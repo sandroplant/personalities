@@ -1,9 +1,15 @@
-// src/models/User.js
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
+  spotifyId: { type: String, required: true, unique: true },
+  displayName: { type: String },
+  email: { type: String, unique: true },
+  images: [{ url: String }],
+  topArtists: [{ name: String, external_urls: Object, images: Array }],
+  topTracks: [{ name: String, album: Object, external_urls: Object }],
+  currentlyPlaying: { type: Object },
 });
 
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
