@@ -1,20 +1,27 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
 
-const UserSchema = new Schema({
-    username: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    profile: {
-        bio: { type: String, default: '' },
-        location: { type: String, default: '' },
-        website: { type: String, default: '' },
-        profilePicture: { type: String, default: '' } // Add profile picture field
+const userSchema = new mongoose.Schema({
+  fullName: { type: String, required: true },
+  bio: { type: String, required: false },
+  evaluatedCharacteristics: [
+    {
+      criterion: String,
+      score: Number,
     },
-    posts: [{
-        title: String,
-        content: String,
-        createdAt: { type: Date, default: Date.now }
-    }]
+  ],
+  musicPreferences: [String], // For Spotify or other music integrations
+  favoriteMovies: [String],
+  friendEvaluations: [
+    {
+      evaluatorId: mongoose.Schema.Types.ObjectId, // Reference to the friend's user ID
+      scores: [{ criterion: String, score: Number }],
+    },
+  ],
+  privacySettings: {
+    type: Map,
+    of: String, // e.g., "public", "friends-only", "private"
+  },
 });
 
-module.exports = mongoose.model('User', UserSchema);
+const User = mongoose.model('User', userSchema);
+module.exports = User;
