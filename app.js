@@ -1,44 +1,126 @@
+// Load environment variables
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express');
+const session = require('express-session');
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-const multer = require('multer');
-const path = require('path');
-const userRoutes = require('./routes/auth');
-const profileRoutes = require('./routes/profile'); // Ensure this is the correct path
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const SpotifyWebApi = require('spotify-web-api-node');
+const FileStore = require('session-file-store')(session); // Import session-file-store
+const authRoutes = require('./src/utils/spotifyAuth'); // Path to Spotify auth routes
+const profileRoutes = require('./src/routes/profile');
+const User = require('./src/models/User'); // Import the User model
 
-const app = express(); // Define app
+// Initialize Express app
+const app = express();
+const PORT = process.env.PORT || 5001;
 
-// Configure Multer
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
+// Spotify API setup
+const spotifyApi = new SpotifyWebApi({
+  clientId: process.env.SPOTIFY_CLIENT_ID,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+  redirectUri: process.env.SPOTIFY_REDIRECT_URI
+});
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
+app.use(cookieParser());
+app.use(session({
+  store: new FileStore(), // Use session-file-store for session storage
+  secret: process.env.SESSION_SECRET || 'your-session-secret', // Ensure you have a session secret
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: process.env.NODE_ENV === 'production' } // Set to true if using HTTPS
+}));
+
+// Routes
+app.use('/auth', authRoutes);
+app.use('/profile', profileRoutes);
+
+// Test MongoDB connection
+app.get('/test-db', async (req, res) => {
+    try {
+        const result = await User.findOne(); // Use User model to query the database
+        res.json(result || { message: 'Database connection successful, but no data found.' });
+    } catch (error) {
+        console.error('Database query error:', error); // Log the error
+        res.status(500).json({ error: 'Error connecting to the database' });
     }
 });
 
-const upload = multer({ storage: storage });
-
-// Middleware
-app.use(bodyParser.json());
-app.use('/uploads', express.static('uploads')); // Serve static files
-
-// Routes
-app.use('/api/auth', userRoutes);
-app.use('/api/profile', profileRoutes); // Ensure this is correct
-
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://sandroplant:xelosani1@personalities.ruznq.mongodb.net/?retryWrites=true&w=majority&appName=Personalities', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => {
-    console.log('Connected to MongoDB Atlas!');
-}).catch(err => {
-    console.error('Error connecting to MongoDB:', err);
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB connection error:', err));
+
+// Spotify OAuth routes
+const scopes = ['user-read-private', 'user-read-email', 'user-top-read', 'user-library-read'];
+const state = 'some-state-of-your-choice';
+
+app.get('/login', (req, res) => {
+  const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
+  res.redirect(authorizeURL);
 });
 
-// Start server
-app.listen(5001, () => {
-    console.log('Server running at http://localhost:5001');
+app.get('/callback', async (req, res) => {
+  const code = req.query.code;
+
+  if (!code) {
+    return res.status(400).send('No code provided');
+  }
+
+  try {
+    const data = await spotifyApi.authorizationCodeGrant(code);
+    const { access_token, refresh_token } = data.body;
+
+    req.session.access_token = access_token;
+    req.session.refresh_token = refresh_token;
+
+    res.redirect('/profile');
+  } catch (err) {
+    res.status(500).send('Authorization failed');
+  }
+});
+
+// Profile route
+app.get('/profile', async (req, res) => {
+  if (!req.session.access_token) {
+    return res.redirect('/login');
+  }
+
+  spotifyApi.setAccessToken(req.session.access_token);
+
+  try {
+    const [userData, topArtistsData, topTracksData, currentlyPlayingData] = await Promise.all([
+      spotifyApi.getMe(),
+      spotifyApi.getMyTopArtists(),
+      spotifyApi.getMyTopTracks(),
+      spotifyApi.getMyCurrentPlayingTrack()
+    ]);
+
+    const profileData = {
+      display_name: userData.body.display_name,
+      external_urls: userData.body.external_urls,
+      href: userData.body.href,
+      id: userData.body.id,
+      images: userData.body.images,
+      uri: userData.body.uri,
+      top_artists: topArtistsData.body.items,
+      top_tracks: topTracksData.body.items,
+      currently_playing: currentlyPlayingData.body.item
+    };
+
+    res.json(profileData); // Or render a profile view if preferred
+  } catch (err) {
+    res.status(500).send('Failed to fetch profile');
+  }
+});
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });

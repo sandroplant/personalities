@@ -1,21 +1,47 @@
 const express = require('express');
 const router = express.Router();
-const { getProfile, updateProfile, createPost, uploadProfilePicture } = require('../controllers/profileController');
-const multer = require('multer');
+const User = require('../models/User');
 
-// Configure multer for file uploads
-const upload = multer({ dest: 'uploads/' });
+// Create or Update User Profile
+router.post('/update-profile', async (req, res) => {
+    const { userId, bio, location, website, profilePicture, charitabilityCoefficient } = req.body;
+    
+    try {
+        const user = await User.findByIdAndUpdate(
+            userId,
+            {
+                'profile.bio': bio,
+                'profile.location': location,
+                'profile.website': website,
+                'profile.profilePicture': profilePicture,
+                charitabilityCoefficient: charitabilityCoefficient // Update this line
+            },
+            { new: true, runValidators: true }
+        );
 
-// Get user profile
-router.get('/:username', getProfile);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-// Update user profile
-router.put('/:username', updateProfile);
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
 
-// Create a post
-router.post('/create-post', createPost);
+// Get User Profile
+router.get('/get-profile/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('profile charitabilityCoefficient'); // Include this field
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-// Upload profile picture
-router.post('/upload-profile-picture', upload.single('profilePicture'), uploadProfilePicture);
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
 
 module.exports = router;

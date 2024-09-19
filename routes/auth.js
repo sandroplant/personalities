@@ -1,14 +1,11 @@
+// Example root routes/auth.js
+
 const express = require('express');
 const router = express.Router();
-const { register, login, createPost } = require('../controllers/authController'); // Ensure createPost is imported
 
-// Register route
-router.post('/register', register);
-
-// Login route
-router.post('/login', login);
-
-// Create Post route
-router.post('/create-post', createPost); // Add this line
+// Define any root-level routes or middleware here
+router.get('/', (req, res) => {
+    res.send('Welcome to the authentication service');
+});
 
 module.exports = router;
