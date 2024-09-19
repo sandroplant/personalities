@@ -1,40 +1,52 @@
 const express = require('express');
 const router = express.Router();
 const SpotifyWebApi = require('spotify-web-api-node');
+const User = require('../models/User');
 
-// Initialize Spotify Web API client
-const spotifyApi = new SpotifyWebApi({
-  clientId: process.env.SPOTIFY_CLIENT_ID,
-  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-  redirectUri: process.env.SPOTIFY_REDIRECT_URI
-});
-
-// Middleware to set access token (retrieve this from session or database)
-router.use(async (req, res, next) => {
-  const accessToken = req.session.access_token; // Replace with your method of retrieving the access token
-
-  if (accessToken) {
-    spotifyApi.setAccessToken(accessToken);
-    next();
-  } else {
-    res.redirect('/auth/login');
+router.get('/', async (req, res) => {
+  if (!req.session.access_token) {
+    return res.redirect('/auth/login');
   }
-});
 
-// Route to get user profile
-router.get('/profile', async (req, res) => {
+  const spotifyApi = new SpotifyWebApi();
+  spotifyApi.setAccessToken(req.session.access_token);
+
   try {
-    const userData = await spotifyApi.getMe();
-    const topTracks = await spotifyApi.getMyTopTracks();
-    const topArtists = await spotifyApi.getMyTopArtists();
+    const [userData, topArtistsData, topTracksData, currentlyPlayingData] = await Promise.all([
+      spotifyApi.getMe(),
+      spotifyApi.getMyTopArtists(),
+      spotifyApi.getMyTopTracks(),
+      spotifyApi.getMyCurrentPlayingTrack()
+    ]);
 
-    res.json({
-      user: userData.body,
-      topTracks: topTracks.body.items,
-      topArtists: topArtists.body.items
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const profileData = {
+      spotifyId: userData.body.id,
+      displayName: userData.body.display_name,
+      email: userData.body.email,
+      images: userData.body.images,
+      topArtists: topArtistsData.body.items,
+      topTracks: topTracksData.body.items,
+      currentlyPlaying: currentlyPlayingData.body.item,
+    };
+
+    let user = await User.findOne({ spotifyId: profileData.spotifyId });
+
+    if (!user) {
+      user = new User(profileData);
+    } else {
+      user.displayName = profileData.displayName;
+      user.email = profileData.email;
+      user.images = profileData.images;
+      user.topArtists = profileData.topArtists;
+      user.topTracks = profileData.topTracks;
+      user.currentlyPlaying = profileData.currentlyPlaying;
+    }
+
+    await user.save();
+    res.json(user); // Return the updated user profile
+  } catch (error) {
+    console.error('Failed to fetch or save profile data:', error);
+    res.status(500).send('Internal Server Error');
   }
 });
 
