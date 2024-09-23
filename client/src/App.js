@@ -1,3 +1,5 @@
+import React from 'react';
+import Messenger from './components/Messenger'; // Import the Messenger component
 import logo from './logo.svg';
 import './App.css';
 
@@ -17,6 +19,9 @@ function App() {
         >
           Learn React
         </a>
+        <h1>Messenger with AI</h1>
+        {/* Include the Messenger component and pass the userId as a prop */}
+        <Messenger userId="yourUserIdHere" />
       </header>
     </div>
   );

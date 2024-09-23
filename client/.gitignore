@@ -21,3 +21,10 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Allow specific documents
+!src/documents/terms-of-service.md
+!src/documents/privacy-policy.md
+!src/documents/data-deletion.md
+
+# Replace 'src/documents/' with the actual path relative to the client directory

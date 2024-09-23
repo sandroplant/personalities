@@ -1,4 +1,12 @@
+# Node modules and environment files
 /node_modules
 /.env
 /build
 /dist
+
+# Allow specific documents
+!client/src/documents/terms-of-service.md
+!client/src/documents/privacy-policy.md
+!client/src/documents/data-deletion.md
+
+# If documents are in a different directory, adjust the paths accordingly
