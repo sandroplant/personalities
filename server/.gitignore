@@ -1,0 +1,8 @@
+# Existing rules remain unchanged
+
+# Allow specific documents if they are in the server directory
+!path/to/terms-of-service.md
+!path/to/privacy-policy.md
+!path/to/data-deletion.md
+
+# Replace 'path/to/' with the actual path relative to the server directory
