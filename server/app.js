@@ -1,6 +1,9 @@
+// app.js
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
+const rateLimit = require('express-rate-limit');
+const { RateLimiterMemory } = require('rate-limiter-flexible');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -57,6 +60,38 @@ app.use(
     cookie: { secure: process.env.NODE_ENV === 'production' },
   })
 );
+
+// Define global rate limiting rules using express-rate-limit
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+  headers: true,
+});
+
+// Apply global rate limiting to all requests
+app.use(globalLimiter);
+
+// Define advanced rate limiting using rate-limiter-flexible
+const rateLimiter = new RateLimiterMemory({
+  points: 100, // Number of points
+  duration: 15 * 60, // Per 15 minutes
+});
+
+// Middleware to use rate-limiter-flexible
+const advancedRateLimiter = (req, res, next) => {
+  rateLimiter
+    .consume(req.ip)
+    .then(() => {
+      next();
+    })
+    .catch(() => {
+      res.status(429).send('Too many requests from this IP, please try again after 15 minutes');
+    });
+};
+
+// Apply advanced rate limiting globally
+app.use(advancedRateLimiter);
 
 // Conditional redirect based on environment
 if (process.env.NODE_ENV === 'production') {
@@ -143,6 +178,12 @@ app.get('/profile', async (req, res) => {
     res.status(500).send('Failed to fetch profile');
   }
 });
+
+// Use imported routes
+app.use('/auth', authRoutes);
+app.use('/profile', profileRoutes);
+app.use('/messaging', messagingRoutes);
+app.use('/ai', aiRoutes);
 
 // Socket.IO Connection Handling
 io.on('connection', (socket) => {
