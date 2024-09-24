@@ -4,8 +4,8 @@ const Profile = require('../models/Profile');
 // Configure Cloudinary
 cloudinary.config({
     cloud_name: 'ddraai3yk',
-    api_key: '***REMOVED***',
-    api_secret: '***REMOVED***'
+    api_key: '282768751798571',
+    api_secret: 'LlKIE2rmwCBujpOtpvRX7oc-syA'
 });
 
 // Upload Profile Picture
