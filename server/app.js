@@ -17,7 +17,7 @@ const aiRoutes = require('./src/routes/ai');
 const User = require('./src/models/User');
 
 const app = express();
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5001;
 
 // Spotify API setup
 const spotifyApi = new SpotifyWebApi({

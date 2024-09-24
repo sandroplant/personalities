@@ -1,8 +1,12 @@
 # Node modules and environment files
 /node_modules
 /.env
+/server/.env
 /build
 /dist
+
+# Ignore any node_modules in the server directory
+/server/node_modules
 
 # Allow specific documents
 !client/src/documents/terms-of-service.md
