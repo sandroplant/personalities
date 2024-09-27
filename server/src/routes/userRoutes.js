@@ -7,64 +7,64 @@ const router = express.Router();
 
 // Create or update user profile
 router.post('/profile', ensureAuthenticated, async (req, res) => {
-  const {
-    fullName,
-    bio,
-    evaluatedCharacteristics,
-    musicPreferences,
-    favoriteMovies
-  } = req.body;
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    let profile = await Profile.findOneAndUpdate(
-      { user: req.user._id },
-      {
+    const {
         fullName,
         bio,
         evaluatedCharacteristics,
         musicPreferences,
-        favoriteMovies
-      },
-      { new: true, upsert: true }
-    );
+        favoriteMovies,
+    } = req.body;
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
 
-    res.json(profile);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update profile' });
-  }
+        let profile = await Profile.findOneAndUpdate(
+            { user: req.user._id },
+            {
+                fullName,
+                bio,
+                evaluatedCharacteristics,
+                musicPreferences,
+                favoriteMovies,
+            },
+            { new: true, upsert: true }
+        );
+
+        res.json(profile);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
 });
 
 // Get user profile
 router.get('/profile', ensureAuthenticated, async (req, res) => {
-  try {
-    const profile = await Profile.findOne({ user: req.user._id }).populate(
-      'user'
-    );
-    if (profile) {
-      res.json(profile);
-    } else {
-      res.status(404).json({ error: 'Profile not found' });
+    try {
+        const profile = await Profile.findOne({ user: req.user._id }).populate(
+            'user'
+        );
+        if (profile) {
+            res.json(profile);
+        } else {
+            res.status(404).json({ error: 'Profile not found' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch profile' });
     }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch profile' });
-  }
 });
 
 // Delete user profile
 router.delete('/profile', ensureAuthenticated, async (req, res) => {
-  try {
-    await Profile.findOneAndDelete({ user: req.user._id });
-    res.json({ message: 'Profile deleted successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to delete profile' });
-  }
+    try {
+        await Profile.findOneAndDelete({ user: req.user._id });
+        res.json({ message: 'Profile deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to delete profile' });
+    }
 });
 
 export default router;
