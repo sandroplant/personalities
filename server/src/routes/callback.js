@@ -58,4 +58,3 @@ router.get('/login', (req, res) => {
 });
 
 export default router;
-// Compare this snippet from server/src/utils/spotifyAuth.js:

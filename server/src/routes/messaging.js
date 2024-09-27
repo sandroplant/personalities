@@ -1,4 +1,5 @@
 import express from 'express';
+import { body, validationResult } from 'express-validator';
 import Message from '../models/Message.js';
 
 const router = express.Router();
@@ -9,7 +10,17 @@ async function getAIResponse(content) {
 }
 
 // Send message with optional AI response
-router.post('/send', async (req, res) => {
+router.post('/send', [
+    body('senderId').isMongoId().withMessage('Invalid sender ID').trim().escape(),
+    body('recipientId').isMongoId().withMessage('Invalid recipient ID').trim().escape(),
+    body('content').notEmpty().withMessage('Content is required').trim().escape(),
+    body('includeAI').optional().isBoolean().withMessage('Invalid includeAI value'),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { senderId, recipientId, content, includeAI } = req.body;
 
     try {
@@ -38,7 +49,10 @@ router.post('/send', async (req, res) => {
 });
 
 // Get conversation between two users
-router.get('/conversation/:userId1/:userId2', async (req, res) => {
+router.get('/conversation/:userId1/:userId2', [
+    body('userId1').isMongoId().withMessage('Invalid user ID').trim().escape(),
+    body('userId2').isMongoId().withMessage('Invalid user ID').trim().escape(),
+], async (req, res) => {
     const { userId1, userId2 } = req.params;
 
     try {
@@ -57,7 +71,16 @@ router.get('/conversation/:userId1/:userId2', async (req, res) => {
 });
 
 // Send mystery message
-router.post('/send-mystery', async (req, res) => {
+router.post('/send-mystery', [
+    body('senderId').isMongoId().withMessage('Invalid sender ID').trim().escape(),
+    body('recipientId').isMongoId().withMessage('Invalid recipient ID').trim().escape(),
+    body('content').notEmpty().withMessage('Content is required').trim().escape(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { senderId, recipientId, content } = req.body;
 
     try {
@@ -77,7 +100,9 @@ router.post('/send-mystery', async (req, res) => {
 });
 
 // Open mystery message and trigger reaction recording
-router.get('/open-mystery/:messageId', async (req, res) => {
+router.get('/open-mystery/:messageId', [
+    body('messageId').isMongoId().withMessage('Invalid message ID').trim().escape(),
+], async (req, res) => {
     const { messageId } = req.params;
 
     try {
@@ -95,7 +120,11 @@ router.get('/open-mystery/:messageId', async (req, res) => {
 });
 
 // Placeholder for starting a call
-router.post('/start-call', (req, res) => {
+router.post('/start-call', [
+    body('senderId').isMongoId().withMessage('Invalid sender ID').trim().escape(),
+    body('recipientId').isMongoId().withMessage('Invalid recipient ID').trim().escape(),
+    body('callType').isIn(['audio', 'video']).withMessage('Invalid call type').trim().escape(),
+], (req, res) => {
     const { senderId, recipientId, callType } = req.body; // callType: 'audio' or 'video'
 
     console.log(
@@ -105,7 +134,9 @@ router.post('/start-call', (req, res) => {
 });
 
 // Placeholder for saving a recording
-router.post('/save-recording', (req, res) => {
+router.post('/save-recording', [
+    body('recordingData').notEmpty().withMessage('Recording data is required').trim().escape(),
+], (req, res) => {
     res.json({ message: 'Recording saved successfully!' });
 });
 

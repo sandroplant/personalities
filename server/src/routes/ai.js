@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import { body, validationResult } from 'express-validator';
 import OpenAI from 'openai'; // Updated OpenAI SDK import
 
 const router = express.Router();
@@ -10,12 +11,15 @@ const openai = new OpenAI({
 });
 
 // Example route using Express for AI response generation
-router.post('/generate', async (req, res) => {
-    const { prompt } = req.body;
-
-    if (!prompt) {
-        return res.status(400).json({ error: 'Prompt is required' });
+router.post('/generate', [
+    body('prompt').notEmpty().withMessage('Prompt is required').trim().escape(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
     }
+
+    const { prompt } = req.body;
 
     try {
         const response = await openai.chat.completions.create({
