@@ -1,36 +1,36 @@
-const cloudinary = require('cloudinary').v2;
-const Profile = require('../models/Profile');
+import { v2 as cloudinary } from 'cloudinary';
+import Profile from '../models/Profile.js';
 
-// Configure Cloudinary
+// Configure Cloudinary using environment variables
 cloudinary.config({
-    cloud_name: 'ddraai3yk',
-    api_key: '282768751798571',
-    api_secret: 'LlKIE2rmwCBujpOtpvRX7oc-syA'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 // Upload Profile Picture
-exports.uploadProfilePicture = async (req, res) => {
-    try {
-        const result = await cloudinary.uploader.upload(req.file.path, {
-            folder: 'profile_pictures'
-        });
-        res.status(200).json({ url: result.secure_url });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+export const uploadProfilePicture = async (req, res) => {
+  try {
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'profile_pictures'
+    });
+    res.status(200).json({ url: result.secure_url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 };
 
 // Update Profile
-exports.updateProfile = async (req, res) => {
-    const { userId, profileData } = req.body;
-    try {
-        const profile = await Profile.findOneAndUpdate(
-            { userId },
-            profileData,
-            { new: true }
-        );
-        res.status(200).json(profile);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+export const updateProfile = async (req, res) => {
+  const { userId, profileData } = req.body;
+  try {
+    const profile = await Profile.findOneAndUpdate({ userId }, profileData, {
+      new: true
+    });
+    res.status(200).json(profile);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+  }
 };

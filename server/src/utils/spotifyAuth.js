@@ -1,15 +1,21 @@
-const express = require('express');
-const crypto = require('crypto');
-const fetch = require('node-fetch');
-const { generateCodeVerifier, generateCodeChallenge } = require('./spotifyAuthUtils');
-const ensureAuthenticated = require('../middleware/authMiddleware'); // Import the middleware
+import dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
+import crypto from 'crypto';
+import fetch from 'node-fetch';
+import {
+  generateCodeVerifier,
+  generateCodeChallenge
+} from './spotifyAuthUtils.js';
+import ensureAuthenticated from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
 const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
-const scope = 'user-read-private user-read-email user-top-read user-read-currently-playing';
+const scope =
+  'user-read-private user-read-email user-top-read user-read-currently-playing';
 
 let codeVerifier = '';
 let codeChallenge = '';
@@ -21,16 +27,17 @@ router.get('/login', (req, res) => {
 
   const state = crypto.randomBytes(16).toString('hex');
 
-  res.redirect('https://accounts.spotify.com/authorize?' +
-    new URLSearchParams({
-      response_type: 'code',
-      client_id: client_id,
-      redirect_uri: redirect_uri,
-      scope: scope,
-      state: state,
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256'
-    }).toString()
+  res.redirect(
+    'https://accounts.spotify.com/authorize?' +
+      new URLSearchParams({
+        response_type: 'code',
+        client_id: client_id,
+        redirect_uri: redirect_uri,
+        scope: scope,
+        state: state,
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256'
+      }).toString()
   );
 });
 
@@ -42,7 +49,9 @@ router.get('/callback', async (req, res) => {
 
   if (!code) {
     console.log('No code provided');
-    return res.redirect('/#' + new URLSearchParams({ error: 'no_code' }).toString());
+    return res.redirect(
+      '/#' + new URLSearchParams({ error: 'no_code' }).toString()
+    );
   }
 
   try {
@@ -50,7 +59,9 @@ router.get('/callback', async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + Buffer.from(`${client_id}:${client_secret}`).toString('base64')
+        Authorization:
+          'Basic ' +
+          Buffer.from(`${client_id}:${client_secret}`).toString('base64')
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
@@ -74,66 +85,85 @@ router.get('/callback', async (req, res) => {
       res.redirect('/profile'); // Redirect to the profile page after successful login
     } else {
       console.log('Error in token response:', data.error_description);
-      res.redirect('/#' + new URLSearchParams({ error: data.error_description }).toString());
+      res.redirect(
+        '/#' + new URLSearchParams({ error: data.error_description }).toString()
+      );
     }
   } catch (error) {
     console.error('Error during token exchange:', error);
-    res.redirect('/#' + new URLSearchParams({ error: 'failed_to_exchange_code' }).toString());
+    res.redirect(
+      '/#' +
+        new URLSearchParams({ error: 'failed_to_exchange_code' }).toString()
+    );
   }
 });
 
 // Profile route to fetch and display user data
-router.get('/profile', ensureAuthenticated, async (req, res) => { // Add the middleware here
+router.get('/profile', ensureAuthenticated, async (req, res) => {
   const accessToken = req.session.access_token;
 
   try {
-    const topArtistsResponse = await fetch('https://api.spotify.com/v1/me/top/artists?limit=10', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
+    const topArtistsResponse = await fetch(
+      'https://api.spotify.com/v1/me/top/artists?limit=10',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
       }
-    });
+    );
 
     const topArtistsData = await topArtistsResponse.json();
 
-    const topTracksResponse = await fetch('https://api.spotify.com/v1/me/top/tracks?limit=20', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
+    const topTracksResponse = await fetch(
+      'https://api.spotify.com/v1/me/top/tracks?limit=20',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
       }
-    });
+    );
 
     const topTracksData = await topTracksResponse.json();
 
-    const currentTrackResponse = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
+    const currentTrackResponse = await fetch(
+      'https://api.spotify.com/v1/me/player/currently-playing',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
       }
-    });
+    );
 
     const currentTrackData = await currentTrackResponse.json();
 
     const profileData = {
-      top_artists: topArtistsData.items.map(artist => ({
+      top_artists: topArtistsData.items.map((artist) => ({
         name: artist.name,
         uri: artist.uri,
         genres: artist.genres // Adding genres to the response
       })),
-      top_tracks: topTracksData.items.map(track => ({
+      top_tracks: topTracksData.items.map((track) => ({
         name: track.name,
         uri: track.uri,
         album: track.album.name // Adding album to the response
       })),
-      currently_playing: currentTrackData.item ? {
-        name: currentTrackData.item.name,
-        artist: currentTrackData.item.artists.map(artist => artist.name).join(', '),
-        uri: currentTrackData.item.uri,
-        album: currentTrackData.item.album.name // Adding album to the response
-      } : null
+      currently_playing: currentTrackData.item
+        ? {
+            name: currentTrackData.item.name,
+            artist: currentTrackData.item.artists
+              .map((artist) => artist.name)
+              .join(', '),
+            uri: currentTrackData.item.uri,
+            album: currentTrackData.item.album.name // Adding album to the response
+          }
+        : null
     };
 
     res.json(profileData); // Send only the required fields
   } catch (err) {
+    console.error('Error fetching profile data:', err);
     res.status(500).send('Failed to fetch profile data');
   }
 });
 
-module.exports = router;
+export default router;

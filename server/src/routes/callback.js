@@ -1,6 +1,9 @@
-const express = require('express');
-const axios = require('axios');
-const { generateCodeVerifier, generateCodeChallenge } = require('../spotifyAuth');
+import express from 'express';
+import axios from 'axios';
+import {
+  generateCodeVerifier,
+  generateCodeChallenge
+} from '../utils/spotifyAuth.js'; // Updated to ES6 import
 const router = express.Router();
 
 const { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI } = process.env;
@@ -17,17 +20,21 @@ router.get('/callback', async (req, res) => {
   }
 
   try {
-    const response = await axios.post('https://accounts.spotify.com/api/token', new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: REDIRECT_URI,
-      code_verifier: codeVerifier,
-    }).toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64')}`,
-      },
-    });
+    const response = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: REDIRECT_URI,
+        code_verifier: codeVerifier
+      }).toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64')}`
+        }
+      }
+    );
 
     const { access_token } = response.data;
 
@@ -43,10 +50,12 @@ router.get('/login', (req, res) => {
   codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
 
-  const scopes = 'user-read-private user-read-email';
+  const scopes =
+    'user-read-private user-read-email user-top-read user-library-read';
   const authorizationUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${SPOTIFY_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&code_challenge=${codeChallenge}&code_challenge_method=S256&scope=${encodeURIComponent(scopes)}`;
 
   res.redirect(authorizationUrl);
 });
 
-module.exports = router;
+export default router;
+// Compare this snippet from server/src/utils/spotifyAuth.js:

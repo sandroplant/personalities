@@ -1,12 +1,20 @@
-function ensureAuthenticated(req, res, next) {
-    if (req.session && req.session.access_token) {
-      // User is authenticated; proceed to the next middleware or route
-      next();
-    } else {
-      // User is not authenticated; redirect to the login page
-      res.redirect('/login');
-    }
+import jwt from 'jsonwebtoken';
+
+const authMiddleware = (req, res, next) => {
+  const token = req.header('Authorization').replace('Bearer ', '');
+
+  if (!token) {
+    return res.status(401).send({ error: 'Access denied. No token provided.' });
   }
-  
-  module.exports = ensureAuthenticated;
-  
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (ex) {
+    console.error(ex);
+    res.status(400).send({ error: 'Invalid token.' });
+  }
+};
+
+export default authMiddleware;

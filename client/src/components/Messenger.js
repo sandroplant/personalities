@@ -32,7 +32,10 @@ const Messenger = ({ userId }) => {
 
     // Send message to server
     try {
-      const response = await axios.post('http://localhost:5001/messaging/send', newMessage);
+      const response = await axios.post(
+        'http://localhost:5001/messaging/send',
+        newMessage
+      );
       const { aiResponse } = response.data;
       setAiResponse(aiResponse || ''); // Update with AI response if available
       setMessages((prev) => [...prev, newMessage]);
@@ -48,7 +51,11 @@ const Messenger = ({ userId }) => {
         {messages.map((msg, idx) => (
           <div key={idx}>
             <strong>{msg.senderId}</strong>: {msg.content}
-            {msg.aiResponse && <p><em>AI Response:</em> {msg.aiResponse}</p>}
+            {msg.aiResponse && (
+              <p>
+                <em>AI Response:</em> {msg.aiResponse}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -59,7 +66,11 @@ const Messenger = ({ userId }) => {
         placeholder="Type a message"
       />
       <button onClick={sendMessage}>Send</button>
-      {aiResponse && <div><strong>AI Response:</strong> {aiResponse}</div>}
+      {aiResponse && (
+        <div>
+          <strong>AI Response:</strong> {aiResponse}
+        </div>
+      )}
     </div>
   );
 };

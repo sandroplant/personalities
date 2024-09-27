@@ -1,10 +1,9 @@
-// client/craco.config.js
+import { defineConfig } from 'craco';
 
-module.exports = {
-    babel: {
-      plugins: [
-        // Add your custom Babel plugins here
-      ],
-    },
-  };
-  
+export default defineConfig({
+  babel: {
+    plugins: [
+      // Add your custom Babel plugins here
+    ],
+  },
+});

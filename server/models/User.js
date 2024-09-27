@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
@@ -6,22 +6,22 @@ const userSchema = new mongoose.Schema({
   evaluatedCharacteristics: [
     {
       criterion: String,
-      score: Number,
-    },
+      score: Number
+    }
   ],
   musicPreferences: [String], // For Spotify or other music integrations
   favoriteMovies: [String],
   friendEvaluations: [
     {
       evaluatorId: mongoose.Schema.Types.ObjectId, // Reference to the friend's user ID
-      scores: [{ criterion: String, score: Number }],
-    },
+      scores: [{ criterion: String, score: Number }]
+    }
   ],
   privacySettings: {
     type: Map,
-    of: String, // e.g., "public", "friends-only", "private"
-  },
+    of: String // e.g., "public", "friends-only", "private"
+  }
 });
 
 const User = mongoose.model('User', userSchema);
-module.exports = User;
+export default User;

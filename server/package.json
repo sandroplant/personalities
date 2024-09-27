@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A simple Express server",
   "main": "app.js",
+  "type": "module",
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
@@ -27,12 +28,14 @@
     "mongoose": "^8.6.3",
     "multer": "^1.4.5-lts.1",
     "node-fetch": "^2.7.0",
-    "openai": "^4.62.1",
+    "on-headers": "^1.0.2",
+    "openai": "^4.64.0",
     "rate-limiter-flexible": "^2.4.2",
     "session-file-store": "^1.5.0",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5",
-    "spotify-web-api-node": "^5.0.2"
+    "spotify-web-api-node": "^5.0.2",
+    "punycode": "^2.1.1"
   },
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
