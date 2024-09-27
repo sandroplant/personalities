@@ -3,12 +3,14 @@
 ## Authentication Routes
 
 ### 1. `/login`
+
 - **Method**: `GET`
 - **Description**: Redirects the user to the Spotify authorization page.
 - **Query Parameters**: None
 - **Response**: Redirect to Spotify for login and authorization.
 
 ### 2. `/callback`
+
 - **Method**: `GET`
 - **Description**: Handles the callback from Spotify after user authorization and exchanges the code for an access token.
 - **Query Parameters**:
@@ -18,6 +20,7 @@
 ## Protected Routes
 
 ### 3. `/profile`
+
 - **Method**: `GET`
 - **Middleware**: `ensureAuthenticated`
 - **Description**: Fetches the user’s top artists, top tracks, and currently playing song from Spotify.
@@ -47,3 +50,4 @@
       "album": "Album Name"
     }
   }
+  ```

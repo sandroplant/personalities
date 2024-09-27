@@ -14,3 +14,4 @@
 !client/src/documents/data-deletion.md
 
 # If documents are in a different directory, adjust the paths accordingly
+.env

@@ -1,8 +1,35 @@
 # Existing rules remain unchanged
 
-# Allow specific documents if they are in the server directory
-!path/to/terms-of-service.md
-!path/to/privacy-policy.md
-!path/to/data-deletion.md
+# Node modules
+node_modules
+npm-debug.log
 
-# Replace 'path/to/' with the actual path relative to the server directory
+# Environment variables
+.env
+
+# Logs
+logs
+*.log
+
+# OS generated files
+.DS_Store
+
+# Coverage directory used by testing tools
+coverage
+
+# Temporary files
+tmp
+
+# Git related files
+.git
+.gitignore
+
+# VS Code settings
+.vscode
+
+# Allow specific documents if they are in the server directory
+!server/terms-of-service.md
+!server/privacy-policy.md
+!server/data-deletion.md
+
+# Replace 'server/' with the actual path relative to the server directory if different

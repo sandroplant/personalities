@@ -1,5 +1,5 @@
 import React from 'react';
-import Messenger from './components/Messenger'; // Import the Messenger component
+import Messenger from './components/Messenger.js'; // Import the Messenger component with .js extension
 import logo from './logo.svg';
 import './App.css';
 

@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
+import Message from '../models/Message.js';
+
 const router = express.Router();
-const Message = require('../models/Message');
-const User = require('../models/User');
 
 // Dummy AI function for responding (replace with actual AI service)
 async function getAIResponse(content) {
@@ -23,7 +23,7 @@ router.post('/send', async (req, res) => {
       sender: senderId,
       recipient: recipientId,
       content,
-      aiResponse,
+      aiResponse
     });
 
     await newMessage.save();
@@ -42,8 +42,8 @@ router.get('/conversation/:userId1/:userId2', async (req, res) => {
     const messages = await Message.find({
       $or: [
         { sender: userId1, recipient: userId2 },
-        { sender: userId2, recipient: userId1 },
-      ],
+        { sender: userId2, recipient: userId1 }
+      ]
     }).sort({ timestamp: 1 });
 
     res.status(200).json(messages);
@@ -62,7 +62,7 @@ router.post('/send-mystery', async (req, res) => {
       sender: senderId,
       recipient: recipientId,
       content,
-      isMysteryMessage: true, // Mark as mystery message
+      isMysteryMessage: true // Mark as mystery message
     });
 
     await newMessage.save();
@@ -95,6 +95,7 @@ router.get('/open-mystery/:messageId', async (req, res) => {
 router.post('/start-call', (req, res) => {
   const { senderId, recipientId, callType } = req.body; // callType: 'audio' or 'video'
 
+  console.log(`Starting a ${callType} call from ${senderId} to ${recipientId}`);
   res.json({ message: `Starting a ${callType} call between users.` });
 });
 
@@ -103,4 +104,4 @@ router.post('/save-recording', (req, res) => {
   res.json({ message: 'Recording saved successfully!' });
 });
 
-module.exports = router;
+export default router;

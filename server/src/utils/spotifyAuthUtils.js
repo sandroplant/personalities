@@ -1,22 +1,19 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 // Function to generate a code verifier
-function generateCodeVerifier() {
+export function generateCodeVerifier() {
   return crypto.randomBytes(32).toString('hex');
 }
 
 // Function to generate a code challenge
-function generateCodeChallenge(codeVerifier) {
+export function generateCodeChallenge(codeVerifier) {
   const hash = crypto.createHash('sha256');
   hash.update(codeVerifier);
-  const codeChallenge = hash.digest('base64')
+  const codeChallenge = hash
+    .digest('base64')
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
   return codeChallenge;
 }
-
-module.exports = {
-  generateCodeVerifier,
-  generateCodeChallenge
-};
+//     } else {
