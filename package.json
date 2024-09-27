@@ -9,6 +9,7 @@
     "eslint-plugin-import": "^2.30.0",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-react": "^7.37.0",
-    "globals": "^15.9.0"
+    "globals": "^15.9.0",
+    "typescript": "^5.5.0-beta"
   }
 }
