@@ -6,10 +6,12 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import csrf from 'csurf';
 import SpotifyWebApi from 'spotify-web-api-node';
 import fileStore from 'session-file-store';
 import http from 'http';
 import { Server } from 'socket.io';
+import { body, validationResult } from 'express-validator';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -64,6 +66,10 @@ app.use(
         cookie: { secure: process.env.NODE_ENV === 'production' },
     })
 );
+
+// CSRF protection middleware
+const csrfProtection = csrf({ cookie: true });
+app.use(csrfProtection);
 
 // Define global rate limiting rules using express-rate-limit
 const globalLimiter = rateLimit({
