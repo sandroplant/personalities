@@ -1,30 +1,42 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
+# Dependencies
+node_modules/
+.pnp/
 .pnp.js
 
-# testing
-/coverage
+# Build directories
+build/
+dist/
 
-# production
-/build
+# Cache
+.cache/
+.tmp/
+.vscode/
 
-# misc
-.DS_Store
+# Testing
+coverage/
+*.log
+
+# Production
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
+# Editor & IDE settings
+.DS_Store
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# ESLint
+.eslintcache
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Allow specific documents
-!src/documents/terms-of-service.md
-!src/documents/privacy-policy.md
-!src/documents/data-deletion.md
-
-# Replace 'src/documents/' with the actual path relative to the client directory
+# Other
+.lock-wscript
