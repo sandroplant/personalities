@@ -10,10 +10,13 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY, // Ensure this key is set in server/.env
 });
 
-// Example route using Express for AI response generation
-router.post('/generate', [
+// Input validation and sanitization
+const validateGenerate = [
     body('prompt').notEmpty().withMessage('Prompt is required').trim().escape(),
-], async (req, res) => {
+];
+
+// Example route using Express for AI response generation
+router.post('/generate', validateGenerate, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });

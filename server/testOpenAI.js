@@ -3,14 +3,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Verify that the OPENAI_API_KEY is set
+// Verify that the OPEN_API_KEY is set
 if (!process.env.OPENAI_API_KEY) {
     console.error(
         'Error: OPENAI_API_KEY is not set in the environment variables.'
     );
     process.exit(1); // Exit the application if API key is missing
 } else {
-    console.log('OPENAI_API_KEY is set:', process.env.OPENAI_API_KEY); // Add this line to verify
+    console.log('OPENAI_API_KEY is set'); // Avoid logging the actual key
 }
 
 // OpenAI API Configuration
