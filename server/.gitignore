@@ -1,12 +1,3 @@
-# Existing rules remain unchanged
-
-# Node modules
-node_modules
-npm-debug.log
-
-# Environment variables
-.env
-
 # Logs
 logs
 *.log
@@ -28,8 +19,6 @@ tmp
 .vscode
 
 # Allow specific documents if they are in the server directory
-!server/terms-of-service.md
-!server/privacy-policy.md
-!server/data-deletion.md
-
-# Replace 'server/' with the actual path relative to the server directory if different
+!terms-of-service.md
+!privacy-policy.md
+!data-deletion.md

@@ -89,7 +89,7 @@ router.get('/', advancedProfileLimiter, async (req, res) => {
     }
 });
 
-// Example POST /profile/create with validation and rate limiting
+// POST /profile/create - Create or update profile with validation and rate limiting
 router.post(
     '/create',
     advancedProfileLimiter,
@@ -130,5 +130,75 @@ router.post(
         }
     }
 );
+
+// POST /profile/update-profile - Update user profile
+router.post(
+    '/update-profile',
+    advancedProfileLimiter,
+    [
+        body('userId').isMongoId().withMessage('Invalid user ID').trim().escape(),
+        body('bio').optional().isLength({ min: 10 }).withMessage('Bio must be at least 10 characters').trim().escape(),
+        body('location').optional().trim().escape(),
+        body('website').optional().isURL().withMessage('Invalid URL').trim().escape(),
+        body('profilePicture').optional().trim().escape(),
+        body('charitabilityCoefficient').optional().isNumeric().withMessage('Must be a number').trim().escape(),
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const {
+            userId,
+            bio,
+            location,
+            website,
+            profilePicture,
+            charitabilityCoefficient,
+        } = req.body;
+
+        try {
+            const user = await User.findByIdAndUpdate(
+                userId,
+                {
+                    'profile.bio': bio,
+                    'profile.location': location,
+                    'profile.website': website,
+                    'profile.profilePicture': profilePicture,
+                    charitabilityCoefficient: charitabilityCoefficient,
+                },
+                { new: true, runValidators: true }
+            );
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            res.status(200).json(user);
+        } catch (error) {
+            console.error('Failed to update profile:', error);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    }
+);
+
+// GET /profile/get-profile/:id - Get user profile by ID
+router.get('/get-profile/:id', advancedProfileLimiter, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select(
+            'profile charitabilityCoefficient'
+        );
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json(user);
+    } catch (error) {
+        console.error('Failed to get profile:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 
 export default router;

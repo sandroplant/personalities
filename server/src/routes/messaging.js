@@ -1,5 +1,5 @@
 import express from 'express';
-import { body, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 import Message from '../models/Message.js';
 
 const router = express.Router();
@@ -50,9 +50,14 @@ router.post('/send', [
 
 // Get conversation between two users
 router.get('/conversation/:userId1/:userId2', [
-    body('userId1').isMongoId().withMessage('Invalid user ID').trim().escape(),
-    body('userId2').isMongoId().withMessage('Invalid user ID').trim().escape(),
+    param('userId1').isMongoId().withMessage('Invalid user ID').trim().escape(),
+    param('userId2').isMongoId().withMessage('Invalid user ID').trim().escape(),
 ], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { userId1, userId2 } = req.params;
 
     try {
@@ -101,8 +106,13 @@ router.post('/send-mystery', [
 
 // Open mystery message and trigger reaction recording
 router.get('/open-mystery/:messageId', [
-    body('messageId').isMongoId().withMessage('Invalid message ID').trim().escape(),
+    param('messageId').isMongoId().withMessage('Invalid message ID').trim().escape(),
 ], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { messageId } = req.params;
 
     try {
@@ -125,6 +135,11 @@ router.post('/start-call', [
     body('recipientId').isMongoId().withMessage('Invalid recipient ID').trim().escape(),
     body('callType').isIn(['audio', 'video']).withMessage('Invalid call type').trim().escape(),
 ], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { senderId, recipientId, callType } = req.body; // callType: 'audio' or 'video'
 
     console.log(
@@ -137,6 +152,11 @@ router.post('/start-call', [
 router.post('/save-recording', [
     body('recordingData').notEmpty().withMessage('Recording data is required').trim().escape(),
 ], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     res.json({ message: 'Recording saved successfully!' });
 });
 

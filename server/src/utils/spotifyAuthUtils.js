@@ -1,3 +1,5 @@
+// src/utils/spotifyAuthUtils.js
+
 import crypto from 'crypto';
 
 // Function to generate a code verifier
@@ -16,4 +18,3 @@ export function generateCodeChallenge(codeVerifier) {
         .replace(/=+$/, '');
     return codeChallenge;
 }
-//     } else {

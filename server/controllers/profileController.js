@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
+import { body, validationResult } from 'express-validator';
 import Profile from '../models/Profile.js';
 
 // Configure Cloudinary using environment variables
@@ -16,25 +17,36 @@ export const uploadProfilePicture = async (req, res) => {
         });
         res.status(200).json({ url: result.secure_url });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
+        console.error('Error uploading profile picture:', err);
+        res.status(500).json({ error: 'Failed to upload profile picture' });
     }
 };
 
 // Update Profile
-export const updateProfile = async (req, res) => {
-    const { userId, profileData } = req.body;
-    try {
-        const profile = await Profile.findOneAndUpdate(
-            { userId },
-            profileData,
-            {
-                new: true,
+export const updateProfile = [
+    body('userId').isMongoId().withMessage('Invalid user ID').trim().escape(),
+    body('profileData').isObject().withMessage('Profile data must be an object'),
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { userId, profileData } = req.body;
+        try {
+            const profile = await Profile.findOneAndUpdate(
+                { user: userId },
+                profileData,
+                { new: true }
+            );
+            if (profile) {
+                res.status(200).json(profile);
+            } else {
+                res.status(404).json({ error: 'Profile not found' });
             }
-        );
-        res.status(200).json(profile);
-    } catch (err) {
-        console.error(err);
-        res.status(400).json({ error: err.message });
+        } catch (err) {
+            console.error('Error updating profile:', err);
+            res.status(500).json({ error: 'Failed to update profile' });
+        }
     }
-};
+];

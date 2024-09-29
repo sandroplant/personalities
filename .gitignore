@@ -1,17 +1,40 @@
 # Node modules and environment files
 /node_modules
+npm-debug.log
+
+# Ignore environment variables
 *.env
 .env
-/build
+
+# Ignore distribution folder
 /dist
 
-# Ignore any node_modules in the server directory
-/server/node_modules
+# Logs
+logs
+*.log
 
-# Allow specific documents
+# OS generated files
+.DS_Store
+
+# Coverage directory used by testing tools
+coverage
+
+# Temporary files
+tmp
+
+# Git related files
+.git
+.gitignore
+
+# VS Code settings
+.vscode
+
+# Allow specific documents in the client directory
 !client/src/documents/terms-of-service.md
 !client/src/documents/privacy-policy.md
 !client/src/documents/data-deletion.md
 
-# If documents are in a different directory, adjust the paths accordingly
-.env
+# Allow specific documents in the server directory
+!server/terms-of-service.md
+!server/privacy-policy.md
+!server/data-deletion.md
