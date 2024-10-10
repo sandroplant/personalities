@@ -1,33 +1,71 @@
-# Node modules and environment files
-/node_modules
-npm-debug.log
+# =============================
+# Node Modules and Dependencies
+# =============================
 
-# Ignore environment variables
+# Ignore all node_modules directories
+/node_modules/
+client/node_modules/
+server/node_modules/
+
+# =====================
+# Environment Variables
+# =====================
+
+# Ignore environment variable files
 *.env
 .env
 
-# Ignore distribution folder
-/dist
+# =====================
+# Build and Distribution
+# =====================
 
-# Logs
-logs
+# Ignore build and distribution folders
+/dist/
+build/
+coverage/
+
+# =====================
+# Logs and Debugging
+# =====================
+
+# Ignore log files and directories
+logs/
 *.log
+npm-debug.log*
 
-# OS generated files
+# =====================
+# Operating System Files
+# =====================
+
+# macOS
 .DS_Store
 
-# Coverage directory used by testing tools
-coverage
+# =====================
+# Temporary Files
+# =====================
 
-# Temporary files
-tmp
+# Ignore temporary files and directories
+tmp/
+temp/
+*.tmp
 
-# Git related files
-.git
-.gitignore
+# =====================
+# Editor and IDE Settings
+# =====================
 
 # VS Code settings
-.vscode
+.vscode/
+
+# =====================
+# Git Specific Files
+# =====================
+
+# Do NOT ignore .git or .gitignore
+# These lines have been removed as Git manages them internally
+
+# =====================
+# Documentation Exceptions
+# =====================
 
 # Allow specific documents in the client directory
 !client/src/documents/terms-of-service.md
