@@ -23,8 +23,12 @@ const CharityPage: React.FC = () => {
         }
         const data: CharityProject[] = await response.json();
         setCharityProjects(data);
-      } catch (error: any) {
-        setError(error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError(String(error));
+        }
       } finally {
         setLoading(false);
       }

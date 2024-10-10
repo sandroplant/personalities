@@ -64,7 +64,7 @@ const Profile: React.FC = () => {
     ],
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<any>) => {
     const { name, value } = e.target;
     setProfileData((prevData) => ({
       ...prevData,
@@ -104,7 +104,9 @@ const Profile: React.FC = () => {
           {Object.keys(dropdownOptions).map((key) => (
             <Col md={6} key={key}>
               <Form.Group controlId={key}>
-                <Form.Label>{key.charAt(0).toUpperCase() + key.slice(1)}</Form.Label>
+                <Form.Label>
+                  {key.charAt(0).toUpperCase() + key.slice(1)}
+                </Form.Label>
                 <Form.Control
                   as="select"
                   name={key}
@@ -112,11 +114,13 @@ const Profile: React.FC = () => {
                   onChange={handleChange}
                 >
                   <option value="">Select...</option>
-                  {dropdownOptions[key as keyof typeof dropdownOptions].map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
+                  {dropdownOptions[key as keyof typeof dropdownOptions].map(
+                    (option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    )
+                  )}
                 </Form.Control>
               </Form.Group>
             </Col>

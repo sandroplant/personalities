@@ -1,10 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import io from 'socket.io-client';
+import React, { useState, useEffect, useRef } from 'react';
+import socketIO, { Socket } from 'socket.io-client';
 import axios from 'axios';
-import { Container, Row, Col, ListGroup, Form, Button, Alert } from 'react-bootstrap';
-import { SendFill, StopFill, MicFill, CameraVideoFill } from 'react-bootstrap-icons';
+import {
+  TabContainer,
+  Row,
+  Col,
+  ListGroup,
+  Form,
+  FormControl,
+  ListGroupItem,
+  FormControlProps,
+} from 'react-bootstrap';
+import Button from 'react-bootstrap/Button';
+import Alert from 'react-bootstrap/Alert';
+import {
+  SendFill,
+  StopFill,
+  MicFill,
+  CameraVideoFill,
+} from 'react-bootstrap-icons';
 
-const socket = io.connect(process.env.REACT_APP_SERVER_URL || 'http://localhost:5001', { withCredentials: true });
+// Define environment variable with a fallback
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:5001';
+
+// Initialize socket outside the component to prevent multiple connections
+const socket: typeof socketIO.Socket = socketIO(SERVER_URL);
 
 interface Message {
   message?: string;
@@ -22,9 +42,8 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
   const [message, setMessage] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [mediaChunks, setMediaChunks] = useState<Blob[]>([]);
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
@@ -32,46 +51,66 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
     socket.emit('joinRoom', { roomId });
 
     // Receive text messages
-    socket.on('receiveMessage', ({ message, sender }: { message: string; sender: string }) => {
+    const handleReceiveMessage = ({
+      message,
+      sender,
+    }: {
+      message: string;
+      sender: string;
+    }) => {
       setMessages((prevMessages) => [...prevMessages, { message, sender }]);
-    });
+    };
 
     // Receive media messages
-    socket.on('receiveMedia', ({ mediaData, mediaType, sender }: { mediaData: string; mediaType: 'audio' | 'video'; sender: string }) => {
+    const handleReceiveMedia = ({
+      mediaData,
+      mediaType,
+      sender,
+    }: {
+      mediaData: string;
+      mediaType: 'audio' | 'video';
+      sender: string;
+    }) => {
       setMessages((prevMessages) => [
         ...prevMessages,
         { mediaData, mediaType, sender },
       ]);
-    });
+    };
+
+    socket.on('receiveMessage', handleReceiveMessage);
+    socket.on('receiveMedia', handleReceiveMedia);
 
     // Cleanup on unmount
     return () => {
+      socket.off('receiveMessage', handleReceiveMessage);
+      socket.off('receiveMedia', handleReceiveMedia);
       socket.disconnect();
-      if (mediaStream) {
-        mediaStream.getTracks().forEach((track) => track.stop());
-      }
     };
-  }, [roomId, mediaStream]);
+  }, [roomId]);
 
   const sendMessage = () => {
     if (message.trim() !== '') {
+      const newMessage: Message = {
+        message,
+        sender: currentUser,
+      };
       socket.emit('sendMessage', { roomId, message, sender: currentUser });
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { message, sender: currentUser },
-      ]);
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
       setMessage('');
     }
   };
 
   const startRecording = async (type: 'audio' | 'video') => {
     try {
-      const constraints = type === 'video' ? { audio: true, video: true } : { audio: true, video: false };
+      const constraints =
+        type === 'video'
+          ? { audio: true, video: true }
+          : { audio: true, video: false };
+
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      setMediaStream(stream);
 
       const recorder = new MediaRecorder(stream);
-      setMediaRecorder(recorder);
+      mediaRecorderRef.current = recorder;
       setMediaChunks([]);
 
       recorder.ondataavailable = (e: BlobEvent) => {
@@ -86,113 +125,175 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
         reader.readAsDataURL(blob);
         reader.onloadend = () => {
           const base64data = reader.result as string;
-          socket.emit('sendMedia', { roomId, mediaData: base64data, mediaType: type, sender: currentUser });
+          socket.emit('sendMedia', {
+            roomId,
+            mediaData: base64data,
+            mediaType: type,
+            sender: currentUser,
+          });
           setMessages((prevMessages) => [
             ...prevMessages,
             { mediaData: base64data, mediaType: type, sender: currentUser },
           ]);
         };
 
-        // Stop all tracks
+        // Stop all tracks to release resources
         stream.getTracks().forEach((track) => track.stop());
-        setMediaStream(null);
+        setIsRecording(false);
       };
 
       recorder.start();
       setIsRecording(true);
       setError('');
-    } catch (error) {
-      console.error('Error accessing media devices:', error);
-      setError('Unable to access media devices. Please check your permissions.');
+    } catch (err) {
+      console.error('Error accessing media devices:', err);
+      setError(
+        'Unable to access media devices. Please check your permissions.'
+      );
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-      setIsRecording(false);
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== 'inactive'
+    ) {
+      mediaRecorderRef.current.stop();
     }
   };
 
   // Function to get AI response
   const getAIResponse = async () => {
-    const conversation = messages.map((msg) => ({
-      role: msg.sender === currentUser ? 'user' : msg.sender === 'AI' ? 'assistant' : 'system',
-      content: msg.message || '',
-    }));
+    const conversation = messages
+      .filter((msg) => msg.message)
+      .map((msg) => ({
+        role:
+          msg.sender === currentUser
+            ? 'user'
+            : msg.sender === 'AI'
+              ? 'assistant'
+              : 'system',
+        content: msg.message ?? 'Default content',
+      }));
 
     try {
-      const response = await axios.post(`${process.env.REACT_APP_SERVER_URL}/messaging/ai/get-response`, {
-        messages: conversation,
-      }, {
-        withCredentials: true,
-      });
+      const response = await axios.post(
+        `${SERVER_URL}/messaging/ai/get-response`,
+        {
+          messages: conversation,
+        },
+        {
+          withCredentials: true,
+        }
+      );
 
-      if (response.data.success) {
+      const data = response.data as {
+        success: boolean;
+        aiMessage: string;
+        message?: string;
+      };
+
+      if (data.success) {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { message: response.data.aiMessage, sender: 'AI' },
+          { message: data.aiMessage, sender: 'AI' },
         ]);
         setError('');
       } else {
-        console.error('AI response error:', response.data.message);
+        const errorMessage = data.message || 'Failed to get AI response.';
+        console.error('AI response error:', errorMessage);
         setError('Failed to get AI response.');
       }
-    } catch (error) {
-      console.error('Error fetching AI response:', error);
+    } catch (err) {
+      console.error('Error fetching AI response:', err);
       setError('Error fetching AI response.');
     }
   };
 
+  // Handle Enter key press for sending message
+
+  const handleKeyPress: React.KeyboardEventHandler<
+    FormControlProps & HTMLInputElement
+  > = (e) => {
+    const target = e.target as HTMLInputElement;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
   return (
-    <Container fluid className="d-flex flex-column vh-100">
-      <Row className="bg-primary text-white text-center py-3">
-        <Col>
-          <h3>Chat Room</h3>
-        </Col>
-      </Row>
-      <Row className="flex-grow-1 overflow-auto">
-        <Col>
-          <ListGroup variant="flush">
-            {messages.map((msg, index) => (
-              <ListGroup.Item key={index} className={msg.sender === currentUser ? 'text-end' : 'text-start'}>
-                <strong>{msg.sender}:</strong>
-                {msg.mediaData ? (
-                  msg.mediaType === 'video' ? (
-                    <div>
-                      <video controls width="250" src={msg.mediaData} className="mt-2" />
-                    </div>
+    <>
+      <div className="d-flex flex-column vh-100">
+        <Row className="bg-primary text-white text-center py-3">
+          <Col>
+            <h3>Chat Room</h3>
+          </Col>
+        </Row>
+        <Row className="flex-grow-1 overflow-auto">
+          <Col>
+            <ListGroup>
+              {messages.map((msg, index) => (
+                <ListGroupItem
+                  key={index}
+                  className={
+                    msg.sender === currentUser ? 'text-end' : 'text-start'
+                  }
+                >
+                  <strong>{msg.sender}:</strong>
+                  {msg.mediaData ? (
+                    msg.mediaType === 'video' ? (
+                      <div>
+                        <video
+                          controls
+                          width="250"
+                          src={msg.mediaData}
+                          className="mt-2"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <audio controls src={msg.mediaData} className="mt-2" />
+                      </div>
+                    )
                   ) : (
-                    <div>
-                      <audio controls src={msg.mediaData} className="mt-2" />
-                    </div>
-                  )
-                ) : (
-                  <p className="mb-1">{msg.message}</p>
-                )}
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
-        </Col>
-      </Row>
-      <Row className="p-3">
+                    <p className="mb-1">{msg.message}</p>
+                  )}
+                </ListGroupItem>
+              ))}
+            </ListGroup>
+          </Col>
+        </Row>
+        <Row className="p-3"></Row>
         <Col>
           {error && <Alert variant="danger">{error}</Alert>}
           <Form className="d-flex">
-            <Form.Control
+            <FormControl
               type="text"
               placeholder="Type your message..."
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={(e) => { if (e.key === 'Enter') sendMessage(); }}
+              onChange={(e) => setMessage((e.target as HTMLInputElement).value)}
+              onKeyDown={handleKeyPress}
             />
             <Button variant="primary" className="ms-2" onClick={sendMessage}>
               <SendFill />
             </Button>
-            <Button variant={isRecording ? 'danger' : 'secondary'} className="ms-2" onClick={isRecording ? stopRecording : () => startRecording('audio')}>
+            <Button
+              variant={isRecording ? 'danger' : 'secondary'}
+              className="ms-2"
+              onClick={
+                isRecording ? stopRecording : () => startRecording('audio')
+              }
+            >
               {isRecording ? <StopFill /> : <MicFill />}
             </Button>
-            <Button variant={isRecording ? 'danger' : 'secondary'} className="ms-2" onClick={isRecording ? stopRecording : () => startRecording('video')}>
+            <Button
+              variant={isRecording ? 'danger' : 'secondary'}
+              className="ms-2"
+              onClick={
+                isRecording ? stopRecording : () => startRecording('video')
+              }
+            >
               {isRecording ? <StopFill /> : <CameraVideoFill />}
             </Button>
             <Button variant="success" className="ms-2" onClick={getAIResponse}>
@@ -200,8 +301,8 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
             </Button>
           </Form>
         </Col>
-      </Row>
-    </Container>
+      </div>
+    </>
   );
 };
 

@@ -1,6 +1,16 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent } from 'react';
 import axios from 'axios';
-import { Container, Form, Button, Alert } from 'react-bootstrap';
+import {
+  TabContainer,
+  Form,
+  FormControl,
+  FormGroup,
+  FormProps,
+} from 'react-bootstrap';
+import FormLabel from 'react-bootstrap/FormLabel';
+import Button from 'react-bootstrap/Button';
+import Container from 'react-bootstrap/Container';
+import Alert from 'react-bootstrap/Alert';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState<string>('');
@@ -8,7 +18,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit: FormProps['onSubmit'] = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -30,36 +40,41 @@ const Login: React.FC = () => {
   };
 
   const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
+    setEmail((e.target as HTMLInputElement).value);
   };
 
   const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
+    setPassword((e.target as HTMLInputElement).value);
   };
 
   return (
-    <Container className="mt-5">
+    <Container>
+      <TabContainer></TabContainer>
       <h2>Login</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       <Form onSubmit={handleSubmit}>
-        <Form.Group controlId="formEmail">
-          <Form.Label>Email</Form.Label>
-          <Form.Control
+        <FormGroup controlId="formEmail">
+          <FormLabel>Email</FormLabel>
+          <FormControl
             type="email"
             value={email}
             onChange={handleEmailChange}
             required
           />
-        </Form.Group>
-        <Form.Group controlId="formPassword" className="mt-3">
-          <Form.Label>Password</Form.Label>
-          <Form.Control
+        </FormGroup>
+        <FormGroup controlId="formPassword" className="mt-3">
+          <FormLabel>Password</FormLabel>
+          <FormControl
             type="password"
             value={password}
-            onChange={handlePasswordChange}
+            onChange={(e) =>
+              handlePasswordChange(
+                e as unknown as ChangeEvent<HTMLInputElement>
+              )
+            }
             required
           />
-        </Form.Group>
+        </FormGroup>
         <Button
           variant="primary"
           type="submit"

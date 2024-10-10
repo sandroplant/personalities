@@ -62,7 +62,12 @@ const Register: React.FC = () => {
             required
           />
         </Form.Group>
-        <Button variant="primary" type="submit" className="mt-3" disabled={loading}>
+        <Button
+          variant="primary"
+          type="submit"
+          className="mt-3"
+          disabled={loading}
+        >
           {loading ? 'Registering...' : 'Register'}
         </Button>
       </Form>

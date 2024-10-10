@@ -52,7 +52,9 @@ const SearchEngine: React.FC<SearchEngineProps> = ({ criteriaOptions }) => {
     education: '',
   });
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setSearchParams((prevState) => ({
       ...prevState,
@@ -90,7 +92,9 @@ const SearchEngine: React.FC<SearchEngineProps> = ({ criteriaOptions }) => {
                   max="10"
                   step="0.1"
                   value={searchParams.selectedCriteria[criteria] || 1}
-                  onChange={(e) => handleCriteriaChange(criteria, Number(e.target.value))}
+                  onChange={(e) =>
+                    handleCriteriaChange(criteria, Number(e.target.value))
+                  }
                 />
               </Form.Group>
             </Col>
@@ -100,7 +104,11 @@ const SearchEngine: React.FC<SearchEngineProps> = ({ criteriaOptions }) => {
         {/* Spotify Data */}
         <Form.Group controlId="spotifyData">
           <Form.Label>Top Artists</Form.Label>
-          <Form.Control as="select" name="topArtists" onChange={handleInputChange}>
+          <Form.Control
+            as="select"
+            name="topArtists"
+            onChange={handleInputChange}
+          >
             {searchParams.spotifyData.topArtists.map((artist, index) => (
               <option key={index} value={artist}>
                 {artist}
@@ -109,7 +117,11 @@ const SearchEngine: React.FC<SearchEngineProps> = ({ criteriaOptions }) => {
           </Form.Control>
 
           <Form.Label>Top Songs</Form.Label>
-          <Form.Control as="select" name="topSongs" onChange={handleInputChange}>
+          <Form.Control
+            as="select"
+            name="topSongs"
+            onChange={handleInputChange}
+          >
             {searchParams.spotifyData.topSongs.map((song, index) => (
               <option key={index} value={song}>
                 {song}
@@ -153,7 +165,11 @@ const SearchEngine: React.FC<SearchEngineProps> = ({ criteriaOptions }) => {
           <Col md={6}>
             <Form.Group controlId="hairColor">
               <Form.Label>Hair Color</Form.Label>
-              <Form.Control as="select" name="hairColor" onChange={handleInputChange}>
+              <Form.Control
+                as="select"
+                name="hairColor"
+                onChange={handleInputChange}
+              >
                 {/* Add options for hair colors */}
               </Form.Control>
             </Form.Group>
@@ -161,7 +177,11 @@ const SearchEngine: React.FC<SearchEngineProps> = ({ criteriaOptions }) => {
           <Col md={6}>
             <Form.Group controlId="eyeColor">
               <Form.Label>Eye Color</Form.Label>
-              <Form.Control as="select" name="eyeColor" onChange={handleInputChange}>
+              <Form.Control
+                as="select"
+                name="eyeColor"
+                onChange={handleInputChange}
+              >
                 {/* Add options for eye colors */}
               </Form.Control>
             </Form.Group>
@@ -191,7 +211,11 @@ const SearchEngine: React.FC<SearchEngineProps> = ({ criteriaOptions }) => {
           <Col md={6}>
             <Form.Group controlId="bodyType">
               <Form.Label>Body Type</Form.Label>
-              <Form.Control as="select" name="bodyType" onChange={handleInputChange}>
+              <Form.Control
+                as="select"
+                name="bodyType"
+                onChange={handleInputChange}
+              >
                 {/* Add options for body types */}
               </Form.Control>
             </Form.Group>

@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "./client/src/**/*",
+    "client/**/*",
+    "server/**/*",
+    "global.d.ts",
+    "webpack.config.ts",
+    "reportWebVitals.ts",
+    "client/**/*.d.ts",
+    "server/**/*.d.ts",
+    "client/src/reportWebVitals.d.ts",
+    "server/src/middleware/csrfMiddleware.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", "build"]
+}
