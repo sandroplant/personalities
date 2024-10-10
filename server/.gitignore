@@ -1,22 +1,26 @@
 # Logs
-logs
+logs/
 *.log
 
 # OS generated files
 .DS_Store
 
 # Coverage directory used by testing tools
-coverage
+coverage/
 
 # Temporary files
-tmp
+tmp/
+temp/
+*.tmp
 
 # Git related files
-.git
-.gitignore
+# .git and .gitignore should NOT be ignored
 
 # VS Code settings
-.vscode
+.vscode/
+
+# Dependencies
+node_modules/
 
 # Allow specific documents if they are in the server directory
 !terms-of-service.md
