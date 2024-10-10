@@ -1,0 +1,7 @@
+# Ignore the backup directory to prevent ESLint from picking up its configurations
+personalities-backup/
+
+# Optional: Ignore other common directories
+node_modules/
+dist/
+build/

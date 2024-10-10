@@ -1,6 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { Container, Form, Row, Col, Button } from 'react-bootstrap';
-import options from '../config/options';
+import options from '../../src/config/options'; // Ensure this path is correct or create the module if it doesn't exist
 
 interface Criteria {
   humor: string;
@@ -81,7 +81,9 @@ const ProfileForm: React.FC = () => {
     },
   });
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setProfile((prevProfile) => ({
       ...prevProfile,
@@ -89,7 +91,9 @@ const ProfileForm: React.FC = () => {
     }));
   };
 
-  const handleCriteriaChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleCriteriaChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setProfile((prevProfile) => ({
       ...prevProfile,
@@ -100,7 +104,9 @@ const ProfileForm: React.FC = () => {
     }));
   };
 
-  const handleAppearanceChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleAppearanceChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setProfile((prevProfile) => ({
       ...prevProfile,
@@ -111,7 +117,9 @@ const ProfileForm: React.FC = () => {
     }));
   };
 
-  const handlePrivacyChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  const handlePrivacyChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setProfile((prevProfile) => ({
       ...prevProfile,
@@ -157,7 +165,9 @@ const ProfileForm: React.FC = () => {
           {Object.keys(profile.criteria).map((key) => (
             <Col md={6} key={key}>
               <Form.Group controlId={key}>
-                <Form.Label>{key.charAt(0).toUpperCase() + key.slice(1)}</Form.Label>
+                <Form.Label>
+                  {key.charAt(0).toUpperCase() + key.slice(1)}
+                </Form.Label>
                 <Form.Control
                   type="number"
                   name={key}
@@ -175,7 +185,9 @@ const ProfileForm: React.FC = () => {
           {Object.keys(profile.appearance).map((key) => (
             <Col md={6} key={key}>
               <Form.Group controlId={key}>
-                <Form.Label>{key.charAt(0).toUpperCase() + key.slice(1)}</Form.Label>
+                <Form.Label>
+                  {key.charAt(0).toUpperCase() + key.slice(1)}
+                </Form.Label>
                 <Form.Control
                   as="select"
                   name={key}
@@ -199,7 +211,9 @@ const ProfileForm: React.FC = () => {
           {['hobbies', 'interests'].map((key) => (
             <Col md={6} key={key}>
               <Form.Group controlId={key}>
-                <Form.Label>{key.charAt(0).toUpperCase() + key.slice(1)}</Form.Label>
+                <Form.Label>
+                  {key.charAt(0).toUpperCase() + key.slice(1)}
+                </Form.Label>
                 <Form.Control
                   as="select"
                   name={key}
@@ -222,30 +236,44 @@ const ProfileForm: React.FC = () => {
         <Form.Group controlId="profession">
           <Form.Label>Profession</Form.Label>
           <Form.Control
-            type="text"
+            as="select"
             name="profession"
             value={profile.profession}
             onChange={handleChange}
-            placeholder="Profession"
-          />
+          >
+            <option value="">Select...</option>
+            {options.professions.map((option: string) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </Form.Control>
         </Form.Group>
 
         <Form.Group controlId="education">
           <Form.Label>Education</Form.Label>
           <Form.Control
-            type="text"
+            as="select"
             name="education"
             value={profile.education}
             onChange={handleChange}
-            placeholder="Education"
-          />
+          >
+            <option value="">Select...</option>
+            {options.educationLevels.map((option: string) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </Form.Control>
         </Form.Group>
 
         <Row>
           {Object.keys(profile.privacySettings).map((key) => (
             <Col md={6} key={key}>
               <Form.Group controlId={key}>
-                <Form.Label>{key.charAt(0).toUpperCase() + key.slice(1)}</Form.Label>
+                <Form.Label>
+                  {key.charAt(0).toUpperCase() + key.slice(1)}
+                </Form.Label>
                 <Form.Control
                   as="select"
                   name={key}

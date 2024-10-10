@@ -9,7 +9,9 @@ interface CharitabilityCoefficientProps {
   user: User;
 }
 
-const CharitabilityCoefficient: React.FC<CharitabilityCoefficientProps> = ({ user }) => {
+const CharitabilityCoefficient: React.FC<CharitabilityCoefficientProps> = ({
+  user,
+}) => {
   // Example logic for calculating the charity coefficient
   const calculateCharitability = (): number => {
     let coefficient = 0;

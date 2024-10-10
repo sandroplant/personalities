@@ -1,9 +1,10 @@
-// src/index.js
+export {}; // This ensures the file is treated as a module by TypeScript
 
 import './styles.css';
 
-console.log('Webpack is working!');
-
-const appDiv = document.createElement('div');
-appDiv.innerHTML = '<h1>Hello from Webpack!</h1>';
-document.body.appendChild(appDiv);
+// Use DOMContentLoaded to ensure the DOM is fully loaded before manipulating it
+document.addEventListener('DOMContentLoaded', () => {
+  const appDiv = document.createElement('div');
+  appDiv.innerHTML = '<h1>Hello from Webpack!</h1>';
+  document.body.appendChild(appDiv);
+});

@@ -1,240 +1,186 @@
-// server/routes/profile.ts
-
-import express, { Request, Response, NextFunction } from 'express';
-import rateLimit from 'express-rate-limit';
-import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
-import { body, validationResult } from 'express-validator';
+import express, { Request, Response } from 'express';
+import { check, validationResult } from 'express-validator';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 import SpotifyWebApi from 'spotify-web-api-node';
-import User from '../models/User';
-import Profile from '../models/Profile';
+import User from '../models/User.js';
+import Profile from '../models/Profile.js';
+import csrfTokens from 'csrf'; // Import CSRF Tokens
 
 const router = express.Router();
 
-// Define express-rate-limit middleware
-const profileLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message:
-        'Too many requests from this IP, please try again after 15 minutes',
-    headers: true,
-});
-
-// Define rate-limiter-flexible middleware
+// Initialize Rate Limiter to prevent excessive requests
 const profileRateLimiter = new RateLimiterMemory({
-    points: 50, // Number of points
-    duration: 15 * 60, // Per 15 minutes
+  points: 50,
+  duration: 15 * 60,
 });
 
-// Middleware for rate-limiter-flexible
-const advancedProfileLimiter = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        await profileRateLimiter.consume(req.ip);
-        next();
-    } catch (err) {
-        res.status(429).send(
-            'Too many profile requests from this IP, please try again after 15 minutes'
-        );
-    }
+// Middleware for applying rate limiting
+const advancedProfileLimiter = async (
+  req: Request,
+  res: Response,
+  next: any
+) => {
+  try {
+    await profileRateLimiter.consume(req.ip || '127.0.0.1');
+    next();
+  } catch (err) {
+    res
+      .status(429)
+      .send(
+        'Too many profile requests from this IP, please try again after 15 minutes'
+      );
+  }
 };
 
-// Apply express-rate-limit to all profile routes
-router.use(profileLimiter);
+// Initialize CSRF Tokens
+const csrf = new csrfTokens();
 
-/**
- * Utility Function: Fetch Spotify Data
- * Consolidated from utils/profile.ts
- */
-const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
+interface SpotifyData {
+  spotifyId?: string;
+  displayName?: string;
+  email?: string;
+  images?: { url: string }[];
+  topArtists?: SpotifyApi.ArtistObjectFull[];
+  topTracks?: SpotifyApi.TrackObjectFull[];
+  currentlyPlaying?:
+    | SpotifyApi.TrackObjectFull
+    | SpotifyApi.EpisodeObject
+    | null;
+}
 
-const getSpotifyData = async (accessToken: string) => {
-    try {
-        const headers = {
-            Authorization: `Bearer ${accessToken}`,
-        };
-
-        const [topArtistsResponse, topTracksResponse, currentlyPlayingResponse] = await Promise.all([
-            SpotifyWebApi.prototype.get.bind(null, `${SPOTIFY_API_URL}/me/top/artists`)(),
-            SpotifyWebApi.prototype.get.bind(null, `${SPOTIFY_API_URL}/me/top/tracks`)(),
-            SpotifyWebApi.prototype.get.bind(null, `${SPOTIFY_API_URL}/me/player/currently-playing`)(),
-        ]);
-
-        return {
-            topArtists: Array.isArray(topArtistsResponse.body.items) ? topArtistsResponse.body.items : [],
-            topTracks: Array.isArray(topTracksResponse.body.items) ? topTracksResponse.body.items : [],
-            currentlyPlaying: currentlyPlayingResponse.body.item || null,
-        };
-    } catch (error: any) {
-        console.error('Error fetching Spotify data:', error);
-        throw error;
-    }
-};
-
-// GET /profile - Fetch user profile with advanced rate limiting and validation
-router.get('/', advancedProfileLimiter, async (req: Request, res: Response) => {
-    if (!req.session || !req.session.access_token) {
-        return res.redirect('/auth/login');
-    }
-
+const getSpotifyData = async (accessToken: string): Promise<SpotifyData> => {
+  try {
     const spotifyApi = new SpotifyWebApi();
-    spotifyApi.setAccessToken(req.session.access_token as string);
+    spotifyApi.setAccessToken(accessToken);
 
-    try {
-        const [userData, topArtistsData, topTracksData, currentlyPlayingData] = await Promise.all([
-            spotifyApi.getMe(),
-            spotifyApi.getMyTopArtists(),
-            spotifyApi.getMyTopTracks(),
-            spotifyApi.getMyCurrentPlayingTrack(),
-        ]);
+    const [topArtistsResponse, topTracksResponse, currentlyPlayingResponse] =
+      await Promise.all([
+        spotifyApi.getMyTopArtists(),
+        spotifyApi.getMyTopTracks(),
+        spotifyApi.getMyCurrentPlayingTrack(),
+      ]);
 
-        const profileData = {
-            spotifyId: userData.body.id,
-            displayName: userData.body.display_name,
-            email: userData.body.email,
-            images: userData.body.images,
-            topArtists: topArtistsData.body.items,
-            topTracks: topTracksData.body.items,
-            currentlyPlaying: currentlyPlayingData.body.item,
-        };
+    return {
+      topArtists: topArtistsResponse.body.items,
+      topTracks: topTracksResponse.body.items,
+      currentlyPlaying: currentlyPlayingResponse.body.item,
+    };
+  } catch (error) {
+    console.error('Error fetching Spotify data:', error);
+    throw error;
+  }
+};
 
-        let user = await User.findOne({ spotifyId: profileData.spotifyId });
+router.get('/', advancedProfileLimiter, async (req: Request, res: Response) => {
+  if (!req.session || !req.session.access_token) {
+    return res.redirect('/auth/login');
+  }
 
-        if (!user) {
-            user = new User(profileData);
-        } else {
-            user.displayName = profileData.displayName;
-            user.email = profileData.email;
-            user.images = profileData.images;
-            user.topArtists = profileData.topArtists;
-            user.topTracks = profileData.topTracks;
-            user.currentlyPlaying = profileData.currentlyPlaying;
-        }
+  try {
+    const spotifyData = await getSpotifyData(
+      req.session.access_token as string
+    );
 
-        await user.save();
-        res.json(user); // Return the updated user profile
-    } catch (error) {
-        console.error('Failed to fetch or save profile data:', error);
-        res.status(500).send('Internal Server Error');
+    let user = await User.findOne({ spotifyId: spotifyData.spotifyId });
+
+    if (!user) {
+      user = new User({
+        spotifyId: spotifyData.spotifyId || '',
+        displayName: spotifyData.displayName || '',
+        email: spotifyData.email || '',
+        images: (spotifyData.images as { url: string }[]) || [],
+        topArtists:
+          spotifyData.topArtists?.map((artist) => ({
+            name: artist.name,
+            external_urls: artist.external_urls,
+            images: artist.images.map((image) => ({ url: image.url })),
+          })) || [],
+        topTracks:
+          spotifyData.topTracks?.map((track) => ({
+            name: track.name,
+            album: track.album,
+            external_urls: track.external_urls,
+          })) || [],
+        currentlyPlaying: spotifyData.currentlyPlaying || undefined,
+      });
+    } else {
+      user.displayName = spotifyData.displayName || user.displayName;
+      user.email = spotifyData.email || user.email;
+      user.images = (spotifyData.images as { url: string }[]) || user.images;
+      user.topArtists =
+        spotifyData.topArtists?.map((artist) => ({
+          name: artist.name,
+          external_urls: Object.fromEntries(Object.entries(artist.external_urls)),
+          images: artist.images.map((image) => ({ url: image.url })),
+        })) || user.topArtists;
+      user.topTracks =
+        spotifyData.topTracks?.map((track) => ({
+          name: track.name,
+          album: track.album,
+          external_urls: Object.fromEntries(Object.entries(track.external_urls)),
+        })) || user.topTracks;
+      user.currentlyPlaying =
+        spotifyData.currentlyPlaying || user.currentlyPlaying;
     }
+
+    await user.save();
+
+    // Generate CSRF token and set it as a cookie
+    const secret = req.session.csrfSecret || csrf.secretSync();
+    req.session.csrfSecret = secret;
+    res.cookie('XSRF-TOKEN', csrf.create(secret), {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: false,
+      sameSite: 'lax',
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.error('Failed to fetch or save profile data:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
-/**
- * POST /profile/create - Create or update profile with validation and rate limiting
- */
 router.post(
-    '/create',
-    advancedProfileLimiter,
-    [
-        body('user').isMongoId().withMessage('Invalid user ID').trim().escape(),
-        body('bio')
-            .isString()
-            .withMessage('Bio must be a string')
-            .isLength({ min: 10 })
-            .withMessage('Bio must be at least 10 characters')
-            .trim()
-            .escape(),
-        // Add more validators as needed
-    ],
-    async (req: Request, res: Response) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { user, bio } = req.body;
-
-        try {
-            let profile = await Profile.findOne({ user });
-
-            if (profile) {
-                // Update existing profile
-                profile.bio = bio;
-                await profile.save();
-                return res.json(profile);
-            }
-
-            // Create new profile
-            const newProfile = new Profile({ user, bio });
-            profile = await newProfile.save();
-            res.json(profile);
-        } catch (err) {
-            console.error('Failed to create or update profile:', err);
-            res.status(500).send('Server Error');
-        }
+  '/create',
+  advancedProfileLimiter,
+  [
+    check('user').isMongoId().withMessage('Invalid user ID').trim().escape(),
+    check('bio')
+      .isString()
+      .withMessage('Bio must be a string')
+      .isLength({ min: 10 })
+      .withMessage('Bio must be at least 10 characters')
+      .trim()
+      .escape(),
+  ],
+  async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
     }
-);
 
-/**
- * POST /profile/update-profile - Update user profile
- */
-router.post(
-    '/update-profile',
-    advancedProfileLimiter,
-    [
-        body('userId').isMongoId().withMessage('Invalid user ID').trim().escape(),
-        body('bio').optional().isString().withMessage('Bio must be a string').isLength({ min: 10 }).withMessage('Bio must be at least 10 characters').trim().escape(),
-        body('location').optional().isString().withMessage('Location must be a string').trim().escape(),
-        body('website').optional().isURL().withMessage('Invalid URL').trim().escape(),
-        body('profilePicture').optional().isString().withMessage('Profile picture must be a string').trim().escape(),
-        body('charitabilityCoefficient').optional().isNumeric().withMessage('Must be a number').trim().escape(),
-    ],
-    async (req: Request, res: Response) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
+    const { user, bio } = req.body;
 
-        const {
-            userId,
-            bio,
-            location,
-            website,
-            profilePicture,
-            charitabilityCoefficient,
-        } = req.body;
-
-        try {
-            const user = await User.findByIdAndUpdate(
-                userId,
-                {
-                    'profile.bio': bio,
-                    'profile.location': location,
-                    'profile.website': website,
-                    'profile.profilePicture': profilePicture,
-                    charitabilityCoefficient: charitabilityCoefficient,
-                },
-                { new: true, runValidators: true }
-            );
-
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-
-            res.status(200).json(user);
-        } catch (error) {
-            console.error('Failed to update profile:', error);
-            res.status(500).json({ message: 'Internal Server Error' });
-        }
-    }
-);
-
-/**
- * GET /profile/get-profile/:id - Get user profile by ID
- */
-router.get('/get-profile/:id', advancedProfileLimiter, async (req: Request, res: Response) => {
     try {
-        const user = await User.findById(req.params.id).select(
-            'profile charitabilityCoefficient'
-        );
+      let profile = await Profile.findOne({ user });
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+      if (profile) {
+        profile.bio = bio;
+        await profile.save();
+        res.json(profile);
+        return;
+      }
 
-        res.status(200).json(user);
-    } catch (error) {
-        console.error('Failed to get profile:', error);
-        res.status(500).json({ message: 'Internal Server Error' });
+      const newProfile = new Profile({ user, bio });
+      profile = await newProfile.save();
+      res.json(profile);
+    } catch (err) {
+      console.error('Failed to create or update profile:', err);
+      res.status(500).send('Server Error');
     }
-});
+  }
+);
 
 export default router;

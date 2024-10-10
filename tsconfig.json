@@ -1,28 +1,31 @@
 {
   "compilerOptions": {
     "target": "ES6",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "ESNext",
+    "lib": ["es2020", "dom"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true, // This option is already included
-    "strict": true, // Enables strict type-checking options
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
+    "noEmit": false,
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "module": "esnext",
-    "baseUrl": "./src",
-    "paths": {
-      "@components/*": ["components/*"],
-      "@utils/*": ["utils/*"],
-      "@hooks/*": ["hooks/*"],
-      "@assets/*": ["assets/*"],
-      "@styles/*": ["styles/*"]
-    }
+    "outDir": "./dist",
+    "rootDir": "./",
+    "removeComments": true,
+    "typeRoots": ["./node_modules/@types", "./server/src/types"]
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "build"]
+  "include": [
+    "server/**/*.ts",
+    "webpack.config.ts",
+    "reportWebVitals.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build"
+  ]
 }

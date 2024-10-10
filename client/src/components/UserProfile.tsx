@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, ListGroup, Spinner, Alert } from 'react-bootstrap';
+import {
+  Container,
+  Row,
+  Col,
+  ListGroup,
+  Spinner,
+  Alert,
+} from 'react-bootstrap';
 import { getSpotifyData } from '../utils/spotify';
 
 interface SpotifyData {

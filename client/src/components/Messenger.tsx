@@ -7,6 +7,7 @@ interface Message {
   recipientId: string;
   content: string;
   aiResponse?: string;
+  includeAI?: boolean;
 }
 
 interface MessengerProps {
@@ -43,7 +44,14 @@ const Messenger: React.FC<MessengerProps> = ({ userId }) => {
 
     // Send message to server
     try {
-      const response = await axios.post('http://localhost:5001/messaging/send', newMessage);
+      interface SendMessageResponse {
+        aiResponse?: string;
+      }
+
+      const response = await axios.post<SendMessageResponse>(
+        'http://localhost:5001/messaging/send',
+        newMessage
+      );
       const { aiResponse } = response.data;
       setAiResponse(aiResponse || ''); // Update with AI response if available
       setMessages((prev) => [...prev, newMessage]);

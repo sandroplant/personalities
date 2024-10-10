@@ -1,11 +1,16 @@
 import React, { ChangeEvent, FormEvent } from 'react';
 
 interface FiltersProps {
-  onFilterChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onFilterChange: (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   onApplyFilters: (e: FormEvent<HTMLFormElement>) => void;
 }
 
-const Filters: React.FC<FiltersProps> = ({ onFilterChange, onApplyFilters }) => {
+const Filters: React.FC<FiltersProps> = ({
+  onFilterChange,
+  onApplyFilters,
+}) => {
   return (
     <div>
       <h3>Filters</h3>
@@ -50,12 +55,22 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange, onApplyFilters }) => 
 
         <div>
           <label htmlFor="height">Height (cm):</label>
-          <input type="number" id="height" name="height" onChange={onFilterChange} />
+          <input
+            type="number"
+            id="height"
+            name="height"
+            onChange={onFilterChange}
+          />
         </div>
 
         <div>
           <label htmlFor="weight">Weight (kg):</label>
-          <input type="number" id="weight" name="weight" onChange={onFilterChange} />
+          <input
+            type="number"
+            id="weight"
+            name="weight"
+            onChange={onFilterChange}
+          />
         </div>
 
         {/* More filters can be added as needed */}
