@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import Message, { IMessage } from '../models/Message.js';
-import { verifyCsrfToken } from '../middleware/csrfMiddleware';
+import { verifyCsrfToken } from '../middleware/csrfMiddleware.js';
 import rateLimit from 'express-rate-limit';
 
 const router = express.Router();

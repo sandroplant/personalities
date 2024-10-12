@@ -1,0 +1,23 @@
+{
+  "extends": "/Users/aniavsa/Desktop/personalities/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./build",
+    "module": "ESNext",
+    "target": "ES6",
+    "jsx": "react",
+    "types": ["jest", "node"],
+    "allowSyntheticDefaultImports": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types"
+    ]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist"
+  ]
+}

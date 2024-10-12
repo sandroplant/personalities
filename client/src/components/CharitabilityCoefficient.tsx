@@ -11,7 +11,7 @@ interface CharitabilityCoefficientProps {
 
 const CharitabilityCoefficient: React.FC<CharitabilityCoefficientProps> = ({
   user,
-}) => {
+}: CharitabilityCoefficientProps): React.ReactElement => {
   // Example logic for calculating the charity coefficient
   const calculateCharitability = (): number => {
     let coefficient = 0;

@@ -1,0 +1,17 @@
+// tsconfig.eslint.base.json
+{
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+      "noEmit": true                          // Prevents the compiler from emitting JavaScript files
+    },
+    "include": [
+      "./server/src/**/*"                      // Include only server TypeScript files for ESLint
+    ],
+    "exclude": [
+      "node_modules",
+      "dist",
+      "build",
+      "client"                                 // Exclude client directory to prevent ESLint conflicts
+    ]
+  }
+  

@@ -1,6 +1,6 @@
-// server/models/Post.ts
+// server/src/models/Post.ts
 
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema, model, Document } from 'mongoose';
 
 // Sub-schema for External URLs to ensure valid URL formats
 const ExternalURLSchema: Schema = new Schema(
@@ -29,7 +29,7 @@ interface IComment {
 const CommentSchema: Schema = new Schema(
   {
     commenter: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Commenter is required'],
       validate: {
@@ -47,7 +47,7 @@ const CommentSchema: Schema = new Schema(
     },
     timestamp: {
       type: Date,
-      default: Date.now,
+      default: () => new Date(), // Updated to return Date object
     },
   },
   { _id: false }
@@ -67,12 +67,12 @@ export interface IPost extends Document {
   };
   isPublished: boolean;
   timestamp: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date; // Managed by Mongoose's timestamps
+  updatedAt: Date; // Managed by Mongoose's timestamps
 }
 
 // Main Post Schema with comprehensive validations
-const postSchema: Schema = new Schema(
+const postSchema: Schema<IPost> = new Schema(
   {
     title: {
       type: String,
@@ -87,7 +87,7 @@ const postSchema: Schema = new Schema(
       maxlength: [5000, 'Post content cannot exceed 5000 characters'],
     },
     author: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Author is required'],
       validate: {
@@ -122,11 +122,12 @@ const postSchema: Schema = new Schema(
     },
     timestamp: {
       type: Date,
-      default: Date.now,
+      default: () => new Date(), // Updated to return Date object
     },
+    // Removed 'createdAt' and 'updatedAt' as they are managed by 'timestamps: true'
   },
   {
-    timestamps: true,
+    timestamps: true, // Automatically manages createdAt and updatedAt fields
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
@@ -137,5 +138,5 @@ postSchema.path('__proto__', undefined);
 postSchema.path('constructor', undefined);
 
 // Export the Post model
-const Post = mongoose.model<IPost>('Post', postSchema);
+const Post = model<IPost>('Post', postSchema);
 export default Post;

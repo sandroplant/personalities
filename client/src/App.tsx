@@ -1,3 +1,5 @@
+// client/src/App.tsx
+
 import React from 'react';
 import Messenger from './components/Messenger';
 import './App.css';
@@ -18,6 +20,7 @@ const App: React.FC = () => {
           Learn React
         </a>
         <h1>Messenger with AI</h1>
+        {/* Ensure that the Messenger component exists in src/components/Messenger.tsx */}
         <Messenger userId="yourUserIdHere" />
       </header>
     </div>

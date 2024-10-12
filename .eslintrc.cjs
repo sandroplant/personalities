@@ -1,38 +1,36 @@
 /** @type {import('eslint').Linter.Config} */
 module.exports = {
-  root: true, // Ensures this configuration is the root
+  root: true,
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: [__dirname + '/tsconfig.eslint.json'], // Absolute path to tsconfig
+    project: ['./tsconfig.eslint.base.json'],
     tsconfigRootDir: __dirname,
-    ecmaVersion: 2020, // Allows parsing of modern ECMAScript features
-    sourceType: 'module', // Allows usage of imports
+    ecmaVersion: 2020,
+    sourceType: 'module',
   },
   env: {
-    browser: true, // Enables browser globals like window and document
-    node: true, // Enables Node.js global variables and Node.js scoping
-    es2021: true, // Adds all ECMAScript 2021 globals
+    browser: true,
+    node: true,
+    es2021: true,
   },
   plugins: ['@typescript-eslint', 'import', 'react', 'react-hooks'],
   extends: [
     'eslint:recommended',
-    'plugin:@typescript-eslint/recommended', // Uses the recommended rules from the @typescript-eslint/eslint-plugin
-    // Removed 'plugin:@typescript-eslint/recommended-requiring-type-checking' to simplify configuration
+    'plugin:@typescript-eslint/recommended',
     'plugin:import/recommended',
     'plugin:import/typescript',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
-    'prettier', // Integrates Prettier configuration
+    'prettier',
   ],
   rules: {
-    // Specify any custom ESLint rules here
-    // Temporarily disable problematic rules if needed
     '@typescript-eslint/no-misused-promises': 'off',
     '@typescript-eslint/unbound-method': 'off',
+    // Add any other specific rules here if needed
   },
   settings: {
     react: {
-      version: 'detect', // Automatically detects the React version
+      version: 'detect',
     },
     'import/resolver': {
       node: {
@@ -40,10 +38,44 @@ module.exports = {
         moduleDirectory: ['node_modules', 'node_modules/@types'],
       },
       typescript: {
-        alwaysTryTypes: true, // Always attempt to resolve types under '@types' directory
-        project: __dirname + '/tsconfig.eslint.json',
+        alwaysTryTypes: true,
+        project: ['./tsconfig.eslint.base.json'],
       },
     },
   },
-  ignorePatterns: ['node_modules/', 'dist/', 'build/', 'personalities-backup/'],
+  ignorePatterns: [
+    'node_modules/',
+    'dist/',
+    'build/',
+    'personalities-backup/',
+  ],
+  overrides: [
+    {
+      files: ['server/**/*.ts'],
+      env: {
+        node: true,
+      },
+      extends: [
+        'plugin:@typescript-eslint/recommended',
+        'eslint:recommended',
+      ],
+      rules: {
+        // Add or override server-specific ESLint rules here
+      },
+    },
+    {
+      files: ['client/src/**/*.{ts,tsx,js,jsx}'],
+      env: {
+        browser: true,
+      },
+      extends: [
+        'plugin:react/recommended',
+        'plugin:@typescript-eslint/recommended',
+        'eslint:recommended',
+      ],
+      rules: {
+        // Add or override client-specific ESLint rules here
+      },
+    }
+  ]  
 };

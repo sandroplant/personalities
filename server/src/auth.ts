@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator'; // Corrected import path for express-validator
 import bcrypt from 'bcrypt';
-import User from './src/models/User'; // Corrected import path
+import User from './models/User.js'; // Corrected import path
 
 // Extend the Session interface to include user property
 declare module 'express-session' {

@@ -4,7 +4,7 @@ import { check, validationResult } from 'express-validator';
 import {
   generateCodeVerifier,
   generateCodeChallenge,
-} from '../utils/spotifyAuthUtils';
+} from '../utils/spotifyAuthUtils.js';
 import csrfTokens from 'csrf'; // CSRF token handling
 import rateLimit from 'express-rate-limit'; // Rate limiting to prevent abuse
 

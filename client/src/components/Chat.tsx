@@ -1,18 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import socketIO, { Socket } from 'socket.io-client';
 import axios from 'axios';
-import {
-  TabContainer,
-  Row,
-  Col,
-  ListGroup,
-  Form,
-  FormControl,
-  ListGroupItem,
-  FormControlProps,
-} from 'react-bootstrap';
+// import Row from 'react-bootstrap'
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import ListGroup from 'react-bootstrap/ListGroup';
 import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
+import { FormControlProps } from 'react-bootstrap/FormControl';
 import {
   SendFill,
   StopFill,
@@ -24,7 +20,7 @@ import {
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:5001';
 
 // Initialize socket outside the component to prevent multiple connections
-const socket: typeof socketIO.Socket = socketIO(SERVER_URL);
+const socket = socketIO(SERVER_URL);
 
 interface Message {
   message?: string;
@@ -234,7 +230,7 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
           <Col>
             <ListGroup>
               {messages.map((msg, index) => (
-                <ListGroupItem
+                <ListGroup.Item
                   key={index}
                   className={
                     msg.sender === currentUser ? 'text-end' : 'text-start'
@@ -259,7 +255,7 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
                   ) : (
                     <p className="mb-1">{msg.message}</p>
                   )}
-                </ListGroupItem>
+                </ListGroup.Item>
               ))}
             </ListGroup>
           </Col>
@@ -268,7 +264,7 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
         <Col>
           {error && <Alert variant="danger">{error}</Alert>}
           <Form className="d-flex">
-            <FormControl
+            <Form.Control
               type="text"
               placeholder="Type your message..."
               value={message}

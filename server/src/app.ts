@@ -13,46 +13,18 @@ import hpp from 'hpp';
 import mongoose from 'mongoose';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { csrfProtection, verifyCsrfToken } from './src/middleware/csrfMiddleware';
+import SpotifyWebApi from 'spotify-web-api-node';
+import helmet from 'helmet';
+import compression from 'compression';
+import cookieParser from 'cookie-parser';
+import csrf from 'csurf'; // Imported CSRF protection
 
 // Correct handling of __dirname and __filename in ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Handling asynchronous dynamic imports for modules that may not load synchronously
-import sessionModule, { SessionOptions } from 'express-session';
-
-let session: typeof sessionModule;
-
-(async () => {
-  session = (await import('express-session')).default;
-})();
-let cookieParser: any;
-(async () => {
-  cookieParser = (await import('cookie-parser')).default;
-})();
-let SpotifyWebApi: any;
-(async () => {
-  SpotifyWebApi = (await import('spotify-web-api-node')).default;
-})();
-let FileStore: any;
-(async () => {
-  await Promise.all([
-    import('express-session').then(mod => session = mod.default),
-    import('session-file-store').then(mod => FileStore = mod.default(session))
-  ]);
-})();
-let helmet: any;
-(async () => {
-  helmet = (await import('helmet')).default;
-})();
-let compression: any;
-(async () => {
-  compression = (await import('compression')).default;
-})();
-
 // Import Models
-import User from './src/models/User.js';
+import User from './models/User.js';
 
 // Spotify API setup
 const spotifyApi = new SpotifyWebApi({
@@ -98,29 +70,34 @@ app.use(
 // Cookie Parser Middleware
 app.use(cookieParser());
 
-// Session Configuration
-(async () => {
-  await Promise.all([
-    import('express-session').then(mod => session = mod.default),
-    import('session-file-store').then(mod => FileStore = mod.default(session))
-  ]);
+// CSRF Protection Middleware
+const csrfProtection = csrf({ cookie: true });
 
-  app.use((await import('express-session')).default({
+// Session Middleware Configuration
+import sessionModule from 'express-session';
+import FileStoreModule from 'session-file-store';
+
+(async () => {
+  const FileStore = FileStoreModule(sessionModule);
+  const session = sessionModule({
     store: new FileStore(),
     secret: process.env.SESSION_SECRET || 'your-session-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production', // secure for production
       httpOnly: true,
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     },
-  }));
+  });
+
+  // Session middleware must be applied before routes
+  app.use(session);
 })();
 
-// Apply CSRF middleware
-app.use(verifyCsrfToken);
+// Apply CSRF protection after session middleware
+app.use(csrfProtection);
 
 // Rate Limiting: Global
 const globalLimiter = rateLimit({
@@ -181,6 +158,11 @@ app.get('/test-db', async (req: Request, res: Response) => {
   }
 });
 
+// CSRF Token Route
+app.get('/csrf-token', (req: Request, res: Response) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
 // Spotify OAuth Routes
 const scopes: string[] = [
   'user-read-private',
@@ -195,6 +177,7 @@ app.get('/login', (req: Request, res: Response) => {
   res.redirect(authorizeURL);
 });
 
+// Spotify Authentication Callback: Store userId in session
 const authCallbackHandler: RequestHandler = async (req, res) => {
   const code: string | undefined = req.query.code as string | undefined;
 
@@ -207,18 +190,43 @@ const authCallbackHandler: RequestHandler = async (req, res) => {
     const data = await spotifyApi.authorizationCodeGrant(code);
     const { access_token, refresh_token } = data.body;
 
+    // Store access and refresh tokens in session
     (req.session as any).access_token = access_token;
     (req.session as any).refresh_token = refresh_token;
 
+    // Fetch user details from Spotify API
+    const spotifyUser = await spotifyApi.getMe();
+
+    // Check if the user exists in MongoDB or create a new one
+    let user = await User.findOne({ spotifyId: spotifyUser.body.id });
+    if (!user) {
+      user = new User({
+        spotifyId: spotifyUser.body.id,
+        displayName: spotifyUser.body.display_name,
+        email: spotifyUser.body.email,
+      });
+      await user.save();
+    }
+
+    // Log to verify the user and session
+    console.log('User found or created:', user);
+
+    // Store the user ID in the session
+    (req.session as any).userId = user._id;
+
+    // Log the session to ensure userId is stored
+    console.log('Session data after storing userId:', req.session);
+
     res.redirect('/profile');
   } catch (err) {
+    console.error('Authorization failed:', err);
     res.status(500).send('Authorization failed');
   }
 };
 
 app.get('/auth/callback', authCallbackHandler);
 
-// Profile Route
+// Profile Route: GET Profile Data from Spotify
 app.get('/profile', async (req: Request, res: Response) => {
   if (!(req.session as any).access_token) {
     return res.redirect('/login');
@@ -253,13 +261,49 @@ app.get('/profile', async (req: Request, res: Response) => {
   }
 });
 
+// Profile Route: POST to update the user profile
+app.post('/profile', async (req: Request, res: Response): Promise<void> => {
+  console.log('Session Data in POST /profile route:', req.session); // Debugging session data
+
+  const { name, bio } = req.body;
+
+  if (!name || !bio) {
+    res.status(400).json({ error: 'Name and bio are required' });
+    return;
+  }
+
+  try {
+    const userId = (req.session as any).userId;
+
+    if (!userId) {
+      res.status(400).json({ error: 'No user ID in session' });
+      return;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, {
+      name,
+      bio,
+    }, { new: true });
+
+    if (!updatedUser) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Profile updated successfully', user: updatedUser });
+  } catch (error) {
+    console.error('Error during profile update:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
 // Import Routes
-import authRoutes from './src/utils/spotifyAuth.js';
-import profileRoutes from './src/routes/profile.js';
-import messagingRoutes from './src/routes/messaging.js';
-import aiRoutes from './src/routes/ai.js';
-import userRoutes from './src/routes/userRoutes.js';
-import uploadRoutes from './src/routes/uploadRoutes.js';
+import authRoutes from './utils/spotifyAuth.js';
+import profileRoutes from './routes/profile.js';
+import messagingRoutes from './routes/messaging.js';
+import aiRoutes from './routes/ai.js';
+import userRoutes from './routes/userRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 // Use Imported Routes with Input Validation
 app.use('/auth', authRoutes);
@@ -325,15 +369,16 @@ io.on('connection', (socket: Socket) => {
     }
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  socket.on('disconnect', () => {});
+  socket.on('disconnect', () => { });
 });
 
 // MongoDB connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI as string);
+    console.log('MongoDB connected successfully');
   } catch (error) {
+    console.error('MongoDB connection failed:', error);
     process.exit(1);
   }
 };
@@ -343,7 +388,3 @@ connectDB();
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
-function csrf(arg0: { cookie: boolean }) {
-  throw new Error('Function not implemented.');
-}
