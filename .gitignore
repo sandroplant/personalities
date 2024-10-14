@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # =============================
 # Node Modules and Dependencies
 # =============================
@@ -45,17 +46,36 @@ npm-debug.log*
 # =====================
 
 # Ignore temporary files and directories
+=======
+# Logs
+logs/
+*.log
+
+# OS generated files
+.DS_Store
+
+# Coverage directory used by testing tools
+coverage/
+
+# Temporary files
+>>>>>>> 9ceea1ed (Initial commit from EC2)
 tmp/
 temp/
 *.tmp
 
+<<<<<<< HEAD
 # =====================
 # Editor and IDE Settings
 # =====================
+=======
+# Git related files
+# .git and .gitignore should NOT be ignored
+>>>>>>> 9ceea1ed (Initial commit from EC2)
 
 # VS Code settings
 .vscode/
 
+<<<<<<< HEAD
 # =====================
 # Git Specific Files
 # =====================
@@ -76,3 +96,12 @@ temp/
 !server/terms-of-service.md
 !server/privacy-policy.md
 !server/data-deletion.md
+=======
+# Dependencies
+node_modules/
+
+# Allow specific documents if they are in the server directory
+!terms-of-service.md
+!privacy-policy.md
+!data-deletion.md
+>>>>>>> 9ceea1ed (Initial commit from EC2)
