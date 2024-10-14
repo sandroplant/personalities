@@ -15,7 +15,7 @@ import SpotifyWebApi from 'spotify-web-api-node';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import csrf from 'csurf';
+import crypto from 'crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import User from './models/User.js';
@@ -45,7 +45,21 @@ app.use(cors({
     credentials: true,
 }));
 app.use(cookieParser());
-const csrfProtection = csrf({ cookie: true });
+function csrfProtection(req, res, next) {
+    if (!req.cookies._csrf) {
+        const csrfToken = crypto.randomBytes(24).toString('hex');
+        res.cookie('_csrf', csrfToken, { httpOnly: true, secure: true, sameSite: 'strict' });
+    }
+    next();
+}
+function verifyCsrfToken(req, res, next) {
+    const csrfTokenFromRequest = req.body._csrf || req.query._csrf || req.headers['x-csrf-token'];
+    const csrfTokenFromCookie = req.cookies._csrf;
+    if (req.method !== 'GET' && csrfTokenFromRequest !== csrfTokenFromCookie) {
+        return res.status(403).json({ error: 'Invalid CSRF token' });
+    }
+    next();
+}
 import sessionModule from 'express-session';
 import FileStoreModule from 'session-file-store';
 (async () => {
@@ -76,15 +90,14 @@ const rateLimiter = new RateLimiterMemory({
     points: 100,
     duration: 15 * 60,
 });
-const advancedRateLimiter = (req, res, next) => {
+app.use((req, res, next) => {
     rateLimiter
         .consume(req.ip || '127.0.0.1')
         .then(() => next())
         .catch(() => res
         .status(429)
         .send('Too many requests from this IP, please try again after 15 minutes'));
-};
-app.use(advancedRateLimiter);
+});
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(__dirname + '/dist'));
     app.get('*', (req, res) => {
@@ -108,7 +121,7 @@ app.get('/test-db', async (req, res) => {
     }
 });
 app.get('/csrf-token', (req, res) => {
-    res.json({ csrfToken: req.csrfToken() });
+    res.json({ csrfToken: req.cookies._csrf });
 });
 const scopes = [
     'user-read-private',

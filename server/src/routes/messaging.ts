@@ -1,11 +1,12 @@
 import express, { Request, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import Message, { IMessage } from '../models/Message.js';
-import { verifyCsrfToken } from '../middleware/csrfMiddleware.js';
+import { csrfProtection, verifyCsrfToken } from '../middleware/csrfMiddleware.js';
 import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
+// Apply rate-limiting to all routes
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per window
@@ -28,7 +29,7 @@ interface SendMessageRequest {
 router.post(
   '/send',
   apiLimiter,
-  verifyCsrfToken,
+  csrfProtection, // Apply CSRF protection middleware
   [
     body('senderId')
       .isMongoId()
@@ -80,7 +81,8 @@ router.post(
         message: 'Message sent successfully!',
         aiResponse,
       });
-    } catch {
+    } catch (error) {
+      console.error('Error sending message:', error);
       res.status(500).json({ error: 'Failed to send message' });
     }
   }
@@ -96,7 +98,7 @@ interface ConversationParams {
 router.get(
   '/conversation/:userId1/:userId2',
   apiLimiter,
-  verifyCsrfToken,
+  csrfProtection, // Apply CSRF protection middleware
   [
     param('userId1').isMongoId().withMessage('Invalid user ID').trim().escape(),
     param('userId2').isMongoId().withMessage('Invalid user ID').trim().escape(),
@@ -105,6 +107,7 @@ router.get(
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
+      return;
     }
 
     const { userId1, userId2 } = req.params;
@@ -118,7 +121,8 @@ router.get(
       }).sort({ timestamp: 1 });
 
       res.status(200).json(messages);
-    } catch {
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
       res.status(500).json({ error: 'Failed to retrieve conversation' });
     }
   }
@@ -135,7 +139,7 @@ interface SendMysteryMessageRequest {
 router.post(
   '/send-mystery',
   apiLimiter,
-  verifyCsrfToken,
+  csrfProtection, // Apply CSRF protection middleware
   [
     body('senderId')
       .isMongoId()
@@ -159,6 +163,7 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
+      return;
     }
 
     const { senderId, recipientId, content } = req.body;
@@ -173,7 +178,8 @@ router.post(
 
       await newMessage.save();
       res.status(200).json({ message: 'Mystery message sent successfully!' });
-    } catch {
+    } catch (error) {
+      console.error('Error sending mystery message:', error);
       res.status(500).json({ error: 'Failed to send mystery message' });
     }
   }
@@ -188,7 +194,7 @@ interface OpenMysteryParams {
 router.get(
   '/open-mystery/:messageId',
   apiLimiter,
-  verifyCsrfToken,
+  csrfProtection, // Apply CSRF protection middleware
   [
     param('messageId')
       .isMongoId()
@@ -213,7 +219,8 @@ router.get(
       } else {
         res.status(400).json({ error: 'This is not a mystery message.' });
       }
-    } catch {
+    } catch (error) {
+      console.error('Error opening mystery message:', error);
       res.status(500).json({ error: 'Failed to open mystery message' });
     }
   }
@@ -230,7 +237,7 @@ interface StartCallRequest {
 router.post(
   '/start-call',
   apiLimiter,
-  verifyCsrfToken,
+  csrfProtection, // Apply CSRF protection middleware
   [
     body('senderId')
       .isMongoId()

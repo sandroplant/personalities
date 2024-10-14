@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 
-const verifyCsrfToken = (req: Request, res: Response, next: NextFunction) => {
+function verifyCsrfToken(req: Request, res: Response, next: NextFunction): void {
   const csrfToken = req.headers['x-csrf-token'];
-  if (csrfToken && csrfToken === 'your-csrf-token') {
+
+  if (csrfToken === 'valid-token') {
     next();
   } else {
     res.status(403).json({ error: 'Invalid CSRF token' });
   }
-};
+}
 
-export default verifyCsrfToken;
+export { verifyCsrfToken };

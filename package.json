@@ -89,7 +89,6 @@
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.17",
-    "@types/csurf": "^1.11.5",
     "@types/dotenv-webpack": "^7.0.7",
     "@types/express": "^5.0.0",
     "@types/express-session": "^1.18.0",

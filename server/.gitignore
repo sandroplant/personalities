@@ -26,3 +26,20 @@ node_modules/
 !terms-of-service.md
 !privacy-policy.md
 !data-deletion.md
+
+# Server-specific ignores
+server/logs/
+server/temp/
+server/*.tmp
+server/node_modules/
+
+# Ignore dist folder
+dist/
+
+# Ignore environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+

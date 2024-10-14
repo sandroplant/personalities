@@ -1,14 +1,14 @@
 {
-  "extends": "/Users/aniavsa/Desktop/personalities/tsconfig.base.json",
+  "extends": "../tsconfig.base.json", // Correct relative path
   "compilerOptions": {
     "outDir": "./dist",
-    "module": "NodeNext",                // Use `NodeNext` to support `import.meta`
-    "moduleResolution": "NodeNext",      // Use `NodeNext` module resolution
-    "target": "ES2022",                  // Target a compatible ECMAScript version
-    "rootDir": "./src",                  // Set root directory to `src` for organization
-    "esModuleInterop": true,             // Allow interoperability between CommonJS and ES Modules
-    "strict": true,                      // Enable all strict type-checking options
-    "resolveJsonModule": true            // Allow importing JSON files
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "strict": true,
+    "resolveJsonModule": true
   },
   "include": [
     "src/**/*"

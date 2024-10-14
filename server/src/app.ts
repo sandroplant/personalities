@@ -17,7 +17,7 @@ import SpotifyWebApi from 'spotify-web-api-node';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import csrf from 'csurf'; // Imported CSRF protection
+import crypto from 'crypto';
 
 // Correct handling of __dirname and __filename in ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -70,8 +70,24 @@ app.use(
 // Cookie Parser Middleware
 app.use(cookieParser());
 
-// CSRF Protection Middleware
-const csrfProtection = csrf({ cookie: true });
+// Custom CSRF Protection Middleware
+function csrfProtection(req: Request, res: Response, next: NextFunction) {
+  if (!req.cookies._csrf) {
+    const csrfToken = crypto.randomBytes(24).toString('hex');
+    res.cookie('_csrf', csrfToken, { httpOnly: true, secure: true, sameSite: 'strict' });
+  }
+  next();
+}
+
+function verifyCsrfToken(req: Request, res: Response, next: NextFunction) {
+  const csrfTokenFromRequest = req.body._csrf || req.query._csrf || req.headers['x-csrf-token'];
+  const csrfTokenFromCookie = req.cookies._csrf;
+
+  if (req.method !== 'GET' && csrfTokenFromRequest !== csrfTokenFromCookie) {
+    return res.status(403).json({ error: 'Invalid CSRF token' });
+  }
+  next();
+}
 
 // Session Middleware Configuration
 import sessionModule from 'express-session';
@@ -113,11 +129,7 @@ const rateLimiter = new RateLimiterMemory({
   points: 100,
   duration: 15 * 60, // 15 minutes
 });
-const advancedRateLimiter = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   rateLimiter
     .consume(req.ip || '127.0.0.1')
     .then(() => next())
@@ -128,9 +140,7 @@ const advancedRateLimiter = (
           'Too many requests from this IP, please try again after 15 minutes'
         )
     );
-};
-
-app.use(advancedRateLimiter);
+});
 
 // Conditional Static File Serving Based on Environment
 if (process.env.NODE_ENV === 'production') {
@@ -160,7 +170,7 @@ app.get('/test-db', async (req: Request, res: Response) => {
 
 // CSRF Token Route
 app.get('/csrf-token', (req: Request, res: Response) => {
-  res.json({ csrfToken: req.csrfToken() });
+  res.json({ csrfToken: req.cookies._csrf });
 });
 
 // Spotify OAuth Routes

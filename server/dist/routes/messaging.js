@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import Message from '../models/Message.js';
-import { verifyCsrfToken } from '../middleware/csrfMiddleware.js';
+import { csrfProtection } from '../middleware/csrfMiddleware.js';
 import rateLimit from 'express-rate-limit';
 const router = express.Router();
 const apiLimiter = rateLimit({
@@ -11,7 +11,7 @@ const apiLimiter = rateLimit({
 async function getAIResponse(content) {
     return `AI Response to: "${content}"`;
 }
-router.post('/send', apiLimiter, verifyCsrfToken, [
+router.post('/send', apiLimiter, csrfProtection, [
     body('senderId')
         .isMongoId()
         .withMessage('Invalid sender ID')
@@ -57,17 +57,19 @@ router.post('/send', apiLimiter, verifyCsrfToken, [
             aiResponse,
         });
     }
-    catch {
+    catch (error) {
+        console.error('Error sending message:', error);
         res.status(500).json({ error: 'Failed to send message' });
     }
 });
-router.get('/conversation/:userId1/:userId2', apiLimiter, verifyCsrfToken, [
+router.get('/conversation/:userId1/:userId2', apiLimiter, csrfProtection, [
     param('userId1').isMongoId().withMessage('Invalid user ID').trim().escape(),
     param('userId2').isMongoId().withMessage('Invalid user ID').trim().escape(),
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         res.status(400).json({ errors: errors.array() });
+        return;
     }
     const { userId1, userId2 } = req.params;
     try {
@@ -79,11 +81,12 @@ router.get('/conversation/:userId1/:userId2', apiLimiter, verifyCsrfToken, [
         }).sort({ timestamp: 1 });
         res.status(200).json(messages);
     }
-    catch {
+    catch (error) {
+        console.error('Error fetching conversation:', error);
         res.status(500).json({ error: 'Failed to retrieve conversation' });
     }
 });
-router.post('/send-mystery', apiLimiter, verifyCsrfToken, [
+router.post('/send-mystery', apiLimiter, csrfProtection, [
     body('senderId')
         .isMongoId()
         .withMessage('Invalid sender ID')
@@ -105,6 +108,7 @@ router.post('/send-mystery', apiLimiter, verifyCsrfToken, [
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         res.status(400).json({ errors: errors.array() });
+        return;
     }
     const { senderId, recipientId, content } = req.body;
     try {
@@ -117,11 +121,12 @@ router.post('/send-mystery', apiLimiter, verifyCsrfToken, [
         await newMessage.save();
         res.status(200).json({ message: 'Mystery message sent successfully!' });
     }
-    catch {
+    catch (error) {
+        console.error('Error sending mystery message:', error);
         res.status(500).json({ error: 'Failed to send mystery message' });
     }
 });
-router.get('/open-mystery/:messageId', apiLimiter, verifyCsrfToken, [
+router.get('/open-mystery/:messageId', apiLimiter, csrfProtection, [
     param('messageId')
         .isMongoId()
         .withMessage('Invalid message ID')
@@ -143,11 +148,12 @@ router.get('/open-mystery/:messageId', apiLimiter, verifyCsrfToken, [
             res.status(400).json({ error: 'This is not a mystery message.' });
         }
     }
-    catch {
+    catch (error) {
+        console.error('Error opening mystery message:', error);
         res.status(500).json({ error: 'Failed to open mystery message' });
     }
 });
-router.post('/start-call', apiLimiter, verifyCsrfToken, [
+router.post('/start-call', apiLimiter, csrfProtection, [
     body('senderId')
         .isMongoId()
         .withMessage('Invalid sender ID')

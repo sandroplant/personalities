@@ -3,7 +3,7 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import OpenAI from 'openai';
 import rateLimit from 'express-rate-limit';
-import verifyCsrfToken from '../middleware/verifyCsrfToken.js';
+import { verifyCsrfToken } from '../middleware/verifyCsrfToken.js';
 const router = express.Router();
 if (!process.env.OPENAI_API_KEY) {
     throw new Error('OpenAI API key is missing in environment variables');

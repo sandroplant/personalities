@@ -1,10 +1,10 @@
-const verifyCsrfToken = (req, res, next) => {
+function verifyCsrfToken(req, res, next) {
     const csrfToken = req.headers['x-csrf-token'];
-    if (csrfToken && csrfToken === 'your-csrf-token') {
+    if (csrfToken === 'valid-token') {
         next();
     }
     else {
         res.status(403).json({ error: 'Invalid CSRF token' });
     }
-};
-export default verifyCsrfToken;
+}
+export { verifyCsrfToken };

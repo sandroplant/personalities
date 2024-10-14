@@ -3,7 +3,7 @@ import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import OpenAI from 'openai';
 import rateLimit from 'express-rate-limit';
-import verifyCsrfToken from '../middleware/verifyCsrfToken.js'; // Corrected path
+import { verifyCsrfToken } from '../middleware/verifyCsrfToken.js'; // Corrected path
 
 const router = express.Router();
 
