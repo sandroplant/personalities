@@ -1,6 +1,4 @@
-// server/src/models/Post.ts
 import mongoose, { Schema, model } from 'mongoose';
-// Sub-schema for External URLs to ensure valid URL formats
 const ExternalURLSchema = new Schema({
     spotify: {
         type: String,
@@ -33,10 +31,9 @@ const CommentSchema = new Schema({
     },
     timestamp: {
         type: Date,
-        default: () => new Date(), // Updated to return Date object
+        default: () => new Date(),
     },
 }, { _id: false });
-// Main Post Schema with comprehensive validations
 const postSchema = new Schema({
     title: {
         type: String,
@@ -86,17 +83,14 @@ const postSchema = new Schema({
     },
     timestamp: {
         type: Date,
-        default: () => new Date(), // Updated to return Date object
+        default: () => new Date(),
     },
-    // Removed 'createdAt' and 'updatedAt' as they are managed by 'timestamps: true'
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
 });
-// Prevent Prototype Pollution by disabling '__proto__' and 'constructor' paths
 postSchema.path('__proto__', undefined);
 postSchema.path('constructor', undefined);
-// Export the Post model
 const Post = model('Post', postSchema);
 export default Post;

@@ -31,14 +31,14 @@ interface UploadedFile {
 // Set up storage and file naming for multer
 const storage = multer.diskStorage({
   destination: function (
-    req: Request,
-    file: Express.Multer.File,
+    _req: Request,
+    _file: Express.Multer.File,
     cb: (error: Error | null, destination: string) => void
   ) {
     cb(null, 'uploads/'); // You can customize this directory path
   },
   filename: function (
-    req: Request,
+    _req: Request,
     file: Express.Multer.File,
     cb: (error: Error | null, filename: string) => void
   ) {
@@ -54,7 +54,7 @@ const upload = multer({
     fileSize: 2 * 1024 * 1024, // Limit file size to 2MB
   },
   fileFilter: (
-    req: Request,
+    _req: Request,
     file: Express.Multer.File,
     cb: FileFilterCallback
   ) => {
@@ -106,7 +106,7 @@ router.post(
 );
 
 // Error handling middleware for multer and other errors
-router.use((err: any, req: Request, res: Response, next: express.NextFunction): void => {
+router.use((err: any, _req: Request, res: Response, next: express.NextFunction): void => {
   if (err instanceof MulterError) {
     // Handle multer-specific errors
     if (err.code === 'LIMIT_FILE_SIZE') {

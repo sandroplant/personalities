@@ -3,7 +3,7 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import OpenAI from 'openai';
 import rateLimit from 'express-rate-limit';
-import verifyCsrfToken from '../middleware/verifyCsrfToken.js'; // Corrected path
+import verifyCsrfToken from '../middleware/verifyCsrfToken.js';
 const router = express.Router();
 if (!process.env.OPENAI_API_KEY) {
     throw new Error('OpenAI API key is missing in environment variables');
@@ -13,9 +13,8 @@ const openai = new OpenAI({
 });
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100, // Limit each IP to 100 requests per window
+    max: 100,
 });
-// Input validation and sanitization
 const validateGenerate = [
     body('prompt')
         .notEmpty()
@@ -31,7 +30,6 @@ const validateGenerate = [
         .toInt(),
 ];
 const isProduction = process.env.NODE_ENV === 'production';
-// Route for generating AI response with CSRF protection
 router.post('/generate', apiLimiter, verifyCsrfToken, validateGenerate, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -45,8 +43,7 @@ router.post('/generate', apiLimiter, verifyCsrfToken, validateGenerate, async (r
             messages: [{ role: 'user', content: prompt }],
             max_tokens: maxTokens,
         });
-        // Handle the case where content could be null
-        const aiMessage = response.choices[0].message?.content ?? ''; // Assign an empty string if null
+        const aiMessage = response.choices[0].message?.content ?? '';
         if (aiMessage.trim()) {
             res.json({ result: aiMessage });
         }

@@ -8,7 +8,7 @@ import ListGroup from 'react-bootstrap/ListGroup';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
-import { FormControlProps } from 'react-bootstrap/FormControl';
+import FormControl, { FormControlProps } from 'react-bootstrap/FormControl';
 import {
   SendFill,
   StopFill,

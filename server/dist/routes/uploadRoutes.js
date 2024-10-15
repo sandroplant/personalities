@@ -11,10 +11,10 @@ const uploadRateLimiter = rateLimit({
     message: 'Too many upload requests, please try again later.',
 });
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
+    destination: function (_req, _file, cb) {
         cb(null, 'uploads/');
     },
-    filename: function (req, file, cb) {
+    filename: function (_req, file, cb) {
         const ext = path.extname(file.originalname);
         cb(null, `${file.fieldname}-${Date.now()}${ext}`);
     },
@@ -24,7 +24,7 @@ const upload = multer({
     limits: {
         fileSize: 2 * 1024 * 1024,
     },
-    fileFilter: (req, file, cb) => {
+    fileFilter: (_req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
@@ -55,7 +55,7 @@ router.post('/upload', uploadRateLimiter, (req, res, next) => {
         file,
     });
 });
-router.use((err, req, res, next) => {
+router.use((err, _req, res, next) => {
     if (err instanceof MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
             res.status(400).json({ error: 'File size is too large.' });

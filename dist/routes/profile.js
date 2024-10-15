@@ -4,14 +4,12 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 import SpotifyWebApi from 'spotify-web-api-node';
 import User from '../models/User.js';
 import Profile from '../models/Profile.js';
-import csrfTokens from 'csrf'; // Import CSRF Tokens
+import csrfTokens from 'csrf';
 const router = express.Router();
-// Initialize Rate Limiter to prevent excessive requests
 const profileRateLimiter = new RateLimiterMemory({
     points: 50,
     duration: 15 * 60,
 });
-// Middleware for applying rate limiting
 const advancedProfileLimiter = async (req, res, next) => {
     try {
         await profileRateLimiter.consume(req.ip || '127.0.0.1');
@@ -23,7 +21,6 @@ const advancedProfileLimiter = async (req, res, next) => {
             .send('Too many profile requests from this IP, please try again after 15 minutes');
     }
 };
-// Initialize CSRF Tokens
 const csrf = new csrfTokens();
 const getSpotifyData = async (accessToken) => {
     try {
@@ -91,7 +88,6 @@ router.get('/', advancedProfileLimiter, async (req, res) => {
                 spotifyData.currentlyPlaying || user.currentlyPlaying;
         }
         await user.save();
-        // Generate CSRF token and set it as a cookie
         const secret = req.session.csrfSecret || csrf.secretSync();
         req.session.csrfSecret = secret;
         res.cookie('XSRF-TOKEN', csrf.create(secret), {

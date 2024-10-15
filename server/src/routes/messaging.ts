@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import Message, { IMessage } from '../models/Message.js';
-import { csrfProtection, verifyCsrfToken } from '../middleware/csrfMiddleware.js';
+import { csrfProtection } from '../middleware/csrfMiddleware.js';
 import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
@@ -87,12 +87,6 @@ router.post(
     }
   }
 );
-
-// Interface for request params in /conversation route
-interface ConversationParams {
-  userId1: string;
-  userId2: string;
-}
 
 // Get conversation between two users
 router.get(
@@ -185,11 +179,6 @@ router.post(
   }
 );
 
-// Interface for request params in /open-mystery route
-interface OpenMysteryParams {
-  messageId: string;
-}
-
 // Open mystery message and trigger reaction recording
 router.get(
   '/open-mystery/:messageId',
@@ -262,7 +251,7 @@ router.post(
       return;
     }
 
-    const { senderId, recipientId, callType } = req.body;
+    const { callType } = req.body;
 
     res.json({ message: `Starting a ${callType} call between users.` });
   }

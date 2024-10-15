@@ -1,28 +1,20 @@
-// server/routes/spotifyAuth.ts
 import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
 import crypto from 'crypto';
 import { query, validationResult } from 'express-validator';
-import { generateCodeVerifier, generateCodeChallenge, } from '../utils/spotifyAuthUtils.js'; // Adjusted import path, no .ts
+import { generateCodeVerifier, generateCodeChallenge, } from '../utils/spotifyAuthUtils.js';
 import ensureAuthenticated from '../middleware/authMiddleware.js';
 import axios from 'axios';
 const router = express.Router();
-// Access environment variables
 const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
 const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
 const scope = 'user-read-private user-read-email user-top-read user-read-currently-playing';
-/**
- * @route   GET /spotifyAuth/login
- * @desc    Initiate Spotify authorization flow
- * @access  Public
- */
 router.get('/login', (req, res) => {
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const state = crypto.randomBytes(16).toString('hex');
-    // Store codeVerifier and state in session to validate later
     req.session.code_verifier = codeVerifier;
     req.session.state = state;
     const authorizeURL = 'https://accounts.spotify.com/authorize?' +
@@ -37,13 +29,7 @@ router.get('/login', (req, res) => {
         }).toString();
     res.redirect(authorizeURL);
 });
-/**
- * @route   GET /spotifyAuth/callback
- * @desc    Handle Spotify callback and exchange code for access token
- * @access  Public
- */
 router.get('/callback', [
-    // Validate and sanitize the query parameters
     query('code').isString().withMessage('Invalid code').trim().escape(),
     query('state').isString().withMessage('Invalid state').trim().escape(),
 ], async (req, res) => {
@@ -53,7 +39,6 @@ router.get('/callback', [
     }
     const code = req.query.code;
     const state = req.query.state;
-    // Validate state parameter to prevent CSRF
     if (!state || state !== req.session.state) {
         return res.redirect('/#' + new URLSearchParams({ error: 'invalid_state' }).toString());
     }
@@ -79,13 +64,11 @@ router.get('/callback', [
         });
         const data = response.data;
         if (data.access_token && data.refresh_token) {
-            // Securely store tokens in session
             req.session.access_token = data.access_token;
             req.session.refresh_token = data.refresh_token;
-            // Clear codeVerifier and state from session
             delete req.session.code_verifier;
             delete req.session.state;
-            res.redirect('/profile'); // Redirect to the profile page after successful login
+            res.redirect('/profile');
         }
         else {
             res.redirect('/#' +
@@ -102,11 +85,6 @@ router.get('/callback', [
             }).toString());
     }
 });
-/**
- * @route   GET /spotifyAuth/profile
- * @desc    Fetch and display user Spotify profile data
- * @access  Private
- */
 router.get('/profile', ensureAuthenticated, async (req, res) => {
     const accessToken = req.session.access_token;
     if (!accessToken) {
@@ -164,7 +142,7 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
                 }
                 : null,
         };
-        res.json(profileData); // Send only the required fields
+        res.json(profileData);
     }
     catch (err) {
         console.error('Error fetching profile data:', err.response ? err.response.data : err.message);

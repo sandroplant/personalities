@@ -6,13 +6,11 @@ import rateLimit from 'express-rate-limit';
 const router = express.Router();
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100, // Limit each IP to 100 requests per window
+    max: 100,
 });
-// Dummy AI function for responding (replace with actual AI service)
 async function getAIResponse(content) {
-    return `AI Response to: "${content}"`; // Placeholder for AI response
+    return `AI Response to: "${content}"`;
 }
-// Send message with optional AI response
 router.post('/send', apiLimiter, verifyCsrfToken, [
     body('senderId')
         .isMongoId()
@@ -63,7 +61,6 @@ router.post('/send', apiLimiter, verifyCsrfToken, [
         res.status(500).json({ error: 'Failed to send message' });
     }
 });
-// Get conversation between two users
 router.get('/conversation/:userId1/:userId2', apiLimiter, verifyCsrfToken, [
     param('userId1').isMongoId().withMessage('Invalid user ID').trim().escape(),
     param('userId2').isMongoId().withMessage('Invalid user ID').trim().escape(),
@@ -86,7 +83,6 @@ router.get('/conversation/:userId1/:userId2', apiLimiter, verifyCsrfToken, [
         res.status(500).json({ error: 'Failed to retrieve conversation' });
     }
 });
-// Send mystery message
 router.post('/send-mystery', apiLimiter, verifyCsrfToken, [
     body('senderId')
         .isMongoId()
@@ -116,7 +112,7 @@ router.post('/send-mystery', apiLimiter, verifyCsrfToken, [
             sender: senderId,
             recipient: recipientId,
             content,
-            isMysteryMessage: true, // Mark as mystery message
+            isMysteryMessage: true,
         });
         await newMessage.save();
         res.status(200).json({ message: 'Mystery message sent successfully!' });
@@ -125,7 +121,6 @@ router.post('/send-mystery', apiLimiter, verifyCsrfToken, [
         res.status(500).json({ error: 'Failed to send mystery message' });
     }
 });
-// Open mystery message and trigger reaction recording
 router.get('/open-mystery/:messageId', apiLimiter, verifyCsrfToken, [
     param('messageId')
         .isMongoId()
@@ -152,7 +147,6 @@ router.get('/open-mystery/:messageId', apiLimiter, verifyCsrfToken, [
         res.status(500).json({ error: 'Failed to open mystery message' });
     }
 });
-// Placeholder for starting a call
 router.post('/start-call', apiLimiter, verifyCsrfToken, [
     body('senderId')
         .isMongoId()

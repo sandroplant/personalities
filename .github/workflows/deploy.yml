@@ -3,7 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main
+      - main  # Adjust the branch if you're using a different one
 
 jobs:
   deploy:
@@ -16,7 +16,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '16'  # Updated to a more recent version of Node
+        node-version: '16'  # Ensure this matches the version you're using on EC2
 
     - name: Install Dependencies
       run: npm install
@@ -39,4 +39,8 @@ jobs:
       run: |
         echo "Deploying to EC2"
         scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ec2-user@54.197.63.5:/home/ec2-user/personalities/server
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "cd /home/ec2-user/personalities/server && npm install && pm2 restart all"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "cd /home/ec2-user/personalities/server && npm install && npm run build && pm2 restart all"
+
+    - name: Start App (if not running)
+      run: |
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "pm2 start /home/ec2-user/personalities/server/dist/app.js || echo 'App already started'"

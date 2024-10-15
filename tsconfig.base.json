@@ -1,24 +1,22 @@
-// tsconfig.base.json
 {
-    "compilerOptions": {
-      "target": "ES6",                        // Specify ECMAScript target version
-      "module": "ESNext",                     // Specify module code generation
-      "lib": ["es2020", "dom"],               // Specify library files to be included
-      "jsx": "react-jsx",                     // Enable JSX in .tsx files
-      "allowJs": true,                        // Allow JavaScript files to be compiled
-      "skipLibCheck": true,                   // Skip type checking of declaration files
-      "esModuleInterop": true,                // Enables emit interoperability between CommonJS and ES Modules
-      "allowSyntheticDefaultImports": true,   // Allow default imports from modules with no default export
-      "strict": true,                         // Enable all strict type-checking options
-      "forceConsistentCasingInFileNames": true, // Ensure file names are case-consistent
-      "moduleResolution": "node",             // Use Node.js module resolution strategy
-      "resolveJsonModule": true,              // Include modules imported with .json extension
-      "isolatedModules": true,                // Ensure that each file can be safely transpiled without relying on other imports
-      "removeComments": true,                 // Remove comments in emitted JavaScript files
-      "typeRoots": [
-        "./node_modules/@types",
-        "./server/src/types"                   // Include custom type definitions from the server directory
-      ]
-    }
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "ESNext",
+    "lib": ["es2020", "dom"],
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "removeComments": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./server/src/types"                      // Ensure custom types are included
+    ]
   }
-  
+}

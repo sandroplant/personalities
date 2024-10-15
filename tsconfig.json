@@ -1,20 +1,27 @@
 {
-  "extends": "/Users/aniavsa/Desktop/personalities/tsconfig.base.json",
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "module": "NodeNext",                // Use `NodeNext` to support `import.meta`
-    "moduleResolution": "NodeNext",      // Use `NodeNext` module resolution
-    "target": "ES2022",                  // Target a compatible ECMAScript version
-    "rootDir": "./src",                  // Set root directory to `src` for organization
-    "esModuleInterop": true,             // Allow interoperability between CommonJS and ES Modules
-    "strict": true,                      // Enable all strict type-checking options
-    "resolveJsonModule": true            // Allow importing JSON files
+    "outDir": "./server/dist",                // Output compiled files to server/dist
+    "rootDir": "./server/src",                // Set root directory for source files in server/src
+    "module": "NodeNext",                     // Use NodeNext to support ESM in Node.js
+    "moduleResolution": "NodeNext",           // Use NodeNext for module resolution
+    "target": "ES2022",                       // Target ECMAScript 2022 for latest features
+    "esModuleInterop": true,                  // Enable interoperability between CommonJS and ESM
+    "strict": true,                           // Enable strict type-checking
+    "resolveJsonModule": true,                // Allow importing of JSON files
+    "skipLibCheck": true,                     // Skip type checking of declaration files
+    "forceConsistentCasingInFileNames": true, // Enforce consistent casing in import statements
+    "noImplicitAny": true,                    // Disallow explicit use of `any`
+    "noUnusedLocals": true,                   // Warn on unused local variables
+    "noUnusedParameters": true,               // Warn on unused parameters
+    "noFallthroughCasesInSwitch": true,       // Prevent fallthrough errors in switch statements
+    "noEmitOnError": true                     // Prevent emitting files if there are type errors
   },
   "include": [
-    "src/**/*"
+    "server/src/**/*.ts"                      // Include all TypeScript files in the server/src folder
   ],
   "exclude": [
-    "node_modules",
-    "dist"
+    "node_modules",                           // Exclude node_modules folder
+    "server/dist"                             // Exclude server/dist folder (output folder)
   ]
 }

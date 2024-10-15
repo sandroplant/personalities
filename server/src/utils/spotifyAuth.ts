@@ -47,11 +47,14 @@ interface SpotifyTrack {
   };
 }
 
+// @ts-ignore: CurrentlyPlaying interface not used yet
 interface CurrentlyPlaying {
-  name: string;
-  artist: string;
-  uri: string;
-  album: string;
+  item: {
+    name: string;
+    artists: Array<{ name: string }>;
+  };
+  is_playing: boolean;
+  progress_ms: number;
 }
 
 /**

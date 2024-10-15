@@ -1,3 +1,5 @@
+// src/app.ts
+
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -17,7 +19,6 @@ import SpotifyWebApi from 'spotify-web-api-node';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import crypto from 'crypto';
 
 // Correct handling of __dirname and __filename in ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -70,24 +71,8 @@ app.use(
 // Cookie Parser Middleware
 app.use(cookieParser());
 
-// Custom CSRF Protection Middleware
-function csrfProtection(req: Request, res: Response, next: NextFunction) {
-  if (!req.cookies._csrf) {
-    const csrfToken = crypto.randomBytes(24).toString('hex');
-    res.cookie('_csrf', csrfToken, { httpOnly: true, secure: true, sameSite: 'strict' });
-  }
-  next();
-}
-
-function verifyCsrfToken(req: Request, res: Response, next: NextFunction) {
-  const csrfTokenFromRequest = req.body._csrf || req.query._csrf || req.headers['x-csrf-token'];
-  const csrfTokenFromCookie = req.cookies._csrf;
-
-  if (req.method !== 'GET' && csrfTokenFromRequest !== csrfTokenFromCookie) {
-    return res.status(403).json({ error: 'Invalid CSRF token' });
-  }
-  next();
-}
+// Import Custom CSRF Protection Middleware
+import { csrfProtection, verifyCsrfToken } from './middleware/csrfMiddleware.js';
 
 // Session Middleware Configuration
 import sessionModule from 'express-session';
@@ -115,6 +100,9 @@ import FileStoreModule from 'session-file-store';
 // Apply CSRF protection after session middleware
 app.use(csrfProtection);
 
+// Verify CSRF Token for state-changing requests
+app.use(verifyCsrfToken);
+
 // Rate Limiting: Global
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -136,26 +124,24 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     .catch(() =>
       res
         .status(429)
-        .send(
-          'Too many requests from this IP, please try again after 15 minutes'
-        )
+        .send('Too many requests from this IP, please try again after 15 minutes')
     );
 });
 
 // Conditional Static File Serving Based on Environment
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(__dirname + '/dist'));
-  app.get('*', (req: Request, res: Response) => {
+  app.get('*', (_req: Request, res: Response) => {
     res.sendFile(__dirname + '/dist/index.html');
   });
 } else {
-  app.get('/', (req: Request, res: Response) => {
+  app.get('/', (_req: Request, res: Response) => {
     res.send('Welcome to the Personality App API');
   });
 }
 
 // Test MongoDB Connection
-app.get('/test-db', async (req: Request, res: Response) => {
+app.get('/test-db', async (_req: Request, res: Response) => {
   try {
     const result = await User.findOne();
     res.json(
@@ -182,7 +168,7 @@ const scopes: string[] = [
 ];
 const state = 'some-state-of-your-choice';
 
-app.get('/login', (req: Request, res: Response) => {
+app.get('/login', (_req: Request, res: Response) => {
   const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
   res.redirect(authorizeURL);
 });
@@ -290,17 +276,23 @@ app.post('/profile', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(userId, {
-      name,
-      bio,
-    }, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        name,
+        bio,
+      },
+      { new: true }
+    );
 
     if (!updatedUser) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    res.status(200).json({ message: 'Profile updated successfully', user: updatedUser });
+    res
+      .status(200)
+      .json({ message: 'Profile updated successfully', user: updatedUser });
   } catch (error) {
     console.error('Error during profile update:', error);
     res.status(500).json({ error: 'Failed to update profile' });
@@ -379,7 +371,7 @@ io.on('connection', (socket: Socket) => {
     }
   );
 
-  socket.on('disconnect', () => { });
+  socket.on('disconnect', () => {});
 });
 
 // MongoDB connection

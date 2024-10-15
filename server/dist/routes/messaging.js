@@ -175,7 +175,7 @@ router.post('/start-call', apiLimiter, csrfProtection, [
         res.status(400).json({ errors: errors.array() });
         return;
     }
-    const { senderId, recipientId, callType } = req.body;
+    const { callType } = req.body;
     res.json({ message: `Starting a ${callType} call between users.` });
 });
 export default router;

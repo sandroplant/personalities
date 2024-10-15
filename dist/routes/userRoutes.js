@@ -5,31 +5,16 @@ import User from '../models/User.js';
 import Profile from '../models/Profile.js';
 import ensureAuthenticated from '../middleware/authMiddleware.js';
 import rateLimit from 'express-rate-limit';
-import csrfTokens from 'csrf'; // Import CSRF Tokens for added security
+import csrfTokens from 'csrf';
 const router = express.Router();
-// Initialize CSRF Tokens
 const csrf = new csrfTokens();
-// ==========================
-// Rate Limiting Middleware
-// ==========================
-// Apply stricter rate limits on sensitive routes like registration to prevent brute-force attacks
 const registerLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
     message: 'Too many registration attempts from this IP, please try again after 15 minutes',
     headers: true,
 });
-// ==========================
-// User Registration Route
-// ==========================
-/**
- * @route   POST /user/register
- * @desc    Register a new user
- * @access  Public
- */
-router.post('/register', registerLimiter, // Apply rate limiting to this route
-[
-    // Input Validation and Sanitization
+router.post('/register', registerLimiter, [
     check('username')
         .isAlphanumeric()
         .withMessage('Username must be alphanumeric')
@@ -52,7 +37,6 @@ router.post('/register', registerLimiter, // Apply rate limiting to this route
         .withMessage('Password must contain at least one special character')
         .trim(),
 ], async (req, res) => {
-    // Handle Validation Errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         res.status(400).json({ errors: errors.array() });
@@ -60,16 +44,13 @@ router.post('/register', registerLimiter, // Apply rate limiting to this route
     }
     const { username, email, password } = req.body;
     try {
-        // Check if user already exists to prevent duplicate accounts
         let user = await User.findOne({ email });
         if (user) {
             res.status(400).json({ error: 'User already exists' });
             return;
         }
-        // Hash Password to Prevent Clear Text Storage of Sensitive Information
         const saltRounds = 12;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-        // Create New User with Hashed Password
         user = new User({
             username,
             email,
@@ -83,16 +64,7 @@ router.post('/register', registerLimiter, // Apply rate limiting to this route
         res.status(500).json({ error: 'Server error' });
     }
 });
-// ==========================
-// Create or Update User Profile
-// ==========================
-/**
- * @route   POST /user/profile
- * @desc    Create or update user profile
- * @access  Private
- */
 router.post('/profile', ensureAuthenticated, [
-    // Input Validation and Sanitization
     check('fullName')
         .isString()
         .withMessage('Full name must be a string')
@@ -114,7 +86,6 @@ router.post('/profile', ensureAuthenticated, [
         .custom((arr) => arr.every((item) => typeof item === 'string'))
         .withMessage('Each favorite movie must be a string'),
 ], (req, res, next) => {
-    // CSRF token validation
     const csrfToken = req.header('X-XSRF-TOKEN');
     const csrfSecret = req.session.csrfSecret;
     if (!csrfSecret || !csrfToken || !csrf.verify(csrfSecret, csrfToken)) {
@@ -125,7 +96,6 @@ router.post('/profile', ensureAuthenticated, [
     }
 }, async (req, res) => {
     const authReq = req;
-    // Handle Validation Errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         res.status(400).json({ errors: errors.array() });
@@ -137,7 +107,6 @@ router.post('/profile', ensureAuthenticated, [
             res.status(404).json({ error: 'User not found' });
             return;
         }
-        // Create or Update Profile Securely
         const profile = await Profile.findOneAndUpdate({ user: authReq.user._id }, {
             fullName,
             bio,
@@ -152,17 +121,8 @@ router.post('/profile', ensureAuthenticated, [
         res.status(500).json({ error: 'Failed to update profile' });
     }
 });
-// ==========================
-// Get User Profile
-// ==========================
-/**
- * @route   GET /user/profile
- * @desc    Get user profile
- * @access  Private
- */
 router.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
-        // Retrieve Profile and Populate User Information
         const authReq = req;
         const profile = await Profile.findOne({
             user: authReq.user._id,
@@ -179,18 +139,9 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch profile' });
     }
 });
-// ==========================
-// Delete User Profile
-// ==========================
-/**
- * @route   DELETE /user/profile
- * @desc    Delete user profile
- * @access  Private
- */
 router.delete('/profile', ensureAuthenticated, async (req, res) => {
     const authReq = req;
     try {
-        // Delete Profile Securely
         await Profile.findOneAndDelete({ user: authReq.user._id });
         res.json({ message: 'Profile deleted successfully' });
     }

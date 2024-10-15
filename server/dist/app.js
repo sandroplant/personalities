@@ -15,7 +15,6 @@ import SpotifyWebApi from 'spotify-web-api-node';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import crypto from 'crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import User from './models/User.js';
@@ -45,21 +44,7 @@ app.use(cors({
     credentials: true,
 }));
 app.use(cookieParser());
-function csrfProtection(req, res, next) {
-    if (!req.cookies._csrf) {
-        const csrfToken = crypto.randomBytes(24).toString('hex');
-        res.cookie('_csrf', csrfToken, { httpOnly: true, secure: true, sameSite: 'strict' });
-    }
-    next();
-}
-function verifyCsrfToken(req, res, next) {
-    const csrfTokenFromRequest = req.body._csrf || req.query._csrf || req.headers['x-csrf-token'];
-    const csrfTokenFromCookie = req.cookies._csrf;
-    if (req.method !== 'GET' && csrfTokenFromRequest !== csrfTokenFromCookie) {
-        return res.status(403).json({ error: 'Invalid CSRF token' });
-    }
-    next();
-}
+import { csrfProtection, verifyCsrfToken } from './middleware/csrfMiddleware.js';
 import sessionModule from 'express-session';
 import FileStoreModule from 'session-file-store';
 (async () => {
@@ -79,6 +64,7 @@ import FileStoreModule from 'session-file-store';
     app.use(session);
 })();
 app.use(csrfProtection);
+app.use(verifyCsrfToken);
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -100,16 +86,16 @@ app.use((req, res, next) => {
 });
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(__dirname + '/dist'));
-    app.get('*', (req, res) => {
+    app.get('*', (_req, res) => {
         res.sendFile(__dirname + '/dist/index.html');
     });
 }
 else {
-    app.get('/', (req, res) => {
+    app.get('/', (_req, res) => {
         res.send('Welcome to the Personality App API');
     });
 }
-app.get('/test-db', async (req, res) => {
+app.get('/test-db', async (_req, res) => {
     try {
         const result = await User.findOne();
         res.json(result || {
@@ -130,7 +116,7 @@ const scopes = [
     'user-library-read',
 ];
 const state = 'some-state-of-your-choice';
-app.get('/login', (req, res) => {
+app.get('/login', (_req, res) => {
     const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
     res.redirect(authorizeURL);
 });
@@ -216,7 +202,9 @@ app.post('/profile', async (req, res) => {
             res.status(404).json({ error: 'User not found' });
             return;
         }
-        res.status(200).json({ message: 'Profile updated successfully', user: updatedUser });
+        res
+            .status(200)
+            .json({ message: 'Profile updated successfully', user: updatedUser });
     }
     catch (error) {
         console.error('Error during profile update:', error);

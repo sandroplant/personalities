@@ -1,9 +1,8 @@
 import express from 'express';
-import { body, validationResult } from 'express-validator'; // Corrected import path for express-validator
+import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
-import User from './models/User.js'; // Corrected import path
+import User from './models/User.js';
 const router = express.Router();
-// Input validation and sanitization for login
 const validateLogin = [
     body('email').isEmail().withMessage('Invalid email address').normalizeEmail(),
     body('password')
@@ -12,7 +11,6 @@ const validateLogin = [
         .trim()
         .escape(),
 ];
-// Input validation and sanitization for registration
 const validateRegister = [
     body('email').isEmail().withMessage('Invalid email address').normalizeEmail(),
     body('password')
@@ -22,7 +20,6 @@ const validateRegister = [
         .escape(),
     body('name').not().isEmpty().withMessage('Name is required').trim().escape(),
 ];
-// Example login route
 router.post('/login', validateLogin, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -41,7 +38,6 @@ router.post('/login', validateLogin, async (req, res) => {
             res.status(401).json({ message: 'Invalid email or password' });
             return;
         }
-        // Example: Set user information in session
         req.session.user = user.id;
         res.send('Login successful');
     }
@@ -49,7 +45,6 @@ router.post('/login', validateLogin, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// Example registration route
 router.post('/register', validateRegister, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -69,7 +64,6 @@ router.post('/register', validateRegister, async (req, res) => {
             name,
         });
         await newUser.save();
-        // Example: Set user information in session
         req.session.user = newUser.id;
         res.send('Registration successful');
     }

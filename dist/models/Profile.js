@@ -1,5 +1,4 @@
 import mongoose, { Schema } from 'mongoose';
-// Sub-schema for Appearance details with strict validation
 const AppearanceSchema = new Schema({
     eyeColor: {
         type: String,
@@ -32,7 +31,6 @@ const AppearanceSchema = new Schema({
         maxlength: [50, 'Skin color cannot exceed 50 characters'],
     },
 }, { _id: false });
-// Sub-schema for Privacy Settings with enum validation
 const PrivacySettingsSchema = new Schema({
     spotifyInfo: {
         type: String,
@@ -75,7 +73,6 @@ const PrivacySettingsSchema = new Schema({
         default: 'private',
     },
 }, { _id: false });
-// Main Profile Schema with comprehensive validations
 const profileSchema = new Schema({
     fullName: {
         type: String,
@@ -207,14 +204,11 @@ const profileSchema = new Schema({
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
 });
-// Middleware to update 'updatedAt' field on document update
 profileSchema.pre('findOneAndUpdate', function (next) {
     this.set({ updatedAt: Date.now() });
     next();
 });
-// Prevent Prototype Pollution by disabling '__proto__' and 'constructor' paths
 profileSchema.path('__proto__', undefined);
 profileSchema.path('constructor', undefined);
-// Export the Profile model
 const Profile = mongoose.model('Profile', profileSchema);
 export default Profile;
