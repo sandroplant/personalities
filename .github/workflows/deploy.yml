@@ -3,7 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # Adjust the branch if you're using a different one
+      - main  # Adjust if using a different branch
 
 jobs:
   deploy:
@@ -11,12 +11,12 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3  # Updated to v3
 
     - name: Set up Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3  # Updated to v3
       with:
-        node-version: '16'  # Ensure this matches the version you're using on EC2
+        node-version: '16'  # You can change to '20' for future-proofing
 
     - name: Install Dependencies
       run: npm install
