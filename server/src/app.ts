@@ -36,7 +36,7 @@ const spotifyApi = new SpotifyWebApi({
 
 // Create Express app
 const app = express();
-const PORT: number = parseInt(process.env.PORT as string, 10) || 5001;
+const PORT: number = parseInt(process.env.PORT as string, 10) || 80; // Port 80 update
 
 // Create HTTP server
 const server = http.createServer(app);
