@@ -17,7 +17,7 @@ import {
 } from 'react-bootstrap-icons';
 
 // Define environment variable with a fallback
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:5001';
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:80';
 
 // Initialize socket outside the component to prevent multiple connections
 const socket = socketIO(SERVER_URL);

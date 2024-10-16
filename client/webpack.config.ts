@@ -7,7 +7,7 @@ import 'webpack-dev-server'; // Ensures webpack-dev-server is available
 const config: webpack.Configuration = {
   entry: './src/index.tsx',
   output: {
-    path: path.resolve(__dirname, 'build'),
+    path: path.resolve(__dirname, 'dist'), // Change from 'build' to 'dist'
     filename: 'bundle.[contenthash].js',
     publicPath: '/',
     clean: true,
@@ -39,7 +39,7 @@ const config: webpack.Configuration = {
     hot: true,
     open: true,
     proxy: {
-      '/api': 'http://localhost:5001',
+      '/api': 'http://localhost:80',
     },
   },
   resolve: {

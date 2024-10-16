@@ -33,7 +33,7 @@ const Messenger: React.FC<MessengerProps> = ({ userId }) => {
 
   useEffect(() => {
     // Initialize socket connection
-    const socket = io('http://localhost:5001');
+    const socket = io('http://localhost:80');
     socketRef.current = socket;
 
     // Listen for incoming messages
@@ -63,7 +63,7 @@ const Messenger: React.FC<MessengerProps> = ({ userId }) => {
 
     try {
       const response = await axios.post<SendMessageResponse>(
-        'http://localhost:5001/messaging/send', // Update with your backend endpoint
+        'http://localhost:80/messaging/send', // Update with your backend endpoint
         newMessage
       );
 

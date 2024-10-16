@@ -487,7 +487,7 @@ Personalities is a web application that allows users to explore and interact wit
    Create a `.env` file in the root directory and add the following variables:
 
    ```env
-   PORT=5001
+   PORT=80
    MONGO_URI=your_mongodb_uri
    SPOTIFY_CLIENT_ID=your_spotify_client_id
    SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
@@ -529,7 +529,7 @@ Personalities is a web application that allows users to explore and interact wit
 2. **Run the Docker container**:
 
    ```bash
-   docker run -p 5001:5001 my-express-app-server
+   docker run -p 80:80 my-express-app-server
    ```
 
 ## Environment Variables
