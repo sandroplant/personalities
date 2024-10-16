@@ -3,7 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # Adjust if using a different branch
+      - main  # Trigger on pushes to the main branch, adjust if necessary
 
 jobs:
   deploy:
@@ -11,12 +11,12 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3  # Updated to v3
+      uses: actions/checkout@v3  # Using latest v3 for actions/checkout
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3  # Updated to v3
+      uses: actions/setup-node@v3  # Using latest v3 for Node.js setup
       with:
-        node-version: '16'  # You can change to '20' for future-proofing
+        node-version: '16'  # Change to '20' if your project supports it
 
     - name: Install Dependencies
       run: npm install
@@ -39,8 +39,17 @@ jobs:
       run: |
         echo "Deploying to EC2"
         scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ec2-user@54.197.63.5:/home/ec2-user/personalities/server
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "cd /home/ec2-user/personalities/server && npm install && npm run build && pm2 restart all"
 
-    - name: Start App (if not running)
+    - name: Install and Restart Services on EC2
       run: |
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "pm2 start /home/ec2-user/personalities/server/dist/app.js || echo 'App already started'"
+        echo "Running npm install, build, and restarting pm2 on EC2"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "
+          cd /home/ec2-user/personalities/server && 
+          npm install && 
+          npm run build &&
+          pm2 reload all --update-env || pm2 start /home/ec2-user/personalities/server/dist/app.js --name 'app'"
+
+    - name: Verify App Running
+      run: |
+        echo "Verifying app status"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "pm2 status"

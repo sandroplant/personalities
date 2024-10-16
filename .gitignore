@@ -1,29 +1,52 @@
-<<<<<<< HEAD
 # =============================
 # Node Modules and Dependencies
 # =============================
 
 # Ignore all node_modules directories
-/node_modules/
-client/node_modules/
+node_modules/
 server/node_modules/
+client/node_modules/
 
 # =====================
 # Environment Variables
 # =====================
 
-# Ignore environment variable files
-*.env
+# Ignore environment variable files (for security)
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Server-specific environment variables
+server/.env
+
+# Client-specific environment variables
+client/.env
 
 # =====================
 # Build and Distribution
 # =====================
 
 # Ignore build and distribution folders
-/dist/
+dist/
+server/dist/
+client/build/
 build/
 coverage/
+
+# =====================
+# Cache and Temporary Files
+# =====================
+
+# Ignore cache and temporary files
+.cache/
+.tmp/
+tmp/
+temp/
+server/temp/
+server/*.tmp
+client/.tmp/
 
 # =====================
 # Logs and Debugging
@@ -31,77 +54,79 @@ coverage/
 
 # Ignore log files and directories
 logs/
+server/logs/
+client/logs/
+
+# General log files
 *.log
+
+# npm and Yarn debug logs
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # =====================
 # Operating System Files
 # =====================
 
-# macOS
+# macOS Finder metadata
 .DS_Store
 
-# =====================
-# Temporary Files
-# =====================
+# Windows Thumbs.db
+Thumbs.db
 
-# Ignore temporary files and directories
-=======
-# Logs
-logs/
-*.log
-
-# OS generated files
-.DS_Store
-
-# Coverage directory used by testing tools
-coverage/
-
-# Temporary files
->>>>>>> 9ceea1ed (Initial commit from EC2)
-tmp/
-temp/
-*.tmp
-
-<<<<<<< HEAD
 # =====================
 # Editor and IDE Settings
 # =====================
-=======
-# Git related files
-# .git and .gitignore should NOT be ignored
->>>>>>> 9ceea1ed (Initial commit from EC2)
 
-# VS Code settings
+# Visual Studio Code
 .vscode/
 
-<<<<<<< HEAD
-# =====================
-# Git Specific Files
-# =====================
+# IntelliJ IDEA
+.idea/
 
-# Do NOT ignore .git or .gitignore
-# These lines have been removed as Git manages them internally
+# Sublime Text project files
+*.sublime-workspace
+*.sublime-project
 
 # =====================
 # Documentation Exceptions
 # =====================
 
-# Allow specific documents in the client directory
+# Allow specific documentation files in server and client directories
+!server/terms-of-service.md
+!server/privacy-policy.md
+!server/data-deletion.md
 !client/src/documents/terms-of-service.md
 !client/src/documents/privacy-policy.md
 !client/src/documents/data-deletion.md
 
-# Allow specific documents in the server directory
-!server/terms-of-service.md
-!server/privacy-policy.md
-!server/data-deletion.md
-=======
-# Dependencies
-node_modules/
+# =====================
+# ESLint and Prettier
+# =====================
 
-# Allow specific documents if they are in the server directory
-!terms-of-service.md
-!privacy-policy.md
-!data-deletion.md
->>>>>>> 9ceea1ed (Initial commit from EC2)
+# Ignore ESLint cache
+.eslintcache
+
+# =====================
+# Other
+# =====================
+
+# Ignore lock files for specific tools
+.lock-wscript
+
+# =====================
+# Webpack Configuration
+# =====================
+
+# If you decide to move webpack.config.js to the client directory, ignore the root one
+# Uncomment the following line if you keep webpack.config.js in the root and don't want to track it
+# webpack.config.js
+
+# =====================
+# Miscellaneous
+# =====================
+
+# Ignore swap files
+*.swp
+*.swo

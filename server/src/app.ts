@@ -1,8 +1,60 @@
-// src/app.ts
+// server/src/app.ts
 
-import dotenv from 'dotenv';
-dotenv.config();
+// 1. Load environment variables using dotenv-flow at the very top
+import dotenvFlow from 'dotenv-flow';
+import { fileURLToPath } from 'url';
+import path, { dirname } from 'path';
 
+// Correct handling of __dirname for ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Initialize dotenv-flow
+dotenvFlow.config({
+  silent: false, // Show warnings if .env files are missing
+});
+
+console.log('OpenAI API Key:', process.env.OPENAI_API_KEY); // Check if the key is loaded
+
+// 2. Validate required environment variables
+const requiredEnvVars = [
+  'MONGO_URI',
+  'SECRET_KEY',
+  'SESSION_SECRET',
+  'SPOTIFY_CLIENT_ID',
+  'SPOTIFY_CLIENT_SECRET',
+  'SPOTIFY_REDIRECT_URI',
+  'CLIENT_URL',
+  'OPENAI_API_KEY',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET',
+];
+
+const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.error(
+    `❌ Missing the following environment variables: ${missingEnvVars.join(', ')}`
+  );
+  process.exit(1); // Exit the application if any required env vars are missing
+}
+
+// 3. Optional: Log the path of the loaded .env files and environment variables (only in development)
+import logger from './logger.js'; // Import the Winston logger
+
+if (process.env.NODE_ENV !== 'production') {
+  logger.info('✅ Loaded .env files from:', path.resolve(__dirname, '../'));
+  logger.info('✅ Environment Variables:', {
+    // Selectively log non-sensitive environment variables
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    CLIENT_URL: process.env.CLIENT_URL,
+    // Add other non-sensitive variables as needed
+  });
+}
+
+// 4. Continue with other imports after dotenv-flow and environment variable validation
 import express, { NextFunction, RequestHandler } from 'express';
 import { Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
@@ -13,35 +65,35 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import mongoose from 'mongoose';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import SpotifyWebApi from 'spotify-web-api-node';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
 
-// Correct handling of __dirname and __filename in ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Import Models
-import User from './models/User.js';
-
-// Spotify API setup
+// Initialize Spotify API
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID as string,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET as string,
   redirectUri: process.env.SPOTIFY_REDIRECT_URI as string,
 });
 
-// Create Express app
-const app = express();
-const PORT: number = parseInt(process.env.PORT as string, 10) || 80; // Port 80 update
+// Import Models
+import User from './models/User.js';
 
-// Create HTTP server
+// Import Custom CSRF Protection Middleware
+import { csrfProtection, verifyCsrfToken } from './middleware/csrfMiddleware.js';
+
+// 5. Initialize Express app
+const app = express();
+
+// 6. Define the port
+const PORT: number = parseInt(process.env.PORT as string, 10) || 80; // Default to port 80 if PORT not set
+
+// 7. Create HTTP server
 const server = http.createServer(app);
 
-// Initialize Socket.IO with CORS settings
+// 8. Initialize Socket.IO with CORS settings
 const io = new SocketIOServer(server, {
   cors: {
     origin: process.env.CLIENT_URL || 'http://localhost:3000',
@@ -50,17 +102,17 @@ const io = new SocketIOServer(server, {
   },
 });
 
-// Apply Security Middlewares
+// 9. Apply Security Middlewares
 app.use(helmet());
 app.use(compression());
 app.use(mongoSanitize());
 app.use(hpp());
 
-// Middleware for parsing JSON and URL-encoded data
+// 10. Middleware for parsing JSON and URL-encoded data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS Configuration
+// 11. CORS Configuration
 app.use(
   cors({
     origin: process.env.CLIENT_URL || 'http://localhost:3000',
@@ -68,42 +120,49 @@ app.use(
   })
 );
 
-// Cookie Parser Middleware
+// 12. Cookie Parser Middleware
 app.use(cookieParser());
 
-// Import Custom CSRF Protection Middleware
-import { csrfProtection, verifyCsrfToken } from './middleware/csrfMiddleware.js';
-
-// Session Middleware Configuration
+// 13. Initialize Session Middleware Synchronously
 import sessionModule from 'express-session';
 import FileStoreModule from 'session-file-store';
 
-(async () => {
-  const FileStore = FileStoreModule(sessionModule);
-  const session = sessionModule({
-    store: new FileStore(),
-    secret: process.env.SESSION_SECRET || 'your-session-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production', // secure for production
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+const FileStore = FileStoreModule(sessionModule);
+const session = sessionModule({
+  store: new FileStore(),
+  secret: process.env.SESSION_SECRET as string, // Already validated to exist
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // Secure cookies in production
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+  },
+});
+
+// Apply session middleware before routes
+app.use(session);
+
+// 14. Initialize Morgan for HTTP request logging with Winston
+app.use(
+  morgan('combined', {
+    stream: {
+      write: (message: string) => {
+        // Remove the newline at the end of the message
+        logger.info(message.trim());
+      },
     },
-  });
+  })
+);
 
-  // Session middleware must be applied before routes
-  app.use(session);
-})();
-
-// Apply CSRF protection after session middleware
+// 15. Apply CSRF protection after session middleware
 app.use(csrfProtection);
 
-// Verify CSRF Token for state-changing requests
+// 16. Verify CSRF Token for state-changing requests
 app.use(verifyCsrfToken);
 
-// Rate Limiting: Global
+// 17. Rate Limiting: Global
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
@@ -112,7 +171,7 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// Advanced Rate Limiting using rate-limiter-flexible
+// 18. Advanced Rate Limiting using rate-limiter-flexible
 const rateLimiter = new RateLimiterMemory({
   points: 100,
   duration: 15 * 60, // 15 minutes
@@ -128,11 +187,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     );
 });
 
-// Conditional Static File Serving Based on Environment
+// 19. Conditional Static File Serving Based on Environment
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(__dirname + '/dist'));
+  app.use(express.static(path.join(__dirname, 'dist')));
   app.get('*', (_req: Request, res: Response) => {
-    res.sendFile(__dirname + '/dist/index.html');
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   });
 } else {
   app.get('/', (_req: Request, res: Response) => {
@@ -140,7 +199,7 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Test MongoDB Connection
+// 20. Test MongoDB Connection
 app.get('/test-db', async (_req: Request, res: Response) => {
   try {
     const result = await User.findOne();
@@ -150,16 +209,17 @@ app.get('/test-db', async (_req: Request, res: Response) => {
       }
     );
   } catch (error) {
+    logger.error('❌ Error connecting to the database:', error);
     res.status(500).json({ error: 'Error connecting to the database' });
   }
 });
 
-// CSRF Token Route
+// 21. CSRF Token Route
 app.get('/csrf-token', (req: Request, res: Response) => {
   res.json({ csrfToken: req.cookies._csrf });
 });
 
-// Spotify OAuth Routes
+// 22. Spotify OAuth Routes
 const scopes: string[] = [
   'user-read-private',
   'user-read-email',
@@ -173,12 +233,13 @@ app.get('/login', (_req: Request, res: Response) => {
   res.redirect(authorizeURL);
 });
 
-// Spotify Authentication Callback: Store userId in session
+// 23. Spotify Authentication Callback: Store userId in session
 const authCallbackHandler: RequestHandler = async (req, res) => {
   const code: string | undefined = req.query.code as string | undefined;
 
   if (!code) {
-    res.status(400).send('No code provided');
+    logger.warn('❌ No code provided in Spotify callback');
+    res.status(400).send('❌ No code provided');
     return;
   }
 
@@ -202,29 +263,32 @@ const authCallbackHandler: RequestHandler = async (req, res) => {
         email: spotifyUser.body.email,
       });
       await user.save();
+      logger.info(`✅ New user created: ${user.displayName} (${user.spotifyId})`);
+    } else {
+      logger.info(`✅ Existing user found: ${user.displayName} (${user.spotifyId})`);
     }
 
-    // Log to verify the user and session
-    console.log('User found or created:', user);
+    // Log to verify the user and session (only in development)
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info('✅ Session data after storing userId:', req.session);
+    }
 
     // Store the user ID in the session
     (req.session as any).userId = user._id;
 
-    // Log the session to ensure userId is stored
-    console.log('Session data after storing userId:', req.session);
-
     res.redirect('/profile');
   } catch (err) {
-    console.error('Authorization failed:', err);
-    res.status(500).send('Authorization failed');
+    logger.error('❌ Authorization failed:', err);
+    res.status(500).send('❌ Authorization failed');
   }
 };
 
 app.get('/auth/callback', authCallbackHandler);
 
-// Profile Route: GET Profile Data from Spotify
+// 24. Profile Route: GET Profile Data from Spotify
 app.get('/profile', async (req: Request, res: Response) => {
   if (!(req.session as any).access_token) {
+    logger.warn('❌ Access token missing in session. Redirecting to /login');
     return res.redirect('/login');
   }
 
@@ -251,55 +315,66 @@ app.get('/profile', async (req: Request, res: Response) => {
       currently_playing: currentlyPlayingData.body.item,
     };
 
+    logger.info(`✅ Profile data fetched for user: ${profileData.display_name}`);
     res.json(profileData);
   } catch (err) {
-    res.status(500).send('Failed to fetch profile');
+    logger.error('❌ Failed to fetch profile:', err);
+    res.status(500).send('❌ Failed to fetch profile');
   }
 });
 
-// Profile Route: POST to update the user profile
-app.post('/profile', async (req: Request, res: Response): Promise<void> => {
-  console.log('Session Data in POST /profile route:', req.session); // Debugging session data
+// 25. Profile Route: POST to update the user profile
+app.post(
+  '/profile',
+  async (req: Request, res: Response): Promise<void> => {
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info('✅ Session Data in POST /profile route:', req.session); // Debugging session data
+    }
 
-  const { name, bio } = req.body;
+    const { name, bio } = req.body;
 
-  if (!name || !bio) {
-    res.status(400).json({ error: 'Name and bio are required' });
-    return;
-  }
-
-  try {
-    const userId = (req.session as any).userId;
-
-    if (!userId) {
-      res.status(400).json({ error: 'No user ID in session' });
+    if (!name || !bio) {
+      logger.warn('❌ Name and bio are required to update profile');
+      res.status(400).json({ error: '❌ Name and bio are required' });
       return;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        name,
-        bio,
-      },
-      { new: true }
-    );
+    try {
+      const userId = (req.session as any).userId;
 
-    if (!updatedUser) {
-      res.status(404).json({ error: 'User not found' });
-      return;
+      if (!userId) {
+        logger.warn('❌ No user ID in session while attempting to update profile');
+        res.status(400).json({ error: '❌ No user ID in session' });
+        return;
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {
+          name,
+          bio,
+        },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        logger.warn(`❌ User not found with ID: ${userId}`);
+        res.status(404).json({ error: '❌ User not found' });
+        return;
+      }
+
+      logger.info(`✅ Profile updated successfully for user: ${updatedUser.displayName}`);
+      res
+        .status(200)
+        .json({ message: '✅ Profile updated successfully', user: updatedUser });
+    } catch (error) {
+      logger.error('❌ Error during profile update:', error);
+      res.status(500).json({ error: '❌ Failed to update profile' });
     }
-
-    res
-      .status(200)
-      .json({ message: 'Profile updated successfully', user: updatedUser });
-  } catch (error) {
-    console.error('Error during profile update:', error);
-    res.status(500).json({ error: 'Failed to update profile' });
   }
-});
+);
 
-// Import Routes
+// 26. Import Routes
 import authRoutes from './utils/spotifyAuth.js';
 import profileRoutes from './routes/profile.js';
 import messagingRoutes from './routes/messaging.js';
@@ -307,7 +382,7 @@ import aiRoutes from './routes/ai.js';
 import userRoutes from './routes/userRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 
-// Use Imported Routes with Input Validation
+// 27. Use Imported Routes with Input Validation
 app.use('/auth', authRoutes);
 app.use('/profile', profileRoutes);
 app.use('/messaging', messagingRoutes);
@@ -315,13 +390,17 @@ app.use('/ai', aiRoutes);
 app.use('/user', userRoutes);
 app.use('/upload', uploadRoutes);
 
-// Socket.IO Connection Handling with Security Considerations
+// 28. Socket.IO Connection Handling with Security Considerations
 io.on('connection', (socket: Socket) => {
+  logger.info('🔗 New client connected via Socket.IO');
+
   socket.on('joinRoom', ({ roomId }: { roomId: string }) => {
     if (typeof roomId !== 'string' || roomId.trim() === '') {
+      logger.warn('❌ Invalid roomId received in joinRoom event');
       return;
     }
     socket.join(roomId);
+    logger.info(`🔑 Client joined room: ${roomId}`);
   });
 
   socket.on(
@@ -340,9 +419,11 @@ io.on('connection', (socket: Socket) => {
         typeof message !== 'string' ||
         typeof sender !== 'string'
       ) {
+        logger.warn('❌ Invalid data received in sendMessage event');
         return;
       }
       socket.to(roomId).emit('receiveMessage', { message, sender });
+      logger.info(`📩 Message sent to room ${roomId} by ${sender}`);
     }
   );
 
@@ -365,28 +446,50 @@ io.on('connection', (socket: Socket) => {
         typeof mediaType !== 'string' ||
         typeof sender !== 'string'
       ) {
+        logger.warn('❌ Invalid data received in sendMedia event');
         return;
       }
       socket.to(roomId).emit('receiveMedia', { mediaData, mediaType, sender });
+      logger.info(`📁 Media sent to room ${roomId} by ${sender}`);
     }
   );
 
-  socket.on('disconnect', () => {});
+  socket.on('disconnect', () => {
+    logger.info('🔌 Client disconnected from Socket.IO');
+  });
 });
 
-// MongoDB connection
+// 29. MongoDB Connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI as string);
-    console.log('MongoDB connected successfully');
+    logger.info('✅ MongoDB connected successfully');
   } catch (error) {
-    console.error('MongoDB connection failed:', error);
-    process.exit(1);
+    logger.error('❌ MongoDB connection failed:', error);
+    process.exit(1); // Exit the application if DB connection fails
   }
 };
 connectDB();
 
-// Start server
+// 30. Start Server
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  logger.info(`🚀 Server is running on port ${PORT}`);
+});
+
+// =============================
+// Additional Best Practices
+// =============================
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Optionally exit the process
+  process.exit(1);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error: Error) => {
+  logger.error('Uncaught Exception thrown:', error);
+  // Optionally exit the process
+  process.exit(1);
 });

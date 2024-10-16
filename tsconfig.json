@@ -1,11 +1,11 @@
 {
-  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./server/dist",                // Output compiled files to server/dist
-    "rootDir": "./server/src",                // Set root directory for source files in server/src
-    "module": "NodeNext",                     // Use NodeNext to support ESM in Node.js
-    "moduleResolution": "NodeNext",           // Use NodeNext for module resolution
-    "target": "ES2022",                       // Target ECMAScript 2022 for latest features
+    "rootDir": "./server/src",                // Root directory for source files in server/src
+    "module": "ESNext",                       // Use ESNext to support ESM in Node.js
+    "moduleResolution": "Node", 
+    "allowImportingTsExtensions": true,              // Use Node for module resolution
+    "target": "ESNext",                       // Target ECMAScript Next for latest features
     "esModuleInterop": true,                  // Enable interoperability between CommonJS and ESM
     "strict": true,                           // Enable strict type-checking
     "resolveJsonModule": true,                // Allow importing of JSON files
@@ -15,13 +15,14 @@
     "noUnusedLocals": true,                   // Warn on unused local variables
     "noUnusedParameters": true,               // Warn on unused parameters
     "noFallthroughCasesInSwitch": true,       // Prevent fallthrough errors in switch statements
-    "noEmitOnError": true                     // Prevent emitting files if there are type errors
+    "noEmitOnError": true,                    // Prevent emitting files if there are type errors
+    "noEmit": true                            // Do not emit output files
   },
   "include": [
-    "server/src/**/*.ts"                      // Include all TypeScript files in the server/src folder
+    "server/src/**/*"                          // Include all TypeScript and declaration files in server/src
   ],
   "exclude": [
-    "node_modules",                           // Exclude node_modules folder
-    "server/dist"                             // Exclude server/dist folder (output folder)
+    "node_modules",                            // Exclude node_modules folder
+    "server/dist"                              // Exclude server/dist folder (output folder)
   ]
 }

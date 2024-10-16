@@ -48,11 +48,12 @@ router.post('/generate', apiLimiter, verifyCsrfToken, validateGenerate, async (r
             res.json({ result: aiMessage });
         }
         else {
-            res.status(500).json({ error: 'AI did not return a message.' });
+            res.status(500).json({ error: 'AI did not return a valid message.' });
         }
     }
     catch (error) {
         if (isProduction) {
+            console.error(error);
             res.status(500).send('Error generating response');
         }
         else {

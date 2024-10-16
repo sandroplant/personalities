@@ -2,16 +2,10 @@ import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import User from '../src/models/User';
-import Post from '../src/models/Post';
+import User from '../models/User.js';
+import Post from '../models/Post.js';
 
 const { JWT_SECRET } = process.env;
-
-// Define an interface for JWT payload
-interface JwtPayload {
-  userId: string;
-  role?: string; // Add other fields as necessary
-}
 
 // Register a new user
 export const register = [

@@ -1,9 +1,12 @@
+// server/src/controllers/profileController.ts
+
+import { __dirname } from '../utils/pathUtil.js';
+import path from 'path';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { v2 as cloudinary } from 'cloudinary';
-import Profile from '../src/models/Profile';
+import Profile from '../models/Profile.js';
 import multer from 'multer';
-import path from 'path';
 
 // Configure Cloudinary using environment variables
 cloudinary.config({
@@ -14,12 +17,12 @@ cloudinary.config({
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: function (_req, _file, cb) { // Renamed to _req and _file
     cb(null, path.join(__dirname, '../../uploads/'));
   },
-  filename: function (req, file, cb) {
+  filename: function (_req, _file, cb) { // Renamed to _req and _file
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+    cb(null, uniqueSuffix + '-' + _file.originalname);
   },
 });
 
@@ -38,7 +41,8 @@ export const uploadProfilePicture = [
         folder: 'profile_pictures',
       });
       res.status(200).json({ url: result.secure_url });
-    } catch {
+    } catch (error) {
+      console.error('Cloudinary Upload Error:', error);
       res.status(500).json({ error: 'Failed to upload profile picture' });
     }
   },
@@ -66,7 +70,8 @@ export const updateProfile = [
       } else {
         res.status(404).json({ error: 'Profile not found' });
       }
-    } catch {
+    } catch (error) {
+      console.error('Profile Update Error:', error);
       res.status(500).json({ error: 'Failed to update profile' });
     }
   },

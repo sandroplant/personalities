@@ -1,15 +1,13 @@
-// webpack.config.ts
-
-import * as path from 'path';
-import * as webpack from 'webpack';
+import path from 'path';
+import webpack from 'webpack';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import DotenvWebpackPlugin from 'dotenv-webpack';
-import 'webpack-dev-server';
+import 'webpack-dev-server'; // Ensures webpack-dev-server is available
 
 const config: webpack.Configuration = {
-  entry: './src/index.js',
+  entry: './src/index.tsx',
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'build'),
     filename: 'bundle.[contenthash].js',
     publicPath: '/',
     clean: true,
@@ -19,9 +17,9 @@ const config: webpack.Configuration = {
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.(ts|tsx)$/,
         exclude: /node_modules/,
-        use: 'babel-loader',
+        use: 'ts-loader',
       },
       {
         test: /\.css$/i,
@@ -34,26 +32,22 @@ const config: webpack.Configuration = {
     ],
   },
   devServer: {
-    static: path.resolve(__dirname, 'dist'),
+    static: path.resolve(__dirname, 'build'),
     compress: true,
     port: 3001,
     historyApiFallback: true,
     hot: true,
     open: true,
-    proxy: [
-      {
-        context: ['/api'],
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-      },
-    ],
+    proxy: {
+      '/api': 'http://localhost:5001',
+    },
   },
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './src/index.html',
+      template: './src/index.html', // Ensure this path is correct
     }),
     new DotenvWebpackPlugin(),
   ],

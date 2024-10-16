@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
-import Post from '../src/models/Post';
-import User from '../src/models/User'; // Kept because it might be used for future validation
+import Post from '../models/Post.js';
 
 // Create a new post
 export const createPost = [
@@ -26,7 +25,7 @@ export const createPost = [
 ];
 
 // Get all posts
-export const getPosts = async (req: Request, res: Response) => {
+export const getPosts = async (_req: Request, res: Response) => {
   try {
     const posts = await Post.find();
     res.status(200).json(posts);
