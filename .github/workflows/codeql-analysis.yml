@@ -26,3 +26,5 @@ jobs:
 
       - name: Analyze
         uses: github/codeql-action/analyze@v2
+        with:
+          upload: false  # Prevent uploading results to Code Scanning
