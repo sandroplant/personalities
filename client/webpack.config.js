@@ -1,11 +1,10 @@
-// client/webpack.config.js
-
 require('ts-node').register({
-    transpileOnly: true,
-    compilerOptions: {
+  transpileOnly: true,
+  compilerOptions: {
       module: 'CommonJS',
-    },
-  });
-  
-  module.exports = require('./webpack.config.ts').default;
-  
+      // Explicitly set the config file to the location of tsconfig.base.json
+      tsconfig: './tsconfig.base.json',
+  },
+});
+
+module.exports = require('./webpack.config.ts').default;
