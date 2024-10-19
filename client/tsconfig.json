@@ -1,5 +1,5 @@
 {
-  "extends": "/Users/aniavsa/Desktop/personalities/tsconfig.base.json",
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./build",
     "module": "ESNext",

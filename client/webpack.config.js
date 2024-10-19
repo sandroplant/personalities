@@ -1,9 +1,11 @@
 require('ts-node').register({
   transpileOnly: true,
   compilerOptions: {
-      module: 'CommonJS',
-      // Explicitly set the config file to the location of tsconfig.base.json
-      tsconfig: './tsconfig.base.json',
+    module: 'CommonJS',
+    baseUrl: './',
+    paths: {
+      '*': ['node_modules/*'], // Removed the absolute path
+    },
   },
 });
 
