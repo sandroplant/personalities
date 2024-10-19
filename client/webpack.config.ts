@@ -2,12 +2,14 @@ import path from 'path';
 import webpack from 'webpack';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import DotenvWebpackPlugin from 'dotenv-webpack';
+import TerserPlugin from 'terser-webpack-plugin'; // For JS minification
+import CssMinimizerPlugin from 'css-minimizer-webpack-plugin'; // For CSS minification
 import 'webpack-dev-server'; // Ensures webpack-dev-server is available
 
 const config: webpack.Configuration = {
   entry: './src/index.tsx',
   output: {
-    path: path.resolve(__dirname, 'dist'), // Change from 'build' to 'dist'
+    path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.[contenthash].js',
     publicPath: '/',
     clean: true,
@@ -47,10 +49,26 @@ const config: webpack.Configuration = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './src/index.html', // Ensure this path is correct
+      template: './src/index.html',
     }),
     new DotenvWebpackPlugin(),
   ],
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          compress: true,
+          mangle: true, // To reduce JS file size
+        },
+      }),
+      new CssMinimizerPlugin(), // Minimize CSS
+    ],
+  },
+  performance: {
+    maxAssetSize: 500000, // Set asset size limit (500 KB)
+    maxEntrypointSize: 500000, // Set entry point size limit (500 KB)
+  },
 };
 
 export default config;

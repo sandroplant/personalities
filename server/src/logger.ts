@@ -1,6 +1,4 @@
-// server/src/logger.ts
-
-import winston from 'winston';
+import winston, { Logform } from 'winston';
 import path from 'path';
 import fs from 'fs';
 import { __dirname } from './utils/pathUtil.js'; // Import from utility module
@@ -19,7 +17,7 @@ const logFormat = winston.format.combine(
     format: 'YYYY-MM-DD HH:mm:ss',
   }),
   winston.format.printf(
-    (info) => `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`
+    (info: Logform.TransformableInfo) => `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`
   )
 );
 
