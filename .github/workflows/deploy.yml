@@ -3,7 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # Trigger on pushes to the main branch, adjust if necessary
+      - main
 
 jobs:
   deploy:
@@ -11,18 +11,21 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3  # Using latest v3 for actions/checkout
+      uses: actions/checkout@v3
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3  # Using latest v3 for Node.js setup
+      uses: actions/setup-node@v3
       with:
-        node-version: '20'  # Change to '20' if your project supports it
+        node-version: '20'
 
     - name: Install Dependencies
       run: npm install
 
-    - name: Install webpack-cli  # Added webpack-cli installation step
+    - name: Install webpack-cli
       run: npm install --save-dev webpack-cli
+
+    - name: Install css-minimizer-webpack-plugin
+      run: npm install --save-dev css-minimizer-webpack-plugin
 
     - name: Build Project
       run: npm run build
@@ -35,24 +38,20 @@ jobs:
 
     - name: Debugging SSH Connection
       run: |
-        echo "Connecting to EC2"
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "echo 'Connection Successful!'"
 
     - name: Deploy to EC2
       run: |
-        echo "Deploying to EC2"
         scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ec2-user@54.197.63.5:/home/ec2-user/personalities/server
 
     - name: Install and Restart Services on EC2
       run: |
-        echo "Running npm install, build, and restarting pm2 on EC2"
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "
-          cd /home/ec2-user/personalities/server && 
-          npm install && 
+          cd /home/ec2-user/personalities/server &&
+          npm install &&
           npm run build &&
           pm2 reload all --update-env || pm2 start /home/ec2-user/personalities/server/dist/app.js --name 'app'"
 
     - name: Verify App Running
       run: |
-        echo "Verifying app status"
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "pm2 status"
