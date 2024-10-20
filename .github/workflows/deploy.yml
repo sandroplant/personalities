@@ -18,14 +18,16 @@ jobs:
       with:
         node-version: '20'
 
-    - name: Install Dependencies
+    - name: Install Dependencies (Server)
       run: npm install
+
+    - name: Install Dependencies (Client)
+      run: |
+        cd client
+        npm install
 
     - name: Install webpack-cli
       run: npm install --save-dev webpack-cli
-
-    - name: Install css-minimizer-webpack-plugin
-      run: npm install --save-dev css-minimizer-webpack-plugin
 
     - name: Build Project
       run: npm run build
@@ -38,15 +40,18 @@ jobs:
 
     - name: Debugging SSH Connection
       run: |
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "echo 'Connection Successful!'"
+        echo "Connecting to EC2"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@<your-ec2-ip> "echo 'Connection Successful!'"
 
     - name: Deploy to EC2
       run: |
-        scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ec2-user@54.197.63.5:/home/ec2-user/personalities/server
+        echo "Deploying to EC2"
+        scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ec2-user@<your-ec2-ip>:/home/ec2-user/personalities/server
 
     - name: Install and Restart Services on EC2
       run: |
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "
+        echo "Running npm install, build, and restarting pm2 on EC2"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@<your-ec2-ip> "
           cd /home/ec2-user/personalities/server &&
           npm install &&
           npm run build &&
@@ -54,4 +59,5 @@ jobs:
 
     - name: Verify App Running
       run: |
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "pm2 status"
+        echo "Verifying app status"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@<your-ec2-ip> "pm2 status"
