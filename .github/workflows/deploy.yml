@@ -41,17 +41,17 @@ jobs:
     - name: Debugging SSH Connection
       run: |
         echo "Connecting to EC2"
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@<your-ec2-ip> "echo 'Connection Successful!'"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "echo 'Connection Successful!'"
 
     - name: Deploy to EC2
       run: |
         echo "Deploying to EC2"
-        scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ec2-user@<your-ec2-ip>:/home/ec2-user/personalities/server
+        scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ec2-user@54.197.63.5:/home/ec2-user/personalities/server
 
     - name: Install and Restart Services on EC2
       run: |
         echo "Running npm install, build, and restarting pm2 on EC2"
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@<your-ec2-ip> "
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "
           cd /home/ec2-user/personalities/server &&
           npm install &&
           npm run build &&
@@ -60,4 +60,4 @@ jobs:
     - name: Verify App Running
       run: |
         echo "Verifying app status"
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@<your-ec2-ip> "pm2 status"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "pm2 status"
