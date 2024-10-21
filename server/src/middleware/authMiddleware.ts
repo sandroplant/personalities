@@ -1,7 +1,11 @@
+// server/middleware/authMiddleware.ts
+
 import { Request, Response, NextFunction } from 'express';
+import session from 'express-session';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import csrfTokens from 'csrf';
+import '../config/env.js';
 
 // Initialize Rate Limiter to prevent brute-force attacks on token verification
 const rateLimiter = new RateLimiterMemory({
@@ -18,11 +22,20 @@ interface DecodedToken extends JwtPayload {
   role?: string; // Optional: if you have roles
 }
 
-// Extend the Request interface to include user information and session
+// Extend the SessionData interface if you have custom session properties
+declare module 'express-session' {
+  interface SessionData {
+    csrfSecret?: string;
+    userId?: string;
+    // Add any other session properties if needed
+  }
+}
+
+// Extend the Express Request interface to include the session
 declare module 'express' {
-  export interface Request {
+  interface Request {
+    session: session.Session & Partial<session.SessionData>;
     user?: DecodedToken;
-    session?: any; // Assuming express-session is used
   }
 }
 
@@ -56,22 +69,29 @@ const authMiddleware = async (
       role: decoded.role, // Example: if you have roles
     };
 
+    // Ensure session exists
+    if (!req.session) {
+      throw new Error('Session not found');
+    }
+
     // Generate CSRF token and set it as a cookie
-    const secret = req.session?.csrfSecret || csrf.secretSync();
+    const secret = req.session.csrfSecret || csrf.secretSync();
     req.session.csrfSecret = secret;
     res.cookie('XSRF-TOKEN', csrf.create(secret), {
       secure: process.env.NODE_ENV === 'production',
-      httpOnly: false, // Ensure this matches your intended usage
-      sameSite: 'lax',
+      httpOnly: false, // Allow client-side scripts to access the token
+      sameSite: 'strict',
     });
 
     next();
   } catch (err: any) {
     // Handle different JWT errors
-    if (err.name === 'JsonWebTokenError') {
+    if (err instanceof jwt.JsonWebTokenError) {
       res.status(401).json({ error: 'Invalid token.' });
-    } else if (err.name === 'TokenExpiredError') {
+    } else if (err instanceof jwt.TokenExpiredError) {
       res.status(401).json({ error: 'Token has expired.' });
+    } else if (err.message === 'Session not found') {
+      res.status(500).json({ error: 'Session not found.' });
     } else {
       res.status(500).json({ error: 'Internal server error.' });
     }

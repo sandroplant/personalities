@@ -7,6 +7,9 @@ import { body, validationResult } from 'express-validator';
 import { v2 as cloudinary } from 'cloudinary';
 import Profile from '../models/Profile.js';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
+import { verifyCsrfToken } from '../middleware/csrfMiddleware.js';
+import '../config/env.js';
 
 // Configure Cloudinary using environment variables
 cloudinary.config({
@@ -27,6 +30,13 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
+// Rate Limiting Middleware
+const profileRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // Limit each IP to 50 requests per windowMs
+  message: 'Too many profile requests from this IP, please try again after 15 minutes',
+});
 
 // Upload Profile Picture
 export const uploadProfilePicture = [
@@ -50,20 +60,24 @@ export const uploadProfilePicture = [
 
 // Update Profile
 export const updateProfile = [
+  profileRateLimiter,
+  verifyCsrfToken,
   body('userId').isMongoId().withMessage('Invalid user ID').trim().escape(),
   body('profileData').isObject().withMessage('Profile data must be an object'),
   async (req: Request, res: Response) => {
+    // Handle Validation Errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { userId, profileData } = req.body;
+
     try {
       const profile = await Profile.findOneAndUpdate(
         { user: userId },
         profileData,
-        { new: true }
+        { new: true, runValidators: true }
       );
       if (profile) {
         res.status(200).json(profile);

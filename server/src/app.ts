@@ -1,22 +1,18 @@
 // server/src/app.ts
 
-// 1. Load environment variables using dotenv-flow at the very top
-import dotenvFlow from 'dotenv-flow';
-import { fileURLToPath } from 'url';
-import path, { dirname } from 'path';
+// Import the env module to load environment variables at the very top
+import './config/env.js'; // Ensure the correct relative path and file extension
 
 // Correct handling of __dirname for ES Modules
+import { fileURLToPath } from 'url';
+import path from 'path';
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
-// Initialize dotenv-flow
-dotenvFlow.config({
-  silent: false, // Show warnings if .env files are missing
-});
+// Optionally, log the API key to verify it's loaded (remove after testing)
+console.log('OpenAI API Key:', process.env.OPENAI_API_KEY);
 
-console.log('OpenAI API Key:', process.env.OPENAI_API_KEY); // Check if the key is loaded
-
-// 2. Validate required environment variables
+// Validate required environment variables
 const requiredEnvVars = [
   'MONGO_URI',
   'SECRET_KEY',
@@ -40,7 +36,7 @@ if (missingEnvVars.length > 0) {
   process.exit(1); // Exit the application if any required env vars are missing
 }
 
-// 3. Optional: Log the path of the loaded .env files and environment variables (only in development)
+// Import logger after environment variables are loaded
 import logger from './logger.js'; // Import the Winston logger
 
 if (process.env.NODE_ENV !== 'production') {
@@ -54,9 +50,9 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// 4. Continue with other imports after dotenv-flow and environment variable validation
-import express, { NextFunction, RequestHandler } from 'express';
-import { Request, Response } from 'express';
+// Continue with other imports after dotenv-flow and environment variable validation
+import express, { NextFunction, RequestHandler, Request, Response } from 'express';
+import { validationResult, body } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import cors from 'cors';
@@ -70,6 +66,9 @@ import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
+import sanitizeHtml from 'sanitize-html'; // For sanitizing messages
+import sessionModule from 'express-session';
+import FileStoreModule from 'session-file-store';
 
 // Initialize Spotify API
 const spotifyApi = new SpotifyWebApi({
@@ -84,16 +83,16 @@ import User from './models/User.js';
 // Import Custom CSRF Protection Middleware
 import { csrfProtection, verifyCsrfToken } from './middleware/csrfMiddleware.js';
 
-// 5. Initialize Express app
+// Initialize Express app
 const app = express();
 
-// 6. Define the port
+// Define the port
 const PORT: number = parseInt(process.env.PORT as string, 10) || 80; // Default to port 80 if PORT not set
 
-// 7. Create HTTP server
+// Create HTTP server
 const server = http.createServer(app);
 
-// 8. Initialize Socket.IO with CORS settings
+// Initialize Socket.IO with CORS settings
 const io = new SocketIOServer(server, {
   cors: {
     origin: process.env.CLIENT_URL || 'http://localhost:3000',
@@ -102,17 +101,30 @@ const io = new SocketIOServer(server, {
   },
 });
 
-// 9. Apply Security Middlewares
+// Apply Security Middlewares
 app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    useDefaults: true,
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'"],
+      "style-src": ["'self'", "https:", "'unsafe-inline'"],
+      "img-src": ["'self'", "data:", "https:"],
+      "connect-src": ["'self'", process.env.CLIENT_URL || 'http://localhost:3000'],
+      // Add other directives as needed
+    },
+  })
+);
 app.use(compression());
 app.use(mongoSanitize());
 app.use(hpp());
 
-// 10. Middleware for parsing JSON and URL-encoded data
+// Middleware for parsing JSON and URL-encoded data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 11. CORS Configuration
+// CORS Configuration
 app.use(
   cors({
     origin: process.env.CLIENT_URL || 'http://localhost:3000',
@@ -120,13 +132,10 @@ app.use(
   })
 );
 
-// 12. Cookie Parser Middleware
+// Cookie Parser Middleware
 app.use(cookieParser());
 
-// 13. Initialize Session Middleware Synchronously
-import sessionModule from 'express-session';
-import FileStoreModule from 'session-file-store';
-
+// Initialize Session Middleware Synchronously
 const FileStore = FileStoreModule(sessionModule);
 const session = sessionModule({
   store: new FileStore(),
@@ -136,7 +145,7 @@ const session = sessionModule({
   cookie: {
     secure: process.env.NODE_ENV === 'production', // Secure cookies in production
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: 'strict', // Use 'strict' for better CSRF protection
     maxAge: 24 * 60 * 60 * 1000, // 1 day
   },
 });
@@ -144,7 +153,7 @@ const session = sessionModule({
 // Apply session middleware before routes
 app.use(session);
 
-// 14. Initialize Morgan for HTTP request logging with Winston
+// Initialize Morgan for HTTP request logging with Winston
 app.use(
   morgan('combined', {
     stream: {
@@ -156,13 +165,13 @@ app.use(
   })
 );
 
-// 15. Apply CSRF protection after session middleware
+// Apply CSRF protection after session middleware
 app.use(csrfProtection);
 
-// 16. Verify CSRF Token for state-changing requests
+// Verify CSRF Token for state-changing requests
 app.use(verifyCsrfToken);
 
-// 17. Rate Limiting: Global
+// Rate Limiting: Global
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
@@ -171,7 +180,7 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// 18. Advanced Rate Limiting using rate-limiter-flexible
+// Advanced Rate Limiting using rate-limiter-flexible
 const rateLimiter = new RateLimiterMemory({
   points: 100,
   duration: 15 * 60, // 15 minutes
@@ -187,7 +196,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     );
 });
 
-// 19. Conditional Static File Serving Based on Environment
+// Conditional Static File Serving Based on Environment
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'dist')));
   app.get('*', (_req: Request, res: Response) => {
@@ -199,10 +208,10 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// 20. Test MongoDB Connection
+// Test MongoDB Connection
 app.get('/test-db', async (_req: Request, res: Response) => {
   try {
-    const result = await User.findOne();
+    const result = await User.findOne().exec();
     res.json(
       result || {
         message: 'Database connection successful, but no data found.',
@@ -214,12 +223,12 @@ app.get('/test-db', async (_req: Request, res: Response) => {
   }
 });
 
-// 21. CSRF Token Route
+// CSRF Token Route
 app.get('/csrf-token', (req: Request, res: Response) => {
   res.json({ csrfToken: req.cookies._csrf });
 });
 
-// 22. Spotify OAuth Routes
+// Spotify OAuth Routes
 const scopes: string[] = [
   'user-read-private',
   'user-read-email',
@@ -233,7 +242,7 @@ app.get('/login', (_req: Request, res: Response) => {
   res.redirect(authorizeURL);
 });
 
-// 23. Spotify Authentication Callback: Store userId in session
+// Spotify Authentication Callback: Store userId in session
 const authCallbackHandler: RequestHandler = async (req, res) => {
   const code: string | undefined = req.query.code as string | undefined;
 
@@ -252,25 +261,34 @@ const authCallbackHandler: RequestHandler = async (req, res) => {
     (req.session as any).refresh_token = refresh_token;
 
     // Fetch user details from Spotify API
+    spotifyApi.setAccessToken(access_token);
     const spotifyUser = await spotifyApi.getMe();
 
+    // Sanitize spotifyUser data
+    const spotifyId = sanitizeHtml(spotifyUser.body.id);
+    const displayName = sanitizeHtml(spotifyUser.body.display_name || '');
+    const email = sanitizeHtml(spotifyUser.body.email || '');
+
     // Check if the user exists in MongoDB or create a new one
-    let user = await User.findOne({ spotifyId: spotifyUser.body.id });
+    let user = await User.findOne({ spotifyId }, null, { sanitizeFilter: true }).exec();
     if (!user) {
       user = new User({
-        spotifyId: spotifyUser.body.id,
-        displayName: spotifyUser.body.display_name,
-        email: spotifyUser.body.email,
+        spotifyId,
+        displayName,
+        email,
       });
       await user.save();
-      logger.info(`✅ New user created: ${user.displayName} (${user.spotifyId})`);
+      logger.info(`✅ New user created: ${displayName} (${spotifyId})`);
     } else {
-      logger.info(`✅ Existing user found: ${user.displayName} (${user.spotifyId})`);
+      logger.info(`✅ Existing user found: ${displayName} (${spotifyId})`);
     }
 
     // Log to verify the user and session (only in development)
     if (process.env.NODE_ENV !== 'production') {
-      logger.info('✅ Session data after storing userId:', req.session);
+      logger.info('✅ Session data after storing userId:', {
+        userId: user._id,
+        // Do not log sensitive data like access tokens
+      });
     }
 
     // Store the user ID in the session
@@ -285,7 +303,7 @@ const authCallbackHandler: RequestHandler = async (req, res) => {
 
 app.get('/auth/callback', authCallbackHandler);
 
-// 24. Profile Route: GET Profile Data from Spotify
+// Profile Route: GET Profile Data from Spotify
 app.get('/profile', async (req: Request, res: Response) => {
   if (!(req.session as any).access_token) {
     logger.warn('❌ Access token missing in session. Redirecting to /login');
@@ -295,19 +313,18 @@ app.get('/profile', async (req: Request, res: Response) => {
   spotifyApi.setAccessToken((req.session as any).access_token);
 
   try {
-    const [userData, topArtistsData, topTracksData, currentlyPlayingData] =
-      await Promise.all([
-        spotifyApi.getMe(),
-        spotifyApi.getMyTopArtists(),
-        spotifyApi.getMyTopTracks(),
-        spotifyApi.getMyCurrentPlayingTrack(),
-      ]);
+    const [userData, topArtistsData, topTracksData, currentlyPlayingData] = await Promise.all([
+      spotifyApi.getMe(),
+      spotifyApi.getMyTopArtists(),
+      spotifyApi.getMyTopTracks(),
+      spotifyApi.getMyCurrentPlayingTrack(),
+    ]);
 
     const profileData = {
-      display_name: userData.body.display_name,
+      display_name: sanitizeHtml(userData.body.display_name || ''),
       external_urls: userData.body.external_urls,
       href: userData.body.href,
-      id: userData.body.id,
+      id: sanitizeHtml(userData.body.id),
       images: userData.body.images,
       uri: userData.body.uri,
       top_artists: topArtistsData.body.items,
@@ -323,38 +340,52 @@ app.get('/profile', async (req: Request, res: Response) => {
   }
 });
 
-// 25. Profile Route: POST to update the user profile
+// Profile Route: POST to update the user profile
 app.post(
   '/profile',
+  rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 50, // Limit each IP to 50 requests per windowMs
+    message: 'Too many profile update requests from this IP, please try again after 15 minutes',
+  }),
+  verifyCsrfToken,
+  body('userId').isString().trim().notEmpty().withMessage('User ID is required'),
+  body('name').isString().trim().notEmpty().withMessage('Name must be a string'),
+  body('bio').isString().trim().notEmpty().withMessage('Bio must be a string'),
   async (req: Request, res: Response): Promise<void> => {
     if (process.env.NODE_ENV !== 'production') {
-      logger.info('✅ Session Data in POST /profile route:', req.session); // Debugging session data
+      logger.info('✅ Session Data in POST /profile route:', {
+        userId: (req.session as any).userId,
+        // Do not log sensitive data like access tokens
+      });
     }
 
-    const { name, bio } = req.body;
-
-    if (!name || !bio) {
-      logger.warn('❌ Name and bio are required to update profile');
-      res.status(400).json({ error: '❌ Name and bio are required' });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
       return;
     }
 
+    // Sanitize inputs
+    const userId = sanitizeHtml(req.body.userId);
+    const name = sanitizeHtml(req.body.name);
+    const bio = sanitizeHtml(req.body.bio);
+
+    // Validate and cast userId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      res.status(400).json({ error: 'Invalid user ID format' });
+      return;
+    }
+    const validUserId = new mongoose.Types.ObjectId(userId);
+
     try {
-      const userId = (req.session as any).userId;
-
-      if (!userId) {
-        logger.warn('❌ No user ID in session while attempting to update profile');
-        res.status(400).json({ error: '❌ No user ID in session' });
-        return;
-      }
-
       const updatedUser = await User.findByIdAndUpdate(
-        userId,
+        validUserId,
         {
           name,
           bio,
         },
-        { new: true }
+        { new: true, runValidators: true, sanitizeFilter: true }
       );
 
       if (!updatedUser) {
@@ -364,9 +395,7 @@ app.post(
       }
 
       logger.info(`✅ Profile updated successfully for user: ${updatedUser.displayName}`);
-      res
-        .status(200)
-        .json({ message: '✅ Profile updated successfully', user: updatedUser });
+      res.status(200).json({ message: '✅ Profile updated successfully', user: updatedUser });
     } catch (error) {
       logger.error('❌ Error during profile update:', error);
       res.status(500).json({ error: '❌ Failed to update profile' });
@@ -374,7 +403,7 @@ app.post(
   }
 );
 
-// 26. Import Routes
+// Import Routes
 import authRoutes from './utils/spotifyAuth.js';
 import profileRoutes from './routes/profile.js';
 import messagingRoutes from './routes/messaging.js';
@@ -382,7 +411,7 @@ import aiRoutes from './routes/ai.js';
 import userRoutes from './routes/userRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 
-// 27. Use Imported Routes with Input Validation
+// Use Imported Routes with Input Validation
 app.use('/auth', authRoutes);
 app.use('/profile', profileRoutes);
 app.use('/messaging', messagingRoutes);
@@ -390,7 +419,7 @@ app.use('/ai', aiRoutes);
 app.use('/user', userRoutes);
 app.use('/upload', uploadRoutes);
 
-// 28. Socket.IO Connection Handling with Security Considerations
+// Socket.IO Connection Handling with Security Considerations
 io.on('connection', (socket: Socket) => {
   logger.info('🔗 New client connected via Socket.IO');
 
@@ -422,8 +451,13 @@ io.on('connection', (socket: Socket) => {
         logger.warn('❌ Invalid data received in sendMessage event');
         return;
       }
-      socket.to(roomId).emit('receiveMessage', { message, sender });
-      logger.info(`📩 Message sent to room ${roomId} by ${sender}`);
+
+      // Sanitize message and sender to prevent XSS
+      const cleanMessage = sanitizeHtml(message);
+      const cleanSender = sanitizeHtml(sender);
+
+      socket.to(roomId).emit('receiveMessage', { message: cleanMessage, sender: cleanSender });
+      logger.info(`📩 Message sent to room ${roomId} by ${cleanSender}`);
     }
   );
 
@@ -449,8 +483,20 @@ io.on('connection', (socket: Socket) => {
         logger.warn('❌ Invalid data received in sendMedia event');
         return;
       }
-      socket.to(roomId).emit('receiveMedia', { mediaData, mediaType, sender });
-      logger.info(`📁 Media sent to room ${roomId} by ${sender}`);
+
+      // Sanitize sender
+      const cleanSender = sanitizeHtml(sender);
+
+      // Validate mediaType
+      const allowedMediaTypes = ['image', 'video', 'audio'];
+      if (!allowedMediaTypes.includes(mediaType)) {
+        logger.warn('❌ Invalid mediaType received in sendMedia event');
+        return;
+      }
+
+      // Emit media data
+      socket.to(roomId).emit('receiveMedia', { mediaData, mediaType, sender: cleanSender });
+      logger.info(`📁 Media sent to room ${roomId} by ${cleanSender}`);
     }
   );
 
@@ -459,10 +505,12 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
-// 29. MongoDB Connection
+// MongoDB Connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI as string);
+    await mongoose.connect(process.env.MONGO_URI as string, {
+      // Additional options can be specified here
+    });
     logger.info('✅ MongoDB connected successfully');
   } catch (error) {
     logger.error('❌ MongoDB connection failed:', error);
@@ -471,7 +519,7 @@ const connectDB = async () => {
 };
 connectDB();
 
-// 30. Start Server
+// Start Server
 server.listen(PORT, () => {
   logger.info(`🚀 Server is running on port ${PORT}`);
 });
@@ -479,6 +527,9 @@ server.listen(PORT, () => {
 // =============================
 // Additional Best Practices
 // =============================
+
+// Configure Express to trust proxies (if behind a proxy like Nginx)
+app.set('trust proxy', 1);
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
@@ -492,4 +543,10 @@ process.on('uncaughtException', (error: Error) => {
   logger.error('Uncaught Exception thrown:', error);
   // Optionally exit the process
   process.exit(1);
+});
+
+// Centralized Error Handling Middleware
+app.use((err: any, _req: Request, res: Response) => {
+  logger.error('An error occurred:', err);
+  res.status(500).json({ error: 'Internal server error' });
 });

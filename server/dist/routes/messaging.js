@@ -1,34 +1,45 @@
+// server/routes/messaging.ts
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import Message from '../models/Message.js';
-import { csrfProtection } from '../middleware/csrfMiddleware.js';
 import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import sanitizeHtml from 'sanitize-html';
+import ensureAuthenticated from '../middleware/authMiddleware.js';
+import { verifyCsrfToken } from '../middleware/csrfMiddleware.js';
 const router = express.Router();
+// Apply rate-limiting to all routes
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
+    message: 'Too many requests, please try again later.',
 });
+// Middleware for sanitizing user input
+const sanitizeInput = (req, _res, next) => {
+    mongoSanitize.sanitize(req.body);
+    mongoSanitize.sanitize(req.params);
+    next();
+};
+// Dummy AI function for responding (replace with actual AI service)
 async function getAIResponse(content) {
-    return `AI Response to: "${content}"`;
+    return `AI Response to: "${sanitizeHtml(content)}"`; // Placeholder for AI response
 }
-router.post('/send', apiLimiter, csrfProtection, [
+// Send message with optional AI response
+router.post('/send', ensureAuthenticated, apiLimiter, verifyCsrfToken, sanitizeInput, [
     body('senderId')
         .isMongoId()
         .withMessage('Invalid sender ID')
-        .trim()
-        .escape(),
+        .trim(),
     body('recipientId')
         .isMongoId()
         .withMessage('Invalid recipient ID')
-        .trim()
-        .escape(),
+        .trim(),
     body('content')
         .notEmpty()
         .withMessage('Content is required')
         .isString()
         .withMessage('Content must be a string')
-        .trim()
-        .escape(),
+        .trim(),
     body('includeAI')
         .optional()
         .isBoolean()
@@ -48,7 +59,7 @@ router.post('/send', apiLimiter, csrfProtection, [
         const newMessage = new Message({
             sender: senderId,
             recipient: recipientId,
-            content,
+            content: sanitizeHtml(content),
             aiResponse,
         });
         await newMessage.save();
@@ -62,9 +73,10 @@ router.post('/send', apiLimiter, csrfProtection, [
         res.status(500).json({ error: 'Failed to send message' });
     }
 });
-router.get('/conversation/:userId1/:userId2', apiLimiter, csrfProtection, [
-    param('userId1').isMongoId().withMessage('Invalid user ID').trim().escape(),
-    param('userId2').isMongoId().withMessage('Invalid user ID').trim().escape(),
+// Get conversation between two users
+router.get('/conversation/:userId1/:userId2', ensureAuthenticated, apiLimiter, verifyCsrfToken, sanitizeInput, [
+    param('userId1').isMongoId().withMessage('Invalid user ID').trim(),
+    param('userId2').isMongoId().withMessage('Invalid user ID').trim(),
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -78,7 +90,7 @@ router.get('/conversation/:userId1/:userId2', apiLimiter, csrfProtection, [
                 { sender: userId1, recipient: userId2 },
                 { sender: userId2, recipient: userId1 },
             ],
-        }).sort({ timestamp: 1 });
+        }, null, { sanitizeFilter: true }).sort({ timestamp: 1 });
         res.status(200).json(messages);
     }
     catch (error) {
@@ -86,24 +98,22 @@ router.get('/conversation/:userId1/:userId2', apiLimiter, csrfProtection, [
         res.status(500).json({ error: 'Failed to retrieve conversation' });
     }
 });
-router.post('/send-mystery', apiLimiter, csrfProtection, [
+// Send mystery message
+router.post('/send-mystery', ensureAuthenticated, apiLimiter, verifyCsrfToken, sanitizeInput, [
     body('senderId')
         .isMongoId()
         .withMessage('Invalid sender ID')
-        .trim()
-        .escape(),
+        .trim(),
     body('recipientId')
         .isMongoId()
         .withMessage('Invalid recipient ID')
-        .trim()
-        .escape(),
+        .trim(),
     body('content')
         .notEmpty()
         .withMessage('Content is required')
         .isString()
         .withMessage('Content must be a string')
-        .trim()
-        .escape(),
+        .trim(),
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -115,7 +125,7 @@ router.post('/send-mystery', apiLimiter, csrfProtection, [
         const newMessage = new Message({
             sender: senderId,
             recipient: recipientId,
-            content,
+            content: sanitizeHtml(content),
             isMysteryMessage: true,
         });
         await newMessage.save();
@@ -126,12 +136,12 @@ router.post('/send-mystery', apiLimiter, csrfProtection, [
         res.status(500).json({ error: 'Failed to send mystery message' });
     }
 });
-router.get('/open-mystery/:messageId', apiLimiter, csrfProtection, [
+// Open mystery message and trigger reaction recording
+router.get('/open-mystery/:messageId', ensureAuthenticated, apiLimiter, verifyCsrfToken, sanitizeInput, [
     param('messageId')
         .isMongoId()
         .withMessage('Invalid message ID')
-        .trim()
-        .escape(),
+        .trim(),
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -140,8 +150,9 @@ router.get('/open-mystery/:messageId', apiLimiter, csrfProtection, [
     }
     const { messageId } = req.params;
     try {
-        const message = await Message.findById(messageId);
+        const message = await Message.findById(messageId, null, { sanitizeFilter: true });
         if (message?.isMysteryMessage) {
+            // Implement logic to record the user's reaction
             res.json({ message: 'Recording reaction for mystery message!' });
         }
         else {
@@ -153,22 +164,20 @@ router.get('/open-mystery/:messageId', apiLimiter, csrfProtection, [
         res.status(500).json({ error: 'Failed to open mystery message' });
     }
 });
-router.post('/start-call', apiLimiter, csrfProtection, [
+// Start a call between users
+router.post('/start-call', ensureAuthenticated, apiLimiter, verifyCsrfToken, sanitizeInput, [
     body('senderId')
         .isMongoId()
         .withMessage('Invalid sender ID')
-        .trim()
-        .escape(),
+        .trim(),
     body('recipientId')
         .isMongoId()
         .withMessage('Invalid recipient ID')
-        .trim()
-        .escape(),
+        .trim(),
     body('callType')
         .isIn(['audio', 'video'])
         .withMessage('Invalid call type')
-        .trim()
-        .escape(),
+        .trim(),
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -176,6 +185,13 @@ router.post('/start-call', apiLimiter, csrfProtection, [
         return;
     }
     const { callType } = req.body;
-    res.json({ message: `Starting a ${callType} call between users.` });
+    try {
+        // Implement logic to start a call (e.g., generating a call token)
+        res.json({ message: `Starting a ${callType} call between users.` });
+    }
+    catch (error) {
+        console.error('Error starting call:', error);
+        res.status(500).json({ error: 'Failed to start call' });
+    }
 });
 export default router;

@@ -3,15 +3,20 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { query, validationResult } from 'express-validator';
 import {
   generateCodeVerifier,
   generateCodeChallenge,
-} from '../utils/spotifyAuthUtils.js'; // Adjusted import path, no .ts
+} from '../utils/spotifyAuthUtils.js';
 import ensureAuthenticated from '../middleware/authMiddleware.js';
 import axios, { AxiosResponse } from 'axios';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import csrfTokens from 'csrf';
+import sanitizeHtml from 'sanitize-html';
+import '../config/env.js';
 
 const router = express.Router();
 
@@ -29,40 +34,46 @@ declare module 'express-session' {
     state?: string;
     access_token?: string;
     refresh_token?: string;
+    csrfSecret?: string;
   }
 }
 
-// Define interfaces for Spotify responses
+// Define SpotifyTrack interface
+interface SpotifyTrack {
+  name: string;
+  uri: string;
+  album: string;
+}
+
+// Define SpotifyArtist interface
 interface SpotifyArtist {
   name: string;
   uri: string;
   genres: string[];
 }
 
-interface SpotifyTrack {
-  name: string;
-  uri: string;
-  album: {
-    name: string;
-  };
-}
+// Initialize CSRF Tokens
+const csrf = new csrfTokens();
 
-// @ts-ignore: CurrentlyPlaying interface not used yet
-interface CurrentlyPlaying {
-  item: {
-    name: string;
-    artists: Array<{ name: string }>;
-  };
-  is_playing: boolean;
-  progress_ms: number;
-}
+// Rate Limiter to prevent abuse
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Limit each IP to 20 requests per window
+  message: 'Too many requests, please try again later.',
+});
+
+// Middleware for sanitizing user input
+const sanitizeInput = (req: Request, _res: Response, next: NextFunction) => {
+  mongoSanitize.sanitize(req.query);
+  next();
+};
 
 /**
  * @route   GET /spotifyAuth/login
  * @desc    Initiate Spotify authorization flow
  * @access  Public
  */
-router.get('/login', (req: Request, res: Response) => {
+router.get('/login', authRateLimiter, (req: Request, res: Response) => {
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
 
@@ -71,6 +82,17 @@ router.get('/login', (req: Request, res: Response) => {
   // Store codeVerifier and state in session to validate later
   req.session.code_verifier = codeVerifier;
   req.session.state = state;
+
+  // Generate CSRF secret and store it in session
+  const csrfSecret = csrf.secretSync();
+  req.session.csrfSecret = csrfSecret;
+
+  // Set CSRF token as a cookie for the client to use in subsequent requests
+  res.cookie('XSRF-TOKEN', csrf.create(csrfSecret), {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: false,
+    sameSite: 'strict',
+  });
 
   const authorizeURL =
     'https://accounts.spotify.com/authorize?' +
@@ -94,10 +116,12 @@ router.get('/login', (req: Request, res: Response) => {
  */
 router.get(
   '/callback',
+  authRateLimiter,
+  sanitizeInput,
   [
     // Validate and sanitize the query parameters
-    query('code').isString().withMessage('Invalid code').trim().escape(),
-    query('state').isString().withMessage('Invalid state').trim().escape(),
+    query('code').isString().withMessage('Invalid code').trim(),
+    query('state').isString().withMessage('Invalid state').trim(),
   ],
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
@@ -107,8 +131,8 @@ router.get(
       );
     }
 
-    const code = req.query.code as string | undefined;
-    const state = req.query.state as string | undefined;
+    const code = req.query.code as string;
+    const state = req.query.state as string;
 
     // Validate state parameter to prevent CSRF
     if (!state || state !== req.session.state) {
@@ -193,6 +217,7 @@ router.get(
 router.get(
   '/profile',
   ensureAuthenticated,
+  authRateLimiter,
   async (req: Request, res: Response): Promise<void> => {
     const accessToken = req.session.access_token as string | undefined;
 
@@ -223,22 +248,28 @@ router.get(
       const topTracksData = topTracksResponse.data;
       const currentTrackData = currentTrackResponse.data;
 
+
       const profileData = {
         top_artists: Array.isArray((topArtistsData as { items: any[] }).items)
           ? (topArtistsData as { items: any[] }).items.map(
               (artist: any): SpotifyArtist => ({
-                name: artist.name,
-                uri: artist.uri,
-                genres: Array.isArray(artist.genres) ? artist.genres : [],
+                name: sanitizeHtml(artist.name),
+                uri: sanitizeHtml(artist.uri),
+                genres: Array.isArray(artist.genres)
+                  ? artist.genres.map((genre: string) => sanitizeHtml(genre))
+                  : [],
               })
             )
           : [],
         top_tracks: Array.isArray((topTracksData as { items: any[] }).items)
           ? (topTracksData as { items: any[] }).items.map(
               (track: any): SpotifyTrack => ({
-                name: track.name,
-                uri: track.uri,
-                album: track.album && track.album.name ? track.album.name : '',
+                name: sanitizeHtml(track.name),
+                uri: sanitizeHtml(track.uri),
+                album:
+                  track.album && track.album.name
+                    ? sanitizeHtml(track.album.name)
+                    : '',
               })
             )
           : [],
@@ -247,17 +278,17 @@ router.get(
           typeof currentTrackData === 'object' &&
           'item' in currentTrackData
             ? {
-                name: (currentTrackData as any).item.name,
+                name: sanitizeHtml((currentTrackData as any).item.name),
                 artist: Array.isArray((currentTrackData as any).item.artists)
                   ? (currentTrackData as any).item.artists
-                      .map((artist: any) => artist.name)
+                      .map((artist: any) => sanitizeHtml(artist.name))
                       .join(', ')
                   : '',
-                uri: (currentTrackData as any).item.uri,
+                uri: sanitizeHtml((currentTrackData as any).item.uri),
                 album:
                   (currentTrackData as any).item.album &&
                   (currentTrackData as any).item.album.name
-                    ? (currentTrackData as any).item.album.name
+                    ? sanitizeHtml((currentTrackData as any).item.album.name)
                     : '',
               }
             : null,

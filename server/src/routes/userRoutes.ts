@@ -1,62 +1,67 @@
+// server/routes/userRoutes.ts
+
 import express, { Request, Response, NextFunction } from 'express';
-import { check, validationResult } from 'express-validator';
+import { Session } from 'express-session';
+import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
 import User, { IUser } from '../models/User.js';
 import Profile, { IProfile } from '../models/Profile.js';
 import ensureAuthenticated from '../middleware/authMiddleware.js';
 import rateLimit from 'express-rate-limit';
-import csrfTokens from 'csrf'; // Import CSRF Tokens for added security
+import { verifyCsrfToken } from '../middleware/csrfMiddleware.js';
+import mongoSanitize from 'express-mongo-sanitize';
+import sanitizeHtml from 'sanitize-html';
 
 const router = express.Router();
 
 // Initialize CSRF Tokens
-const csrf = new csrfTokens();
 
-// ==========================
 // Rate Limiting Middleware
-// ==========================
-
-// Apply stricter rate limits on sensitive routes like registration to prevent brute-force attacks
 const registerLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 registration requests per windowMs
+  max: 5,
   message:
     'Too many registration attempts from this IP, please try again after 15 minutes',
   headers: true,
 });
 
-// Extend the Request interface to include the user property
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message:
+    'Too many requests from this IP, please try again after 15 minutes',
+  headers: true,
+});
+
+// Middleware for sanitizing user input
+const sanitizeInput = (req: Request, _res: Response, next: NextFunction) => {
+  mongoSanitize.sanitize(req.body);
+  next();
+};
+// Extend the Request interface to include the user and session properties
 interface AuthenticatedRequest extends Request {
   user: {
     _id: string;
     id: string;
   };
+  session: Session & { userId?: string };
 }
 
 // ==========================
 // User Registration Route
 // ==========================
 
-/**
- * @route   POST /user/register
- * @desc    Register a new user
- * @access  Public
- */
 router.post(
   '/register',
-  registerLimiter, // Apply rate limiting to this route
+  registerLimiter,
+  sanitizeInput,
   [
-    // Input Validation and Sanitization
-    check('username')
+    body('username')
       .isAlphanumeric()
       .withMessage('Username must be alphanumeric')
-      .trim()
-      .escape(),
-    check('email')
-      .isEmail()
-      .withMessage('Invalid email address')
-      .normalizeEmail(),
-    check('password')
+      .trim(),
+    body('email').isEmail().withMessage('Invalid email address').normalizeEmail(),
+    body('password')
       .isLength({ min: 8 })
       .withMessage('Password must be at least 8 characters long')
       .matches(/[a-z]/)
@@ -83,21 +88,29 @@ router.post(
     const { username, email, password } = req.body;
 
     try {
-      // Check if user already exists to prevent duplicate accounts
-      let user: IUser | null = await User.findOne({ email });
+      // Sanitize inputs
+      const sanitizedUsername = sanitizeHtml(username);
+      const sanitizedEmail = sanitizeHtml(email);
+
+      // Check if user already exists
+      let user: IUser | null = await User.findOne(
+        { email: sanitizedEmail },
+        null,
+        { sanitizeFilter: true }
+      );
       if (user) {
         res.status(400).json({ error: 'User already exists' });
         return;
       }
 
-      // Hash Password to Prevent Clear Text Storage of Sensitive Information
+      // Hash Password
       const saltRounds = 12;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-      // Create New User with Hashed Password
+      // Create New User
       user = new User({
-        username,
-        email,
+        username: sanitizedUsername,
+        email: sanitizedEmail,
         password: hashedPassword,
       });
 
@@ -112,57 +125,102 @@ router.post(
 );
 
 // ==========================
+// User Login Route
+// ==========================
+
+router.post(
+  '/login',
+  sanitizeInput,
+  [
+    body('email').isEmail().withMessage('Invalid email address').normalizeEmail(),
+    body('password').notEmpty().withMessage('Password is required').trim(),
+  ],
+  async (
+    req: Request<Record<string, unknown>, unknown, { email: string; password: string }>,
+    res: Response
+  ): Promise<void> => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+
+    const { email, password } = req.body;
+
+    try {
+      // Sanitize inputs
+      const sanitizedEmail = sanitizeHtml(email);
+
+      const user: IUser | null = await User.findOne(
+        { email: sanitizedEmail },
+        null,
+        { sanitizeFilter: true }
+      );
+      if (!user) {
+        res.status(400).json({ error: 'Invalid credentials' });
+        return;
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        res.status(400).json({ error: 'Invalid credentials' });
+        return;
+      }
+
+      // Implement session creation logic here
+      // For example, setting user ID in session
+      req.session.userId = (user._id as string).toString();
+
+      res.json({ message: 'Login successful' });
+    } catch (err) {
+      console.error('User login error:', err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
+// ==========================
 // Create or Update User Profile
 // ==========================
 
-/**
- * @route   POST /user/profile
- * @desc    Create or update user profile
- * @access  Private
- */
 router.post(
   '/profile',
   ensureAuthenticated,
+  apiLimiter,
+  verifyCsrfToken,
+  sanitizeInput,
   [
-    // Input Validation and Sanitization
-    check('fullName')
+    body('fullName')
       .isString()
       .withMessage('Full name must be a string')
-      .trim()
-      .escape(),
-    check('bio').isString().withMessage('Bio must be a string').trim().escape(),
-    check('evaluatedCharacteristics')
+      .trim(),
+    body('bio')
+      .isString()
+      .withMessage('Bio must be a string')
+      .trim(),
+    body('evaluatedCharacteristics')
       .isArray()
       .withMessage('Evaluated characteristics must be an array')
       .custom((arr: string[]) => arr.every((item) => typeof item === 'string'))
       .withMessage('Each evaluated characteristic must be a string'),
-    check('musicPreferences')
+    body('musicPreferences')
       .isArray()
       .withMessage('Music preferences must be an array')
       .custom((arr: string[]) => arr.every((item) => typeof item === 'string')),
-    check('favoriteMovies')
+    body('favoriteMovies')
       .isArray()
       .withMessage('Favorite movies must be an array')
       .custom((arr: string[]) => arr.every((item) => typeof item === 'string'))
       .withMessage('Each favorite movie must be a string'),
   ],
-  (req: Request, res: Response, next: NextFunction): void => {
-    // CSRF token validation
-    const csrfToken = req.header('X-XSRF-TOKEN');
-    const csrfSecret = req.session.csrfSecret;
-
-    if (!csrfSecret || !csrfToken || !csrf.verify(csrfSecret, csrfToken)) {
-      res.status(403).json({ error: 'Invalid CSRF token' });
-    } else {
-      next();
-    }
-  },
   async (req: Request, res: Response): Promise<void> => {
     const authReq = req as AuthenticatedRequest;
+
     // Handle Validation Errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
+      return;
     }
 
     const {
@@ -174,23 +232,43 @@ router.post(
     } = req.body;
 
     try {
-      const user: IUser | null = await User.findById(authReq.user._id);
+      // Sanitize inputs
+      const sanitizedFullName = sanitizeHtml(fullName);
+      const sanitizedBio = sanitizeHtml(bio);
+      const sanitizedEvaluatedCharacteristics = evaluatedCharacteristics.map(
+        (item: string) => sanitizeHtml(item)
+      );
+      const sanitizedMusicPreferences = musicPreferences.map((item: string) =>
+        sanitizeHtml(item)
+      );
+      const sanitizedFavoriteMovies = favoriteMovies.map((item: string) =>
+        sanitizeHtml(item)
+      );
+
+      const user: IUser | null = await User.findById(
+        authReq.user._id,
+        null,
+        { sanitizeFilter: true }
+      );
       if (!user) {
         res.status(404).json({ error: 'User not found' });
         return;
       }
 
       // Create or Update Profile Securely
+      const profileData = {
+        user: authReq.user._id,
+        fullName: sanitizedFullName,
+        bio: sanitizedBio,
+        evaluatedCharacteristics: sanitizedEvaluatedCharacteristics,
+        musicPreferences: sanitizedMusicPreferences,
+        favoriteMovies: sanitizedFavoriteMovies,
+      };
+
       const profile: IProfile | null = await Profile.findOneAndUpdate(
         { user: authReq.user._id },
-        {
-          fullName,
-          bio,
-          evaluatedCharacteristics,
-          musicPreferences,
-          favoriteMovies,
-        },
-        { new: true, upsert: true, runValidators: true }
+        profileData,
+        { new: true, upsert: true, runValidators: true, sanitizeFilter: true }
       );
 
       res.json(profile);
@@ -205,21 +283,18 @@ router.post(
 // Get User Profile
 // ==========================
 
-/**
- * @route   GET /user/profile
- * @desc    Get user profile
- * @access  Private
- */
 router.get(
   '/profile',
   ensureAuthenticated,
+  apiLimiter,
   async (req: Request, res: Response) => {
     try {
-      // Retrieve Profile and Populate User Information
       const authReq = req as AuthenticatedRequest;
-      const profile: IProfile | null = await Profile.findOne({
-        user: authReq.user._id,
-      }).populate('user', '-password -__v');
+      const profile: IProfile | null = await Profile.findOne(
+        { user: authReq.user._id },
+        null,
+        { sanitizeFilter: true }
+      ).populate('user', '-password -__v');
       if (profile) {
         res.json(profile);
       } else {
@@ -236,19 +311,18 @@ router.get(
 // Delete User Profile
 // ==========================
 
-/**
- * @route   DELETE /user/profile
- * @desc    Delete user profile
- * @access  Private
- */
 router.delete(
   '/profile',
   ensureAuthenticated,
+  apiLimiter,
+  verifyCsrfToken,
   async (req: Request, res: Response) => {
     const authReq = req as AuthenticatedRequest;
     try {
-      // Delete Profile Securely
-      await Profile.findOneAndDelete({ user: authReq.user._id });
+      await Profile.findOneAndDelete(
+        { user: authReq.user._id },
+        { sanitizeFilter: true }
+      );
       res.json({ message: 'Profile deleted successfully' });
     } catch (err) {
       console.error('Error deleting profile:', err);

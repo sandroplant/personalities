@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import './server/src/config/env.js';
 
 dotenv.config();
 

@@ -1,20 +1,22 @@
 {
-  "extends": "../tsconfig.base.json", // Correct relative path
+  "extends": "../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
+    "rootDir": "./src",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "target": "ES2022",
-    "rootDir": "./src",
     "esModuleInterop": true,
     "strict": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmitOnError": true
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/**/*", "types/**/*.d.ts"],
+  "exclude": ["node_modules", "dist"]
 }

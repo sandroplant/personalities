@@ -1,5 +1,6 @@
 import SpotifyWebApi from 'spotify-web-api-node';
 import dotenv from 'dotenv';
+import './server/src/config/env.js';
 
 // Load environment variables
 dotenv.config();

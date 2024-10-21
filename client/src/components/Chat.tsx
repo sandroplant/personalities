@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import socketIO, { Socket } from 'socket.io-client';
 import axios from 'axios';
+import '../../../server/src/config/env.js';
 // import Row from 'react-bootstrap'
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';

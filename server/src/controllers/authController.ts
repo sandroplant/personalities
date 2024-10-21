@@ -1,71 +1,137 @@
+// authController.ts
+
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import rateLimit from 'express-rate-limit';
 import Post from '../models/Post.js';
+import { verifyCsrfToken } from '../middleware/verifyCsrfToken.js';
+import mongoose from 'mongoose';
+import sanitize from 'mongo-sanitize'; // Import mongo-sanitize
+import '../config/env.js';
 
 const { JWT_SECRET } = process.env;
 
+// Rate Limiting Middleware
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // Limit each IP to 50 requests per windowMs
+  message:
+    'Too many authentication requests from this IP, please try again after 15 minutes',
+});
+
+// Helper function to safely handle errors
+const handleError = (res: Response, message: string, error: any) => {
+  console.error(message, error);
+  res.status(500).json({ message });
+};
+
 // Register a new user
 export const register = [
+  authRateLimiter,
+  verifyCsrfToken,
   body('username')
     .isString()
     .trim()
-    .escape()
-    .notEmpty()
-    .withMessage('Username is required'),
+    .isLength({ min: 3, max: 30 })
+    .withMessage('Username must be between 3 and 30 characters long')
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage(
+      'Username can only contain letters, numbers, underscores, and dashes'
+    ),
   body('password')
+    .isString()
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long')
-    .trim()
-    .escape(),
+    .trim(),
   async (req: Request, res: Response) => {
+    // Validate request data
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
     try {
-      const { username, password } = req.body;
-      const existingUser = await User.findOne({ username });
+      let { username, password } = req.body;
+
+      // Ensure username is a string
+      if (typeof username !== 'string') {
+        return res.status(400).json({ message: 'Invalid username format' });
+      }
+
+      // Sanitize username to prevent NoSQL injection
+      username = sanitize(username);
+
+      // Use sanitizeFilter option in the query
+      const existingUser = await User.findOne(
+        { username },
+        null,
+        { sanitizeFilter: true }
+      ).exec();
+
       if (existingUser) {
         return res.status(409).json({ message: 'Username already exists' });
       }
 
+      // Hash the password
       const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create new user
       const newUser = new User({ username, password: hashedPassword });
       await newUser.save();
+
       res.status(201).send('User registered');
-    } catch {
-      res.status(500).send('Error registering user');
+    } catch (error) {
+      handleError(res, 'Error registering user', error);
     }
   },
 ];
 
 // Login a user
 export const login = [
+  authRateLimiter,
+  verifyCsrfToken,
   body('username')
     .isString()
     .trim()
-    .escape()
-    .notEmpty()
-    .withMessage('Username is required'),
+    .isLength({ min: 3, max: 30 })
+    .withMessage('Username must be between 3 and 30 characters long')
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage(
+      'Username can only contain letters, numbers, underscores, and dashes'
+    ),
   body('password')
     .isString()
     .trim()
-    .escape()
     .notEmpty()
     .withMessage('Password is required'),
   async (req: Request, res: Response) => {
+    // Validate request data
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
     try {
-      const { username, password } = req.body;
-      const user = await User.findOne({ username });
+      let { username, password } = req.body;
+
+      // Ensure username is a string
+      if (typeof username !== 'string') {
+        return res.status(400).json({ message: 'Invalid username format' });
+      }
+
+      // Sanitize username to prevent NoSQL injection
+      username = sanitize(username);
+
+      // Use sanitizeFilter option in the query
+      const user = await User.findOne(
+        { username },
+        null,
+        { sanitizeFilter: true }
+      ).exec();
+
       if (user && (await bcrypt.compare(password, user.password))) {
         if (!JWT_SECRET) {
           return res.status(500).json({ message: 'JWT secret not configured' });
@@ -75,37 +141,66 @@ export const login = [
         });
         res.status(200).json({ message: 'User logged in', token });
       } else {
-        res.status(401).send('Invalid credentials');
+        res.status(401).json({ message: 'Invalid credentials' });
       }
-    } catch {
-      res.status(500).send('Error logging in');
+    } catch (error) {
+      handleError(res, 'Error logging in', error);
     }
   },
 ];
 
 // Create a new post
 export const createPost = [
-  body('title').isString().trim().escape().withMessage('Title is required'),
-  body('content').isString().trim().escape().withMessage('Content is required'),
-  body('author').isMongoId().withMessage('Invalid author ID'),
+  authRateLimiter,
+  verifyCsrfToken,
+  body('title')
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage('Title is required'),
+  body('content')
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage('Content is required'),
+  body('author')
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage('Author ID is required'),
   async (req: Request, res: Response) => {
+    // Validate request data
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
     try {
-      const { title, content, author } = req.body;
-      const authorExists = await User.findById(author);
+      let { title, content, author } = req.body;
+
+      // Validate and cast the author ID
+      if (!mongoose.Types.ObjectId.isValid(author)) {
+        return res.status(400).json({ message: 'Invalid author ID format' });
+      }
+      const authorId = new mongoose.Types.ObjectId(author);
+
+      // Sanitize title and content
+      title = sanitize(title);
+      content = sanitize(content);
+
+      // Check if author exists
+      const authorExists = await User.findById(authorId).exec();
       if (!authorExists) {
         return res.status(404).json({ message: 'Author not found' });
       }
 
-      const newPost = new Post({ title, content, author });
+      // Create a new post
+      const newPost = new Post({ title, content, author: authorId });
       await newPost.save();
-      res.status(201).send('Post created');
-    } catch {
-      res.status(500).send('Error creating post');
+
+      res.status(201).json({ message: 'Post created' });
+    } catch (error) {
+      handleError(res, 'Error creating post', error);
     }
   },
 ];

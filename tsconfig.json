@@ -1,28 +1,21 @@
 {
   "compilerOptions": {
-    "outDir": "./server/dist",                // Output compiled files to server/dist
-    "rootDir": "./server/src",                // Root directory for source files in server/src
-    "module": "ESNext",                       // Use ESNext to support ESM in Node.js
-    "moduleResolution": "Node", 
-    "allowImportingTsExtensions": true,              // Use Node for module resolution
-    "target": "ESNext",                       // Target ECMAScript Next for latest features
-    "esModuleInterop": true,                  // Enable interoperability between CommonJS and ESM
-    "strict": true,                           // Enable strict type-checking
-    "resolveJsonModule": true,                // Allow importing of JSON files
-    "skipLibCheck": true,                     // Skip type checking of declaration files
-    "forceConsistentCasingInFileNames": true, // Enforce consistent casing in import statements
-    "noImplicitAny": true,                    // Disallow explicit use of `any`
-    "noUnusedLocals": true,                   // Warn on unused local variables
-    "noUnusedParameters": true,               // Warn on unused parameters
-    "noFallthroughCasesInSwitch": true,       // Prevent fallthrough errors in switch statements
-    "noEmitOnError": true,                    // Prevent emitting files if there are type errors
-    "noEmit": true                            // Do not emit output files
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "outDir": "./server/dist",
+    "rootDir": "./server/src",
+    "esModuleInterop": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmitOnError": true
   },
-  "include": [
-    "server/src/**/*"                          // Include all TypeScript and declaration files in server/src
-  ],
-  "exclude": [
-    "node_modules",                            // Exclude node_modules folder
-    "server/dist"                              // Exclude server/dist folder (output folder)
-  ]
+  "include": ["server/src/**/*", "server/types/**/*.d.ts"],
+  "exclude": ["node_modules", "server/dist"]
 }

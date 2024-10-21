@@ -1,11 +1,14 @@
-import mongoose, { Schema } from 'mongoose';
+// server/models/User.ts
+import mongoose, { Schema } from 'mongoose'; // Added CallbackError
 import bcrypt from 'bcrypt';
+// Sub-schema for Images
 const ImageSchema = new Schema({
     url: {
         type: String,
         match: [/^https?:\/\/.+\.(jpg|jpeg|png|gif)$/i, 'Invalid image URL'],
     },
 }, { _id: false });
+// Sub-schema for Top Artists
 const TopArtistSchema = new Schema({
     name: { type: String, required: true, trim: true },
     external_urls: {
@@ -15,6 +18,7 @@ const TopArtistSchema = new Schema({
     },
     images: [ImageSchema],
 }, { _id: false });
+// Sub-schema for Top Tracks
 const TopTrackSchema = new Schema({
     name: { type: String, required: true, trim: true },
     album: {
@@ -28,6 +32,7 @@ const TopTrackSchema = new Schema({
         default: {},
     },
 }, { _id: false });
+// Sub-schema for Friend Evaluations
 const FriendEvaluationSchema = new Schema({
     evaluatorId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -50,6 +55,7 @@ const FriendEvaluationSchema = new Schema({
         },
     ],
 }, { _id: false });
+// Main User Schema with comprehensive validations
 const userSchema = new Schema({
     spotifyId: {
         type: String,
@@ -67,7 +73,7 @@ const userSchema = new Schema({
         lowercase: true,
         trim: true,
         match: [
-            /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+            /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
             'Please fill a valid email address',
         ],
     },
@@ -84,7 +90,7 @@ const userSchema = new Schema({
         type: String,
         required: [true, 'Password is required'],
         minlength: [8, 'Password must be at least 8 characters long'],
-        select: false,
+        select: false, // Exclude password from query results by default
     },
     images: [ImageSchema],
     topArtists: [TopArtistSchema],
@@ -97,7 +103,7 @@ const userSchema = new Schema({
     profile: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Profile',
-        required: false,
+        required: false, // Depending on application logic
     },
     fullName: {
         type: String,
@@ -148,19 +154,21 @@ const userSchema = new Schema({
         },
     },
 }, { timestamps: true });
+// Pre-save hook to hash passwords before saving
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password'))
         return next();
     try {
-        const saltRounds = 12;
+        const saltRounds = 12; // Adjust salt rounds as needed
         const salt = await bcrypt.genSalt(saltRounds);
         this.password = await bcrypt.hash(this.password, salt);
         next();
     }
     catch (err) {
-        next(err);
+        next(err); // Fixed type mismatch by casting err as CallbackError
     }
 });
+// Method to compare entered password with hashed password
 userSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };

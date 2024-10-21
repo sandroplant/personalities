@@ -1,13 +1,15 @@
+// server/routes/uploadRoutes.ts
+
 import express, { Request, Response } from 'express';
-import multer, { FileFilterCallback , MulterError } from 'multer';
+import multer, { FileFilterCallback, MulterError } from 'multer';
 import path from 'path';
-import csrfTokens from 'csrf'; // CSRF tokens for added security
-import rateLimit from 'express-rate-limit'; // Rate limiting to prevent abuse
+import rateLimit from 'express-rate-limit';
+import { verifyCsrfToken } from '../middleware/csrfMiddleware.js';
+import sanitizeHtml from 'sanitize-html';
 
 const router = express.Router();
 
-// Initialize CSRF Tokens
-const csrf = new csrfTokens();
+// CSRF Tokens initialization removed as it is not used
 
 // Rate Limiter to prevent abuse of file uploads
 const uploadRateLimiter = rateLimit({
@@ -16,18 +18,6 @@ const uploadRateLimiter = rateLimit({
   message: 'Too many upload requests, please try again later.',
 });
 
-// Define interface for uploaded file
-interface UploadedFile {
-  fieldname: string;
-  originalname: string;
-  encoding: string;
-  mimetype: string;
-  destination: string;
-  filename: string;
-  path: string;
-  size: number;
-}
-
 // Set up storage and file naming for multer
 const storage = multer.diskStorage({
   destination: function (
@@ -35,7 +25,7 @@ const storage = multer.diskStorage({
     _file: Express.Multer.File,
     cb: (error: Error | null, destination: string) => void
   ) {
-    cb(null, 'uploads/'); // You can customize this directory path
+    cb(null, 'uploads/');
   },
   filename: function (
     _req: Request,
@@ -58,7 +48,7 @@ const upload = multer({
     file: Express.Multer.File,
     cb: FileFilterCallback
   ) => {
-    const allowedTypes = /jpeg|jpg|png|gif/; // Adjust allowed file types
+    const allowedTypes = /jpeg|jpg|png|gif/;
     const extname = allowedTypes.test(
       path.extname(file.originalname).toLowerCase()
     );
@@ -76,18 +66,7 @@ const upload = multer({
 router.post(
   '/upload',
   uploadRateLimiter,
-  (req: Request, res: Response, next: express.NextFunction): void => {
-    // CSRF token validation
-    const csrfToken = req.header('X-XSRF-TOKEN');
-    const csrfSecret = req.session.csrfSecret;
-
-    if (!csrfSecret || !csrfToken || !csrf.verify(csrfSecret, csrfToken)) {
-      res.status(403).json({ error: 'Invalid CSRF token' });
-      return;
-    }
-
-    next();
-  },
+  verifyCsrfToken,
   upload.single('file'),
   (req: Request, res: Response): void => {
     if (!req.file) {
@@ -95,31 +74,45 @@ router.post(
       return;
     }
 
-    // Type assertion for uploaded file
-    const file = req.file as UploadedFile;
+    // Sanitize file information before sending it back
+    const fileInfo = {
+      fieldname: sanitizeHtml(req.file.fieldname),
+      originalname: sanitizeHtml(req.file.originalname),
+      encoding: sanitizeHtml(req.file.encoding),
+      mimetype: sanitizeHtml(req.file.mimetype),
+      destination: sanitizeHtml(req.file.destination),
+      filename: sanitizeHtml(req.file.filename),
+      path: sanitizeHtml(req.file.path),
+      size: req.file.size,
+    };
 
     res.json({
       message: 'File uploaded successfully',
-      file,
+      file: fileInfo,
     });
   }
 );
 
 // Error handling middleware for multer and other errors
-router.use((err: any, _req: Request, res: Response, next: express.NextFunction): void => {
-  if (err instanceof MulterError) {
-    // Handle multer-specific errors
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      res.status(400).json({ error: 'File size is too large.' });
-    } else {
+router.use(
+  (
+    err: any,
+    _req: Request,
+    res: Response,
+    next: express.NextFunction
+  ): void => {
+    if (err instanceof MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        res.status(400).json({ error: 'File size is too large.' });
+      } else {
+        res.status(400).json({ error: err.message });
+      }
+    } else if (err) {
       res.status(400).json({ error: err.message });
+    } else {
+      next();
     }
-  } else if (err) {
-    // Handle other errors
-    res.status(400).json({ error: err.message });
-  } else {
-    next();
   }
-});
+);
 
 export default router;

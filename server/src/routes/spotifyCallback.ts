@@ -1,12 +1,24 @@
-import express, { Request, Response } from 'express';
+// server/src/routes/spotifyCallback.ts
+
+import express, { Request, Response, NextFunction } from 'express';
 import axios, { AxiosResponse } from 'axios';
-import { check, validationResult } from 'express-validator';
+import { query, validationResult } from 'express-validator';
 import {
   generateCodeVerifier,
   generateCodeChallenge,
 } from '../utils/spotifyAuthUtils.js';
 import csrfTokens from 'csrf'; // CSRF token handling
 import rateLimit from 'express-rate-limit'; // Rate limiting to prevent abuse
+import mongoSanitize from 'express-mongo-sanitize';
+import '../config/env.js';
+
+interface SpotifyTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
+  scope?: string;
+}
 
 const router = express.Router();
 
@@ -15,47 +27,42 @@ const { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI } = process.env;
 // Initialize CSRF Tokens
 const csrf = new csrfTokens();
 
-// Interface for token response from Spotify
-interface SpotifyTokenResponse {
-  access_token: string;
-  token_type: string;
-  scope: string;
-  expires_in: number;
-  refresh_token?: string;
-}
-
-// Input validation and sanitization for the callback route
-const validateCallback = [
-  check('code')
-    .notEmpty()
-    .withMessage('Code is required')
-    .isString()
-    .withMessage('Code must be a string')
-    .trim()
-    .escape(),
-  check('state')
-    .notEmpty()
-    .withMessage('State is required')
-    .isString()
-    .withMessage('State must be a string')
-    .trim()
-    .escape(),
-];
-
-// Apply rate limiting to the callback route
+// Rate Limiter to prevent abuse
 const callbackLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // Limit each IP to 10 requests per window
   message: 'Too many requests, please try again later.',
 });
 
+// Middleware for sanitizing user input
+const sanitizeInput = (req: Request, _res: Response, next: NextFunction) => {
+  mongoSanitize.sanitize(req.query);
+  next();
+};
+
+// Input validation and sanitization for the callback route
+const validateCallback = [
+  query('code')
+    .notEmpty()
+    .withMessage('Code is required')
+    .isString()
+    .withMessage('Code must be a string')
+    .trim(),
+  query('state')
+    .notEmpty()
+    .withMessage('State is required')
+    .isString()
+    .withMessage('State must be a string')
+    .trim(),
+];
+
 // GET /login - Start the authorization flow
-router.get('/login', (req: Request, res: Response) => {
+router.get('/login', callbackLimiter, (req: Request, res: Response) => {
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
 
   // Store codeVerifier in session for later use
-  req.session.codeVerifier = codeVerifier;
+  req.session.code_verifier = codeVerifier;
 
   // Generate CSRF secret and store it in session
   const csrfSecret = csrf.secretSync();
@@ -65,7 +72,7 @@ router.get('/login', (req: Request, res: Response) => {
   res.cookie('XSRF-TOKEN', csrf.create(csrfSecret), {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: false,
-    sameSite: 'lax',
+    sameSite: 'strict',
   });
 
   const scopes =
@@ -81,6 +88,7 @@ router.get('/login', (req: Request, res: Response) => {
 router.get(
   '/callback',
   callbackLimiter,
+  sanitizeInput,
   validateCallback,
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
@@ -95,9 +103,16 @@ router.get(
     }
 
     // Retrieve codeVerifier from session
-    const codeVerifier = req.session.codeVerifier;
+    const codeVerifier = req.session.code_verifier;
     if (!codeVerifier) {
       return res.redirect('/#error=missing_verifier');
+    }
+
+    // Validate CSRF token
+    const csrfToken = req.cookies['XSRF-TOKEN'];
+    const csrfSecret = req.session.csrfSecret;
+    if (!csrfSecret || !csrfToken || !csrf.verify(csrfSecret, csrfToken)) {
+      return res.redirect('/#error=invalid_csrf_token');
     }
 
     try {
@@ -105,7 +120,7 @@ router.get(
         'https://accounts.spotify.com/api/token',
         new URLSearchParams({
           grant_type: 'authorization_code',
-          code,
+          code: code,
           redirect_uri: REDIRECT_URI as string,
           code_verifier: codeVerifier,
         }).toString(),
@@ -113,16 +128,21 @@ router.get(
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             Authorization: `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64')}`,
+          },
         }
-      });
+      );
 
       const { access_token } = response.data;
 
-      // Clear codeVerifier from session after successful use
-      delete req.session.codeVerifier;
+      // Clear codeVerifier and CSRF secret from session after successful use
+      delete req.session.code_verifier;
+      delete req.session.csrfSecret;
 
-      // Redirect to profile page with access token
-      res.redirect(`/profile?access_token=${access_token}`);
+      // Store access token securely in session
+      req.session.access_token = access_token;
+
+      // Redirect to profile page
+      res.redirect('/profile');
     } catch (error: any) {
       console.error(
         'Error during token exchange:',

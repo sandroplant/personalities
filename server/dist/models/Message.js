@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+// Main Message Schema with comprehensive validations
 const messageSchema = new Schema({
     sender: {
         type: mongoose.Schema.Types.ObjectId,
@@ -47,7 +48,9 @@ const messageSchema = new Schema({
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
 });
+// Prevent Prototype Pollution by disabling '__proto__' and 'constructor' paths
 messageSchema.path('__proto__', undefined);
 messageSchema.path('constructor', undefined);
+// Export the Message model
 const Message = mongoose.model('Message', messageSchema);
 export default Message;

@@ -2,33 +2,59 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
 import User from './models/User.js';
+import mongoSanitize from 'express-mongo-sanitize'; // Import express-mongo-sanitize
 const router = express.Router();
+// Use express-mongo-sanitize middleware
+router.use(mongoSanitize());
+// Input validation and sanitization for login
 const validateLogin = [
-    body('email').isEmail().withMessage('Invalid email address').normalizeEmail(),
+    body('email')
+        .isEmail()
+        .withMessage('Invalid email address')
+        .normalizeEmail()
+        .trim(),
     body('password')
+        .isString()
         .isLength({ min: 6 })
         .withMessage('Password must be at least 6 characters long')
-        .trim()
-        .escape(),
+        .trim(),
 ];
+// Input validation and sanitization for registration
 const validateRegister = [
-    body('email').isEmail().withMessage('Invalid email address').normalizeEmail(),
+    body('email')
+        .isEmail()
+        .withMessage('Invalid email address')
+        .normalizeEmail()
+        .trim(),
     body('password')
+        .isString()
         .isLength({ min: 6 })
         .withMessage('Password must be at least 6 characters long')
+        .trim(),
+    body('name')
+        .isString()
+        .not()
+        .isEmpty()
+        .withMessage('Name is required')
         .trim()
         .escape(),
-    body('name').not().isEmpty().withMessage('Name is required').trim().escape(),
 ];
+// Example login route
 router.post('/login', validateLogin, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         res.status(400).json({ errors: errors.array() });
         return;
     }
-    const { email, password } = req.body;
+    let { email, password } = req.body;
     try {
-        const user = await User.findOne({ email });
+        // Ensure email is a string
+        if (typeof email !== 'string') {
+            res.status(400).json({ message: 'Invalid email format' });
+            return;
+        }
+        // Use Mongoose's sanitizeFilter option to sanitize the query
+        const user = await User.findOne({ email }, null, { sanitizeFilter: true }).exec();
         if (!user) {
             res.status(401).json({ message: 'Invalid email or password' });
             return;
@@ -38,24 +64,34 @@ router.post('/login', validateLogin, async (req, res) => {
             res.status(401).json({ message: 'Invalid email or password' });
             return;
         }
+        // Set user information in session
         req.session.user = user.id;
         res.send('Login successful');
     }
     catch (error) {
+        console.error('Error during login:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+// Example registration route
 router.post('/register', validateRegister, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         res.status(400).json({ errors: errors.array() });
         return;
     }
-    const { email, password, name } = req.body;
+    let { email, password, name } = req.body;
     try {
-        const existingUser = await User.findOne({ email });
+        // Ensure email is a string
+        if (typeof email !== 'string') {
+            res.status(400).json({ message: 'Invalid email format' });
+            return;
+        }
+        // Use Mongoose's sanitizeFilter option to sanitize the query
+        const existingUser = await User.findOne({ email }, null, { sanitizeFilter: true }).exec();
         if (existingUser) {
             res.status(409).json({ message: 'Email already in use' });
+            return;
         }
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = new User({
@@ -64,10 +100,12 @@ router.post('/register', validateRegister, async (req, res) => {
             name,
         });
         await newUser.save();
+        // Set user information in session
         req.session.user = newUser.id;
         res.send('Registration successful');
     }
     catch (error) {
+        console.error('Error during registration:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

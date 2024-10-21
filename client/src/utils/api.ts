@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import '../../../server/src/config/env.js';
 
 const API_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:80';
 

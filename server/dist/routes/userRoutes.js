@@ -1,30 +1,44 @@
+// server/routes/userRoutes.ts
 import express from 'express';
-import { check, validationResult } from 'express-validator';
+import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
 import Profile from '../models/Profile.js';
 import ensureAuthenticated from '../middleware/authMiddleware.js';
 import rateLimit from 'express-rate-limit';
-import csrfTokens from 'csrf';
+import { verifyCsrfToken } from '../middleware/csrfMiddleware.js';
+import mongoSanitize from 'express-mongo-sanitize';
+import sanitizeHtml from 'sanitize-html';
 const router = express.Router();
-const csrf = new csrfTokens();
+// Initialize CSRF Tokens
+// Rate Limiting Middleware
 const registerLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
     message: 'Too many registration attempts from this IP, please try again after 15 minutes',
     headers: true,
 });
-router.post('/register', registerLimiter, [
-    check('username')
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: 'Too many requests from this IP, please try again after 15 minutes',
+    headers: true,
+});
+// Middleware for sanitizing user input
+const sanitizeInput = (req, _res, next) => {
+    mongoSanitize.sanitize(req.body);
+    next();
+};
+// ==========================
+// User Registration Route
+// ==========================
+router.post('/register', registerLimiter, sanitizeInput, [
+    body('username')
         .isAlphanumeric()
         .withMessage('Username must be alphanumeric')
-        .trim()
-        .escape(),
-    check('email')
-        .isEmail()
-        .withMessage('Invalid email address')
-        .normalizeEmail(),
-    check('password')
+        .trim(),
+    body('email').isEmail().withMessage('Invalid email address').normalizeEmail(),
+    body('password')
         .isLength({ min: 8 })
         .withMessage('Password must be at least 8 characters long')
         .matches(/[a-z]/)
@@ -37,6 +51,7 @@ router.post('/register', registerLimiter, [
         .withMessage('Password must contain at least one special character')
         .trim(),
 ], async (req, res) => {
+    // Handle Validation Errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         res.status(400).json({ errors: errors.array() });
@@ -44,16 +59,22 @@ router.post('/register', registerLimiter, [
     }
     const { username, email, password } = req.body;
     try {
-        let user = await User.findOne({ email });
+        // Sanitize inputs
+        const sanitizedUsername = sanitizeHtml(username);
+        const sanitizedEmail = sanitizeHtml(email);
+        // Check if user already exists
+        let user = await User.findOne({ email: sanitizedEmail }, null, { sanitizeFilter: true });
         if (user) {
             res.status(400).json({ error: 'User already exists' });
             return;
         }
+        // Hash Password
         const saltRounds = 12;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
+        // Create New User
         user = new User({
-            username,
-            email,
+            username: sanitizedUsername,
+            email: sanitizedEmail,
             password: hashedPassword,
         });
         await user.save();
@@ -64,56 +85,99 @@ router.post('/register', registerLimiter, [
         res.status(500).json({ error: 'Server error' });
     }
 });
-router.post('/profile', ensureAuthenticated, [
-    check('fullName')
+// ==========================
+// User Login Route
+// ==========================
+router.post('/login', sanitizeInput, [
+    body('email').isEmail().withMessage('Invalid email address').normalizeEmail(),
+    body('password').notEmpty().withMessage('Password is required').trim(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        res.status(400).json({ errors: errors.array() });
+        return;
+    }
+    const { email, password } = req.body;
+    try {
+        // Sanitize inputs
+        const sanitizedEmail = sanitizeHtml(email);
+        const user = await User.findOne({ email: sanitizedEmail }, null, { sanitizeFilter: true });
+        if (!user) {
+            res.status(400).json({ error: 'Invalid credentials' });
+            return;
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            res.status(400).json({ error: 'Invalid credentials' });
+            return;
+        }
+        // Implement session creation logic here
+        // For example, setting user ID in session
+        req.session.userId = user._id.toString();
+        res.json({ message: 'Login successful' });
+    }
+    catch (err) {
+        console.error('User login error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+// ==========================
+// Create or Update User Profile
+// ==========================
+router.post('/profile', ensureAuthenticated, apiLimiter, verifyCsrfToken, sanitizeInput, [
+    body('fullName')
         .isString()
         .withMessage('Full name must be a string')
-        .trim()
-        .escape(),
-    check('bio').isString().withMessage('Bio must be a string').trim().escape(),
-    check('evaluatedCharacteristics')
+        .trim(),
+    body('bio')
+        .isString()
+        .withMessage('Bio must be a string')
+        .trim(),
+    body('evaluatedCharacteristics')
         .isArray()
         .withMessage('Evaluated characteristics must be an array')
         .custom((arr) => arr.every((item) => typeof item === 'string'))
         .withMessage('Each evaluated characteristic must be a string'),
-    check('musicPreferences')
+    body('musicPreferences')
         .isArray()
         .withMessage('Music preferences must be an array')
         .custom((arr) => arr.every((item) => typeof item === 'string')),
-    check('favoriteMovies')
+    body('favoriteMovies')
         .isArray()
         .withMessage('Favorite movies must be an array')
         .custom((arr) => arr.every((item) => typeof item === 'string'))
         .withMessage('Each favorite movie must be a string'),
-], (req, res, next) => {
-    const csrfToken = req.header('X-XSRF-TOKEN');
-    const csrfSecret = req.session.csrfSecret;
-    if (!csrfSecret || !csrfToken || !csrf.verify(csrfSecret, csrfToken)) {
-        res.status(403).json({ error: 'Invalid CSRF token' });
-    }
-    else {
-        next();
-    }
-}, async (req, res) => {
+], async (req, res) => {
     const authReq = req;
+    // Handle Validation Errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         res.status(400).json({ errors: errors.array() });
+        return;
     }
     const { fullName, bio, evaluatedCharacteristics, musicPreferences, favoriteMovies, } = req.body;
     try {
-        const user = await User.findById(authReq.user._id);
+        // Sanitize inputs
+        const sanitizedFullName = sanitizeHtml(fullName);
+        const sanitizedBio = sanitizeHtml(bio);
+        const sanitizedEvaluatedCharacteristics = evaluatedCharacteristics.map((item) => sanitizeHtml(item));
+        const sanitizedMusicPreferences = musicPreferences.map((item) => sanitizeHtml(item));
+        const sanitizedFavoriteMovies = favoriteMovies.map((item) => sanitizeHtml(item));
+        const user = await User.findById(authReq.user._id, null, { sanitizeFilter: true });
         if (!user) {
             res.status(404).json({ error: 'User not found' });
             return;
         }
-        const profile = await Profile.findOneAndUpdate({ user: authReq.user._id }, {
-            fullName,
-            bio,
-            evaluatedCharacteristics,
-            musicPreferences,
-            favoriteMovies,
-        }, { new: true, upsert: true, runValidators: true });
+        // Create or Update Profile Securely
+        const profileData = {
+            user: authReq.user._id,
+            fullName: sanitizedFullName,
+            bio: sanitizedBio,
+            evaluatedCharacteristics: sanitizedEvaluatedCharacteristics,
+            musicPreferences: sanitizedMusicPreferences,
+            favoriteMovies: sanitizedFavoriteMovies,
+        };
+        const profile = await Profile.findOneAndUpdate({ user: authReq.user._id }, profileData, { new: true, upsert: true, runValidators: true, sanitizeFilter: true });
         res.json(profile);
     }
     catch (err) {
@@ -121,12 +185,13 @@ router.post('/profile', ensureAuthenticated, [
         res.status(500).json({ error: 'Failed to update profile' });
     }
 });
-router.get('/profile', ensureAuthenticated, async (req, res) => {
+// ==========================
+// Get User Profile
+// ==========================
+router.get('/profile', ensureAuthenticated, apiLimiter, async (req, res) => {
     try {
         const authReq = req;
-        const profile = await Profile.findOne({
-            user: authReq.user._id,
-        }).populate('user', '-password -__v');
+        const profile = await Profile.findOne({ user: authReq.user._id }, null, { sanitizeFilter: true }).populate('user', '-password -__v');
         if (profile) {
             res.json(profile);
         }
@@ -139,10 +204,13 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch profile' });
     }
 });
-router.delete('/profile', ensureAuthenticated, async (req, res) => {
+// ==========================
+// Delete User Profile
+// ==========================
+router.delete('/profile', ensureAuthenticated, apiLimiter, verifyCsrfToken, async (req, res) => {
     const authReq = req;
     try {
-        await Profile.findOneAndDelete({ user: authReq.user._id });
+        await Profile.findOneAndDelete({ user: authReq.user._id }, { sanitizeFilter: true });
         res.json({ message: 'Profile deleted successfully' });
     }
     catch (err) {
