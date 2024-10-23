@@ -8,7 +8,7 @@ import crypto from 'crypto';
  * @returns {string} A 64-character hexadecimal code verifier.
  */
 export function generateCodeVerifier(): string {
-  return crypto.randomBytes(32).toString('hex'); // 32 bytes generate a 64-character hex string
+    return crypto.randomBytes(32).toString('hex'); // 32 bytes generate a 64-character hex string
 }
 
 /**
@@ -18,14 +18,14 @@ export function generateCodeVerifier(): string {
  * @returns {string} The resulting code challenge in base64url format.
  */
 export function generateCodeChallenge(codeVerifier: string): string {
-  const hash = crypto.createHash('sha256');
-  hash.update(codeVerifier);
+    const hash = crypto.createHash('sha256');
+    hash.update(codeVerifier);
 
-  const codeChallenge = hash
-    .digest('base64')
-    .replace(/\+/g, '-') // Replace + with -
-    .replace(/\//g, '_') // Replace / with _
-    .replace(/=+$/, ''); // Remove any trailing '=' characters (base64 padding)
+    const codeChallenge = hash
+        .digest('base64')
+        .replace(/\+/g, '-') // Replace + with -
+        .replace(/\//g, '_') // Replace / with _
+        .replace(/=+$/, ''); // Remove any trailing '=' characters (base64 padding)
 
-  return codeChallenge;
+    return codeChallenge;
 }

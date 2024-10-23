@@ -1,15 +1,16 @@
+// client/src/components/Chat.tsx
+
 import React, { useState, useEffect, useRef } from 'react';
-import socketIO, { Socket } from 'socket.io-client';
+import { io } from 'socket.io-client'; // Removed unused 'Socket' import
 import axios from 'axios';
 import '../../../server/src/config/env.js';
-// import Row from 'react-bootstrap'
+// Removed unused 'FormControl' import
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import ListGroup from 'react-bootstrap/ListGroup';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
-import FormControl, { FormControlProps } from 'react-bootstrap/FormControl';
 import {
   SendFill,
   StopFill,
@@ -21,7 +22,7 @@ import {
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:80';
 
 // Initialize socket outside the component to prevent multiple connections
-const socket = socketIO(SERVER_URL);
+const socket = io(SERVER_URL);
 
 interface Message {
   message?: string;
@@ -142,7 +143,7 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
       recorder.start();
       setIsRecording(true);
       setError('');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error accessing media devices:', err);
       setError(
         'Unable to access media devices. Please check your permissions.'
@@ -168,8 +169,8 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
           msg.sender === currentUser
             ? 'user'
             : msg.sender === 'AI'
-              ? 'assistant'
-              : 'system',
+            ? 'assistant'
+            : 'system',
         content: msg.message ?? 'Default content',
       }));
 
@@ -201,18 +202,19 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
         console.error('AI response error:', errorMessage);
         setError('Failed to get AI response.');
       }
-    } catch (err) {
-      console.error('Error fetching AI response:', err);
-      setError('Error fetching AI response.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error('Error fetching AI response:', err.message);
+        setError('Error fetching AI response.');
+      } else {
+        console.error('Unknown error fetching AI response:', err);
+        setError('Error fetching AI response due to an unknown error.');
+      }
     }
   };
 
   // Handle Enter key press for sending message
-
-  const handleKeyPress: React.KeyboardEventHandler<
-    FormControlProps & HTMLInputElement
-  > = (e) => {
-    const target = e.target as HTMLInputElement;
+  const handleKeyPress: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       sendMessage();
@@ -269,7 +271,7 @@ const Chat: React.FC<ChatProps> = ({ roomId, currentUser }) => {
               type="text"
               placeholder="Type your message..."
               value={message}
-              onChange={(e) => setMessage((e.target as HTMLInputElement).value)}
+              onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyPress}
             />
             <Button variant="primary" className="ms-2" onClick={sendMessage}>

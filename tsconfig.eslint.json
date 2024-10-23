@@ -1,15 +1,25 @@
-// server/tsconfig.eslint.json
 {
-    "extends": "/Users/aniavsa/Desktop/personalities/tsconfig.base.json",
-    "compilerOptions": {
-      "noEmit": true                          // Ensure no files are emitted during linting
-    },
-    "include": [
-      "src/**/*"
-    ],
-    "exclude": [
-      "node_modules",
-      "dist"
-    ]
-  }
-  
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "./server/src/**/*",
+    "./client/src/**/*",
+    "src/types/**/*.d.ts", // Explicitly include all .d.ts files
+    "./server/src/middleware/csrfMiddleware.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "personalities-backup/",
+    "server/testOpenAI.ts",
+    "server/services/spotify.ts",
+    "client/jest.config.js",
+    "client/webpack.config.js",
+    "client/webpack.config.ts",
+    "client/src/reportWebVitals.d.ts"
+  ]
+}

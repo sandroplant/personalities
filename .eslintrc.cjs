@@ -3,7 +3,7 @@ module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: ['./tsconfig.eslint.base.json'],
+    project: ['./tsconfig.eslint.json'],
     tsconfigRootDir: __dirname,
     ecmaVersion: 2020,
     sourceType: 'module',
@@ -12,8 +12,16 @@ module.exports = {
     browser: true,
     node: true,
     es2021: true,
+    jest: true, // Jest environment
   },
-  plugins: ['@typescript-eslint', 'import', 'react', 'react-hooks'],
+  plugins: [
+    '@typescript-eslint',
+    'import',
+    'react',
+    'react-hooks',
+    'prettier',
+    'jest', // Jest plugin
+  ],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -21,12 +29,13 @@ module.exports = {
     'plugin:import/typescript',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
+    'plugin:jest/recommended', // Jest recommended rules
+    'plugin:prettier/recommended',
     'prettier',
   ],
   rules: {
-    '@typescript-eslint/no-misused-promises': 'off',
-    '@typescript-eslint/unbound-method': 'off',
-    // Add any other specific rules here if needed
+    'prettier/prettier': 'error',
+    // Add or customize other rules as needed
   },
   settings: {
     react: {
@@ -39,7 +48,7 @@ module.exports = {
       },
       typescript: {
         alwaysTryTypes: true,
-        project: ['./tsconfig.eslint.base.json'],
+        project: ['./tsconfig.eslint.json'],
       },
     },
   },
@@ -47,7 +56,15 @@ module.exports = {
     'node_modules/',
     'dist/',
     'build/',
+    'coverage/',
     'personalities-backup/',
+    'server/services/',
+    'server/testOpenAI.ts',
+    'server/src/middleware/csrfMiddleware.d.ts', // Exclude this file
+    'client/jest.config.js',
+    'client/webpack.config.js',
+    'client/webpack.config.ts',
+    'client/src/reportWebVitals.d.ts',
   ],
   overrides: [
     {
@@ -55,12 +72,16 @@ module.exports = {
       env: {
         node: true,
       },
-      extends: [
-        'plugin:@typescript-eslint/recommended',
-        'eslint:recommended',
-      ],
+      extends: ['plugin:@typescript-eslint/recommended', 'eslint:recommended'],
       rules: {
-        // Add or override server-specific ESLint rules here
+        '@typescript-eslint/no-explicit-any': 'warn',
+        'prefer-const': 'error',
+        'no-undef': 'off', // Disable 'no-undef' for TypeScript files
+        'no-unused-vars': 'off', // Disable core 'no-unused-vars' rule
+        '@typescript-eslint/no-unused-vars': [
+          'warn',
+          { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+        ],
       },
     },
     {
@@ -74,8 +95,29 @@ module.exports = {
         'eslint:recommended',
       ],
       rules: {
-        // Add or override client-specific ESLint rules here
+        'react/react-in-jsx-scope': 'off',
+        '@typescript-eslint/no-unused-vars': [
+          'warn',
+          { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+        ],
+        '@typescript-eslint/no-explicit-any': 'off',
+        'no-undef': 'off', // Disable 'no-undef' for TypeScript files
       },
-    }
-  ]  
+    },
+    {
+      files: ['*.test.ts', '*.test.tsx'], // Apply to test files
+      env: {
+        jest: true,
+      },
+      plugins: ['jest'],
+      extends: ['plugin:jest/recommended'],
+      rules: {
+        'no-undef': 'off', // Disable 'no-undef' for test files
+        '@typescript-eslint/no-unused-vars': [
+          'warn',
+          { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+        ],
+      },
+    },
+  ],
 };

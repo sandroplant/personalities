@@ -7,7 +7,7 @@
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
+    "allowSyntheticDefaultImports": true, // Ensure this is set to true
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
@@ -16,7 +16,8 @@
     "removeComments": true,
     "typeRoots": [
       "./node_modules/@types",
-      "./server/src/types"                      // Ensure custom types are included
+      "./server/src/types",
+      "./client/src/types"
     ]
   }
 }

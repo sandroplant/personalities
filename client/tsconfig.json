@@ -4,20 +4,22 @@
     "outDir": "./build",
     "module": "ESNext",
     "target": "ES6",
-    "jsx": "react",
+    "jsx": "react-jsx", // Updated to better support React
     "types": ["jest", "node"],
     "allowSyntheticDefaultImports": true,
-    "typeRoots": [
-      "./node_modules/@types",
-      "../../node_modules/@types"
-    ]
+    "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
+    "esModuleInterop": true, // Ensured compatibility with CommonJS modules
+    "skipLibCheck": true, // Skip type checking of all declaration files
+    "strict": true // Enable strict type-checking options
   },
-  "include": [
-    "src/**/*"
-  ],
+  "include": ["src/**/*"],
   "exclude": [
     "node_modules",
     "build",
-    "dist"
+    "dist",
+    "webpack.config.js",
+    "webpack.config.ts",
+    "jest.config.js",
+    "src/reportWebVitals.d.ts"
   ]
 }

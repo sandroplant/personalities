@@ -55,7 +55,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
-import sanitizeHtml from 'sanitize-html'; // For sanitizing messages
+import sanitizeHtml from 'sanitize-html';
 import sessionModule from 'express-session';
 import FileStoreModule from 'session-file-store';
 // Initialize Spotify API

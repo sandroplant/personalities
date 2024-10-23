@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "dotenv-flow": "^4.1.0"
+  },
+  "devDependencies": {
+    "eslint-config-react-app": "^7.0.1"
   }
 }

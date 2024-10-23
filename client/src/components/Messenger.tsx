@@ -1,7 +1,7 @@
 // client/src/components/Messenger.tsx
 
 import React, { useState, useEffect, useRef } from 'react';
-import io, { Socket } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 import './Messenger.css'; // Ensure you have appropriate styles
 
@@ -96,7 +96,12 @@ const Messenger: React.FC<MessengerProps> = ({ userId }) => {
     <div className="messenger-container">
       <div className="chat-box">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`message ${msg.senderId === userId ? 'sent' : 'received'}`}>
+          <div
+            key={idx}
+            className={`message ${
+              msg.senderId === userId ? 'sent' : 'received'
+            }`}
+          >
             <strong>{msg.senderId}:</strong> {msg.content}
             {msg.aiResponse && (
               <p className="ai-response">
@@ -115,7 +120,9 @@ const Messenger: React.FC<MessengerProps> = ({ userId }) => {
           placeholder="Type a message"
           className="message-input"
         />
-        <button onClick={sendMessage} className="send-button">Send</button>
+        <button onClick={sendMessage} className="send-button">
+          Send
+        </button>
       </div>
     </div>
   );
