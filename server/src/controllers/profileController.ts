@@ -1,5 +1,3 @@
-// server/src/controllers/profileController.ts
-
 import { __dirname } from '../utils/pathUtil.js';
 import path from 'path';
 import { Request, Response } from 'express';
@@ -13,21 +11,19 @@ import '../config/env.js';
 
 // Configure Cloudinary using environment variables
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME as string,
-    api_key: process.env.CLOUDINARY_API_KEY as string,
-    api_secret: process.env.CLOUDINARY_API_SECRET as string,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || '',
+    api_key: process.env.CLOUDINARY_API_KEY || '',
+    api_secret: process.env.CLOUDINARY_API_SECRET || '',
 });
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
     destination: function (_req, _file, cb) {
-        // Renamed to _req and _file
         cb(null, path.join(__dirname, '../../uploads/'));
     },
-    filename: function (_req, _file, cb) {
-        // Renamed to _req and _file
+    filename: function (_req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, uniqueSuffix + '-' + _file.originalname);
+        cb(null, uniqueSuffix + '-' + file.originalname);
     },
 });
 
@@ -70,7 +66,6 @@ export const updateProfile = [
         .isObject()
         .withMessage('Profile data must be an object'),
     async (req: Request, res: Response) => {
-        // Handle Validation Errors
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
