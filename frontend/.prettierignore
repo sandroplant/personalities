@@ -1,0 +1,45 @@
+# Ignore output directories
+node_modules/
+build/
+dist/
+coverage/
+public/
+
+# Ignore compiled and minified files
+*.min.js
+*.min.css
+*.bundle.js
+
+# Ignore specific environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Ignore lock files
+yarn.lock
+package-lock.json
+
+# Ignore configuration files (if not needed for formatting)
+.prettierrc
+.prettierignore
+.eslintrc
+tsconfig.json
+
+# Ignore assets and binary files
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.mp3
+*.woff
+*.woff2
+*.eot
+*.ttf
+*.otf
+
+# Ignore JSON files (if not needed for formatting)
+*.json

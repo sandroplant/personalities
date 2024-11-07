@@ -1,0 +1,226 @@
+# =============================
+# Python and Django
+# =============================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django migrations
+**/migrations/
+
+# Django cache files
+**/cache/
+
+# Django static and media files
+staticfiles/
+static/
+media/
+
+# Local development settings
+local_settings.py
+
+# SQLite database files
+*.sqlite3
+*.db
+
+# Secret environment settings
+.env
+**/.env
+
+# Virtual environment directories
+venv/
+env/
+ENV/
+
+# =============================
+# Node Modules and Dependencies
+# =============================
+
+# Ignore all node_modules directories
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# =====================
+# Environment Variables
+# =====================
+
+# Ignore environment variable files (for security)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Server-specific environment variables
+django_project/.env
+
+# Client-specific environment variables
+frontend/.env
+
+# Backend environment variables
+backend/.env
+
+# =====================
+# Build and Distribution
+# =====================
+
+# Ignore build and distribution folders
+dist/
+server/dist/
+frontend/build/
+build/
+coverage/
+coverage.xml
+htmlcov/
+test-results/
+
+# =====================
+# Cache and Temporary Files
+# =====================
+
+# Ignore cache and temporary files
+.cache/
+.tmp/
+tmp/
+temp/
+server/temp/
+server/*.tmp
+frontend/.tmp/
+
+# =====================
+# Logs and Debugging
+# =====================
+
+# Ignore log files and directories
+logs/
+server/logs/
+frontend/logs/
+
+# General log files
+*.log
+
+# npm and Yarn debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =====================
+# Operating System Files
+# =====================
+
+# macOS Finder metadata
+.DS_Store
+
+# Windows Thumbs.db
+Thumbs.db
+
+# =====================
+# Editor and IDE Settings
+# =====================
+
+# Visual Studio Code
+.vscode/
+
+# IntelliJ IDEA
+.idea/
+
+# Sublime Text project files
+*.sublime-workspace
+*.sublime-project
+
+# =====================
+# Documentation Exceptions
+# =====================
+
+# Allow specific documentation files in server and frontend directories
+!server/terms-of-service.md
+!server/privacy-policy.md
+!server/data-deletion.md
+!frontend/src/documents/terms-of-service.md
+!frontend/src/documents/privacy-policy.md
+!frontend/src/documents/data-deletion.md
+
+# Ignore frontend and backend node_modules and venv
+frontend/node_modules/
+backend/node_modules/
+backend/venv/
+
+# =====================
+# ESLint and Prettier
+# =====================
+
+# Ignore ESLint cache
+.eslintcache
+
+# =====================
+# Other
+# =====================
+
+# Ignore lock files for specific tools
+.lock-wscript
+
+# =====================
+# Webpack Configuration
+# =====================
+
+# If you decide to move webpack.config.js to the frontend directory, ignore the root one
+# Uncomment the following line if you keep webpack.config.js in the root and don't want to track it
+# webpack.config.js
+
+# =====================
+# Miscellaneous
+# =====================
+
+# Ignore swap files
+*.swp
+*.swo
+
+# =====================
+# Excluded Files
+# =====================
+
+# Exclude the database
+db.sqlite3
+
+# Exclude coverage reports
+htmlcov/
+.coverage
+
+# Exclude test reports
+test-results/
+
+# Exclude pip files
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Exclude wheel build files
+*.egg-info/
+*.egg
+
+# Exclude celery beat schedule file
+celerybeat-schedule
+
+# Exclude pytest cache
+.pytest_cache/
+
+# Exclude mypy cache
+.mypy_cache/
+
+# Exclude Pycharm files
+*.iml
+.idea/
+
+# Exclude Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Exclude profiler reports
+.prof
+
+# Exclude Sphinx documentation
+docs/_build/
+
+# Exclude local settings files
+local_settings.py

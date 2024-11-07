@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    container_name: db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data/
+    networks:
+      - back-tier
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - back-tier
+
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: web
+    command: ./entrypoint.sh
+    volumes:
+      - ./backend:/usr/src/app
+    ports:
+      - "8000:8000"
+    networks:
+      - back-tier
+    env_file:
+      - ./backend/.env  # Backend-specific environment file
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  client:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: client
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "3000:3000"
+    networks:
+      - front-tier
+      - back-tier
+    env_file:
+      - ./frontend/.env  # Frontend-specific environment file
+    environment:
+      REACT_APP_API_URL: http://localhost:8000  # Adjust if your API URL is different
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  db-data:
+    driver: local
+
+networks:
+  front-tier:
+    driver: bridge
+  back-tier:
+    driver: bridge

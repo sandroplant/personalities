@@ -1,0 +1,36 @@
+# Ignore the backup directory to prevent ESLint from picking up its configurations
+personalities-backup/
+
+# Ignore common build and dependency directories
+node_modules/
+dist/
+build/
+coverage/
+
+# Ignore configuration files
+*.config.js
+*.config.ts
+webpack.config.*
+jest.config.*
+
+# Ignore TypeScript declaration files
+*.d.ts
+global.d.ts
+
+# Ignore specific utility and report files
+reportWebVitals.*
+testOpenAI.ts
+
+# Backend-specific exclusions
+backend/core/utils/csrfMiddleware.d.ts
+backend/core/utils/testOpenAI.ts
+
+# Frontend-specific exclusions
+frontend/jest.config.js
+frontend/webpack.config.js
+frontend/webpack.config.ts
+frontend/src/reportWebVitals.d.ts
+
+# Miscellaneous exclusions
+# Removed 'server/services/spotify.ts' to allow linting
+# Removed 'services/spotify.ts' as it's deleted

@@ -1,0 +1,22 @@
+# Ignore frontend dependencies and build artifacts
+node_modules/
+build/
+dist/
+
+# Ignore system files and logs
+.DS_Store
+*.log
+
+# Ignore backend-related files (if not required inside container)
+docker-compose.yml
+backend/
+backend/Dockerfile
+frontend/Dockerfile  # Optional if copying from root
+
+# Ignore test and backup files
+coverage/
+*.test.*
+*.config.js
+*.config.ts
+jest.config.*
+webpack.config.*

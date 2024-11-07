@@ -1,0 +1,23 @@
+# Ignore backend dependencies and generated files
+venv/
+__pycache__/
+*.pyc
+db-data/
+logs/
+media/
+staticfiles/
+*.sqlite3
+
+# Ignore system files and logs
+.DS_Store
+*.log
+
+# Ignore Docker-related files (if not required inside container)
+docker-compose.yml
+frontend/
+frontend/Dockerfile
+backend/Dockerfile  # Optional if copying from root
+
+# Ignore test and backup files
+coverage/
+*.test.*

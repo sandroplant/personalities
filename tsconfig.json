@@ -1,0 +1,21 @@
+{
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+      "outDir": "./dist",                       // Output directory for compiled files
+      "baseUrl": ".",                           // Base directory for module resolution
+      "paths": {
+        "*": ["node_modules/*"]                 // Module resolution paths
+      }
+    },
+    "types": ["jest", "node"],                  // Add type definitions for 'jest' and 'node'
+    "include": [
+      "src",                                    // Include the source folder for any shared files
+      "webpack.config.ts",                      // Include Webpack configuration if TypeScript-based
+      "frontend/src/**/*"                       // Include the frontend source folder
+    ],
+    "exclude": [
+      "node_modules",                           // Exclude node_modules
+      "dist"                                    // Exclude dist output folder
+    ]
+  }
+  

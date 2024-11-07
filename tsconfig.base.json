@@ -1,0 +1,23 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./build",                     // Frontend-specific output directory
+    "types": ["jest", "node"],               // Include Jest and Node types for testing
+    "allowSyntheticDefaultImports": true,    // Allow default imports from modules without default exports
+    "esModuleInterop": true                  // Interop with CommonJS modules
+  },
+  "include": [
+    "src",                                   // Include frontend source folder
+    "src/**/*.tsx",                          // Include all TSX files in src
+    "src/types/**/*.d.ts"                    // Include all type declarations
+  ],
+  "exclude": [
+    "node_modules",                          // Exclude node_modules
+    "dist",                                  // Exclude dist output folder
+    "build",                                 // Exclude build output folder
+    "webpack.config.js",                     // Exclude webpack config
+    "webpack.config.ts",                     // Exclude any TS webpack config
+    "jest.config.js",                        // Exclude Jest config
+    "src/reportWebVitals.d.ts"               // Exclude Web Vitals if not in use
+  ]
+}

@@ -1,0 +1,9 @@
+# robots.txt for personalities application
+# More info: https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Disallow:
+
+# Sitemap (if available)
+# Uncomment the line below and add your sitemap URL if you have one
+# Sitemap: https://yourdomain.com/sitemap.xml

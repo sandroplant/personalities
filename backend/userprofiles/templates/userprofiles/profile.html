@@ -1,0 +1,7 @@
+<!-- templates/userprofiles/profile.html -->
+
+<h1>{{ profile.display_name }}</h1>
+<p>Email: {{ profile.email }}</p>
+{% if profile.images %}
+  <img src="{{ profile.images.0.url }}" alt="Profile Picture">
+{% endif %}

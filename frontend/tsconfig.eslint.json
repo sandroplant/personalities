@@ -1,0 +1,23 @@
+// frontend/tsconfig.eslint.json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*",
+    "src/types/**/*.ts",
+    "src/config/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "personalities-backup/",
+    "frontend/jest.config.js",
+    "frontend/webpack.config.js",
+    "frontend/webpack.config.ts",
+    "frontend/src/reportWebVitals.d.ts"
+  ]
+}
