@@ -10,54 +10,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
 
-    - name: Install Dependencies (Server)
-      run: npm install
+      - name: Install Dependencies (Server)
+        run: npm install
 
-    - name: Install Dependencies (Client)
-      run: |
-        cd client
-        npm install
+      - name: Install Dependencies (Client)
+        run: |
+          cd client
+          npm install
 
-    - name: Install webpack-cli
-      run: npm install --save-dev webpack-cli
+      - name: Install webpack-cli
+        run: npm install --save-dev webpack-cli
 
-    - name: Build Project
-      run: npm run build
+      - name: Build Project
+        run: npm run build
 
-    - name: Adding SSH Key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
+      - name: Adding SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa && chmod 400 ~/.ssh/id_rsa || { echo 'EC2_SSH_KEY secret not found or invalid'; exit 1; }
+          chmod 600 ~/.ssh/id_rsa
 
-    - name: Debugging SSH Connection
-      run: |
-        echo "Connecting to EC2"
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "echo 'Connection Successful!'"
+      - name: Debugging SSH Connection
+        run: |
+          echo "Connecting to EC2"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "echo 'Connection Successful!'"
 
-    - name: Deploy to EC2
-      run: |
-        echo "Deploying to EC2"
-        scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ec2-user@54.197.63.5:/home/ec2-user/personalities/server
+      - name: Deploy to EC2
+        run: |
+          echo "Deploying to EC2"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ec2-user@54.197.63.5:/home/ec2-user/personalities/server
 
-    - name: Install and Restart Services on EC2
-      run: |
-        echo "Running npm install, build, and restarting pm2 on EC2"
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "
-          cd /home/ec2-user/personalities/server &&
-          npm install &&
-          npm run build &&
-          pm2 reload all --update-env || pm2 start /home/ec2-user/personalities/server/dist/app.js --name 'app'"
+      - name: Install and Restart Services on EC2
+        run: |
+          echo "Running npm install, build, and restarting pm2 on EC2"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "
+            cd /home/ec2-user/personalities/server &&
+            npm install &&
+            npm run build &&
+            pm2 reload all --update-env || pm2 start /home/ec2-user/personalities/server/dist/app.js --name 'app'"
 
-    - name: Verify App Running
-      run: |
-        echo "Verifying app status"
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "pm2 status"
+      - name: Verify App Running
+        run: |
+          echo "Verifying app status"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "pm2 status"
