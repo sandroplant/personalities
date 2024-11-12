@@ -20,6 +20,9 @@ env_file_path = BASE_DIR.parent / '.env'
 # Read the .env file using django-environ
 environ.Env.read_env(env_file_path)
 
+# Fetch the DEBUG variable from the .env file
+DEBUG = env('DEBUG')  # This will read DEBUG from the .env file
+
 # Debugging: Print environment variables (remove or comment out in production)
 print("DEBUG: POSTGRES_DB =", env('POSTGRES_DB', default='Not Set'))
 print("DEBUG: POSTGRES_USER =", env('POSTGRES_USER', default='Not Set'))
