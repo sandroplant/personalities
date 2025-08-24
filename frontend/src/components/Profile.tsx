@@ -1,220 +1,352 @@
-import React, { useState } from 'react';
-import { Container, Form, Row, Col, Button } from 'react-bootstrap';
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  ListGroup,
+  Spinner,
+  Alert,
+} from 'react-bootstrap';
+import api from './services/api';
 
-interface ProfileData {
-  humor: string;
-  adventurousness: string;
-  height: string;
-  weight: string;
-  hairColor: string;
-  eyeColor: string;
-  skinColor: string;
-  music: string;
-  movies: string;
-  books: string;
-  hobbies: string;
-  interests: string;
-  profession: string;
-  education: string;
-  privacy: string;
-}
-
+/**
+ * Profile component
+ *
+ * This component fetches the current user's profile from the backend and
+ * displays a summary of all available profile information. The data is
+ * grouped into logical sections such as basic info, appearance, lifestyle,
+ * favourites, personality values and miscellaneous details. During
+ * loading, a spinner is shown, and any errors encountered while
+ * retrieving the profile are displayed as an alert.
+ */
 const Profile: React.FC = () => {
-  const [profileData, setProfileData] = useState<ProfileData>({
-    humor: '',
-    adventurousness: '',
-    height: '',
-    weight: '',
-    hairColor: '',
-    eyeColor: '',
-    skinColor: '',
-    music: '',
-    movies: '',
-    books: '',
-    hobbies: '',
-    interests: '',
-    profession: '',
-    education: '',
-    privacy: 'friends', // Default privacy setting
-  });
+  const [profile, setProfile] = useState<any | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const criteriaOptions = [
-    'Humor',
-    'Adventurousness',
-    'Wisdom',
-    'Open-mindedness',
-    'Responsibility',
-  ];
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/userprofiles/profile/');
+        setProfile(response.data);
+      } catch (err) {
+        setError('Failed to fetch profile');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const dropdownOptions = {
-    height: ['Short', 'Average', 'Tall'],
-    weight: ['Underweight', 'Normal', 'Overweight'],
-    hairColor: ['Blonde', 'Brunette', 'Red', 'Black', 'Gray'],
-    eyeColor: ['Blue', 'Green', 'Brown', 'Gray', 'Hazel'],
-    skinColor: ['Pale', 'Light', 'Medium', 'Dark'],
-    hobbies: ['Reading', 'Sports', 'Traveling', 'Music', 'Cooking'],
-    interests: ['Technology', 'Art', 'Science', 'History', 'Music'],
-    profession: ['Engineer', 'Doctor', 'Artist', 'Teacher', 'Entrepreneur'],
-    education: [
-      'High School',
-      'Associate Degree',
-      'Bachelor’s Degree',
-      'Master’s Degree',
-      'PhD',
-    ],
+    fetchProfile();
+  }, []);
+
+  // Helper to safely join arrays or split comma‑separated strings
+  const toList = (value: any): string[] => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    return String(value).split(',').map((item) => item.trim()).filter(Boolean);
   };
 
-  const handleChange = (e: React.ChangeEvent<any>) => {
-    const { name, value } = e.target;
-    setProfileData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
+  if (loading) {
+    return (
+      <Container className="mt-5 text-center">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </Container>
+    );
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Profile data saved:', profileData);
-    // Add form submission logic here
-  };
+  if (error) {
+    return (
+      <Container className="mt-5">
+        <Alert variant="danger">{error}</Alert>
+      </Container>
+    );
+  }
+
+  if (!profile) {
+    return null;
+  }
+
+  // Destructure fields for readability. If a field isn't present, default to an
+  // empty string or sensible default. Arrays are split into lists for display.
+  const {
+    full_name,
+    bio,
+    age_group,
+    gender_identity,
+    nationality,
+    languages,
+    location_city,
+    location_state,
+    location_country,
+    zodiac_sign,
+    eye_color,
+    height,
+    weight,
+    body_type,
+    hair_color,
+    hair_style,
+    skin_tone,
+    tattoos_piercings,
+    education_level,
+    profession,
+    diet,
+    exercise_frequency,
+    smoking,
+    drinking,
+    pets,
+    hobbies,
+    favorite_songs,
+    favorite_artists,
+    favorite_books,
+    favorite_movies,
+    favorite_tv_shows,
+    favorite_food,
+    favorite_travel_destinations,
+    favorite_sport,
+    favorite_podcasts,
+    favorite_influencers,
+    fun_fact,
+    goals,
+    achievements,
+    personal_quote,
+    social_links,
+    personality_values,
+  } = profile;
 
   return (
     <Container className="mt-5">
-      <h1>User Profile</h1>
-      <Form onSubmit={handleSubmit}>
-        <Row>
-          {criteriaOptions.map((option) => (
-            <Col md={6} key={option}>
-              <Form.Group controlId={option.toLowerCase()}>
-                <Form.Label>{option}</Form.Label>
-                <Form.Control
-                  type="number"
-                  name={option.toLowerCase()}
-                  min="1"
-                  max="10"
-                  value={profileData[option.toLowerCase() as keyof ProfileData]}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-          ))}
-        </Row>
+      <h2 className="mb-4">{full_name || 'Your Profile'}</h2>
+      {bio && <p className="lead">{bio}</p>}
 
-        <Row>
-          {Object.keys(dropdownOptions).map((key) => (
-            <Col md={6} key={key}>
-              <Form.Group controlId={key}>
-                <Form.Label>
-                  {key.charAt(0).toUpperCase() + key.slice(1)}
-                </Form.Label>
-                <Form.Control
-                  as="select"
-                  name={key}
-                  value={profileData[key as keyof ProfileData]}
-                  onChange={handleChange}
-                >
-                  <option value="">Select...</option>
-                  {dropdownOptions[key as keyof typeof dropdownOptions].map(
-                    (option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    )
-                  )}
-                </Form.Control>
-              </Form.Group>
-            </Col>
-          ))}
-        </Row>
+      {/* Basic Information */}
+      <Card className="mb-3">
+        <Card.Header>Basic Information</Card.Header>
+        <ListGroup variant="flush">
+          {age_group && (
+            <ListGroup.Item>
+              <strong>Age Group:</strong> {age_group}
+            </ListGroup.Item>
+          )}
+          {gender_identity && (
+            <ListGroup.Item>
+              <strong>Gender:</strong> {gender_identity}
+            </ListGroup.Item>
+          )}
+          {nationality && (
+            <ListGroup.Item>
+              <strong>Nationality:</strong> {nationality}
+            </ListGroup.Item>
+          )}
+          {languages && toList(languages).length > 0 && (
+            <ListGroup.Item>
+              <strong>Languages:</strong> {toList(languages).join(', ')}
+            </ListGroup.Item>
+          )}
+          {(location_city || location_state || location_country) && (
+            <ListGroup.Item>
+              <strong>Location:</strong>{' '}
+              {[location_city, location_state, location_country]
+                .filter(Boolean)
+                .join(', ')}
+            </ListGroup.Item>
+          )}
+          {zodiac_sign && (
+            <ListGroup.Item>
+              <strong>Zodiac Sign:</strong> {zodiac_sign}
+            </ListGroup.Item>
+          )}
+        </ListGroup>
+      </Card>
 
-        <Form.Group controlId="music">
-          <Form.Label>Music</Form.Label>
-          <Form.Control
-            type="text"
-            name="music"
-            value={profileData.music}
-            onChange={handleChange}
-          />
-        </Form.Group>
+      {/* Appearance */}
+      <Card className="mb-3">
+        <Card.Header>Appearance</Card.Header>
+        <ListGroup variant="flush">
+          {eye_color && (
+            <ListGroup.Item>
+              <strong>Eye Colour:</strong> {eye_color}
+            </ListGroup.Item>
+          )}
+          {height && (
+            <ListGroup.Item>
+              <strong>Height:</strong> {height}
+            </ListGroup.Item>
+          )}
+          {weight && (
+            <ListGroup.Item>
+              <strong>Weight:</strong> {weight}
+            </ListGroup.Item>
+          )}
+          {body_type && (
+            <ListGroup.Item>
+              <strong>Body Type:</strong> {body_type}
+            </ListGroup.Item>
+          )}
+          {hair_color && (
+            <ListGroup.Item>
+              <strong>Hair Colour:</strong> {hair_color}
+            </ListGroup.Item>
+          )}
+          {hair_style && (
+            <ListGroup.Item>
+              <strong>Hair Style:</strong> {hair_style}
+            </ListGroup.Item>
+          )}
+          {skin_tone && (
+            <ListGroup.Item>
+              <strong>Skin Tone:</strong> {skin_tone}
+            </ListGroup.Item>
+          )}
+          {tattoos_piercings && (
+            <ListGroup.Item>
+              <strong>Tattoos/Piercings:</strong> {tattoos_piercings}
+            </ListGroup.Item>
+          )}
+        </ListGroup>
+      </Card>
 
-        <Form.Group controlId="movies">
-          <Form.Label>Movies</Form.Label>
-          <Form.Control
-            type="text"
-            name="movies"
-            value={profileData.movies}
-            onChange={handleChange}
-          />
-        </Form.Group>
+      {/* Lifestyle & Habits */}
+      <Card className="mb-3">
+        <Card.Header>Lifestyle & Habits</Card.Header>
+        <ListGroup variant="flush">
+          {diet && (
+            <ListGroup.Item>
+              <strong>Diet:</strong> {diet}
+            </ListGroup.Item>
+          )}
+          {exercise_frequency && (
+            <ListGroup.Item>
+              <strong>Exercise Frequency:</strong> {exercise_frequency}
+            </ListGroup.Item>
+          )}
+          {smoking && (
+            <ListGroup.Item>
+              <strong>Smoking:</strong> {smoking}
+            </ListGroup.Item>
+          )}
+          {drinking && (
+            <ListGroup.Item>
+              <strong>Drinking:</strong> {drinking}
+            </ListGroup.Item>
+          )}
+          {pets && (
+            <ListGroup.Item>
+              <strong>Pets:</strong> {pets}
+            </ListGroup.Item>
+          )}
+        </ListGroup>
+      </Card>
 
-        <Form.Group controlId="books">
-          <Form.Label>Books</Form.Label>
-          <Form.Control
-            type="text"
-            name="books"
-            value={profileData.books}
-            onChange={handleChange}
-          />
-        </Form.Group>
+      {/* Favourites */}
+      <Card className="mb-3">
+        <Card.Header>Favourites</Card.Header>
+        <ListGroup variant="flush">
+          {hobbies && toList(hobbies).length > 0 && (
+            <ListGroup.Item>
+              <strong>Hobbies:</strong> {toList(hobbies).join(', ')}
+            </ListGroup.Item>
+          )}
+          {favorite_songs && toList(favorite_songs).length > 0 && (
+            <ListGroup.Item>
+              <strong>Favourite Songs:</strong> {toList(favorite_songs).join(', ')}
+            </ListGroup.Item>
+          )}
+          {favorite_artists && toList(favorite_artists).length > 0 && (
+            <ListGroup.Item>
+              <strong>Favourite Artists:</strong> {toList(favorite_artists).join(', ')}
+            </ListGroup.Item>
+          )}
+          {favorite_books && toList(favorite_books).length > 0 && (
+            <ListGroup.Item>
+              <strong>Favourite Books:</strong> {toList(favorite_books).join(', ')}
+            </ListGroup.Item>
+          )}
+          {favorite_movies && toList(favorite_movies).length > 0 && (
+            <ListGroup.Item>
+              <strong>Favourite Movies:</strong> {toList(favorite_movies).join(', ')}
+            </ListGroup.Item>
+          )}
+          {favorite_tv_shows && toList(favorite_tv_shows).length > 0 && (
+            <ListGroup.Item>
+              <strong>Favourite TV Shows:</strong> {toList(favorite_tv_shows).join(', ')}
+            </ListGroup.Item>
+          )}
+          {favorite_food && toList(favorite_food).length > 0 && (
+            <ListGroup.Item>
+              <strong>Favourite Food:</strong> {toList(favorite_food).join(', ')}
+            </ListGroup.Item>
+          )}
+          {favorite_travel_destinations && toList(favorite_travel_destinations).length > 0 && (
+            <ListGroup.Item>
+              <strong>Favourite Travel Destinations:</strong> {toList(favorite_travel_destinations).join(', ')}
+            </ListGroup.Item>
+          )}
+          {favorite_sport && (
+            <ListGroup.Item>
+              <strong>Favourite Sport:</strong> {favorite_sport}
+            </ListGroup.Item>
+          )}
+          {favorite_podcasts && toList(favorite_podcasts).length > 0 && (
+            <ListGroup.Item>
+              <strong>Favourite Podcasts:</strong> {toList(favorite_podcasts).join(', ')}
+            </ListGroup.Item>
+          )}
+          {favorite_influencers && toList(favorite_influencers).length > 0 && (
+            <ListGroup.Item>
+              <strong>Favourite Influencers:</strong> {toList(favorite_influencers).join(', ')}
+            </ListGroup.Item>
+          )}
+        </ListGroup>
+      </Card>
 
-        <Form.Group controlId="hobbies">
-          <Form.Label>Hobbies</Form.Label>
-          <Form.Control
-            type="text"
-            name="hobbies"
-            value={profileData.hobbies}
-            onChange={handleChange}
-          />
-        </Form.Group>
+      {/* Fun & Miscellaneous */}
+      <Card className="mb-3">
+        <Card.Header>Fun & Miscellaneous</Card.Header>
+        <ListGroup variant="flush">
+          {fun_fact && (
+            <ListGroup.Item>
+              <strong>Fun Fact:</strong> {fun_fact}
+            </ListGroup.Item>
+          )}
+          {goals && (
+            <ListGroup.Item>
+              <strong>Goals:</strong> {goals}
+            </ListGroup.Item>
+          )}
+          {achievements && (
+            <ListGroup.Item>
+              <strong>Achievements:</strong> {achievements}
+            </ListGroup.Item>
+          )}
+          {personal_quote && (
+            <ListGroup.Item>
+              <strong>Personal Quote:</strong> {personal_quote}
+            </ListGroup.Item>
+          )}
+          {social_links && (
+            <ListGroup.Item>
+              <strong>Social Links:</strong> {social_links}
+            </ListGroup.Item>
+          )}
+        </ListGroup>
+      </Card>
 
-        <Form.Group controlId="interests">
-          <Form.Label>Interests</Form.Label>
-          <Form.Control
-            type="text"
-            name="interests"
-            value={profileData.interests}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        <Form.Group controlId="profession">
-          <Form.Label>Profession</Form.Label>
-          <Form.Control
-            type="text"
-            name="profession"
-            value={profileData.profession}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        <Form.Group controlId="education">
-          <Form.Label>Education</Form.Label>
-          <Form.Control
-            type="text"
-            name="education"
-            value={profileData.education}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        <Form.Group controlId="privacy">
-          <Form.Label>Privacy</Form.Label>
-          <Form.Control
-            as="select"
-            name="privacy"
-            value={profileData.privacy}
-            onChange={handleChange}
-          >
-            <option value="friends">Friends</option>
-            <option value="public">Public</option>
-            <option value="private">Private</option>
-          </Form.Control>
-        </Form.Group>
-
-        <Button variant="primary" type="submit" className="mt-3">
-          Save Profile
-        </Button>
-      </Form>
+      {/* Personality Values */}
+      {personality_values && Object.keys(personality_values).length > 0 && (
+        <Card className="mb-3">
+          <Card.Header>Personality Values</Card.Header>
+          <ListGroup variant="flush">
+            {Object.entries(personality_values).map(([trait, value]) => (
+              <ListGroup.Item key={trait}>
+                <strong>{trait}:</strong> {value}
+              </ListGroup.Item>
+            ))}
+          </ListGroup>
+        </Card>
+      )}
     </Container>
   );
 };
