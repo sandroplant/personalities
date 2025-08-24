@@ -32,16 +32,13 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get(
-          `${process.env.REACT_APP_SERVER_URL}/evaluations/criteria`,
+          `${process.env.REACT_APP_SERVER_URL}/evaluations/criteria/`,
           {
-            headers: {
-              Authorization: token ? `Token ${token}` : '',
-            },
-          },
+            headers: { Authorization: `Token ${token}` },
+          }
         );
         setCriteria(response.data);
       } catch (err) {
-        console.error(err);
         setError('Failed to load criteria');
       }
     };
@@ -49,38 +46,43 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
     fetchCriteria();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedCriterion) {
-      setError('Please select a criterion');
+  const handleCriterionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value;
+    setSelectedCriterion(value ? parseInt(value) : "");
+    setError(null);
+  };
+
+  const handleScoreChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setScore(parseInt(event.target.value, 10));
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
+
+    if (!actualSubjectId || selectedCriterion === "") {
+      setError('Please select a criterion and specify a subject.');
       return;
     }
-    if (!actualSubjectId) {
-      setError('Subject ID is missing');
-      return;
-    }
+
+    setLoading(true);
     try {
-      setLoading(true);
-      setError(null);
       const token = localStorage.getItem('token');
       await axios.post(
         `${process.env.REACT_APP_SERVER_URL}/evaluations/evaluations/?subject_id=${actualSubjectId}`,
         {
           criterion_id: selectedCriterion,
-          score: score,
+          score,
         },
         {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: token ? `Token ${token}` : '',
-          },
-        },
+          headers: { Authorization: `Token ${token}` },
+        }
       );
       setSuccessMessage('Evaluation submitted successfully!');
-      setSelectedCriterion('');
+      setSelectedCriterion("");
       setScore(5);
     } catch (err) {
-      console.error(err);
       setError('Failed to submit evaluation');
     } finally {
       setLoading(false);
@@ -88,21 +90,19 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
   };
 
   return (
-    <div>
-      <h3>Evaluate Friend</h3>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
+    <div className="max-w-md mx-auto mt-8 p-4 bg-white rounded shadow">
+      <h2 className="text-xl font-bold mb-4">Evaluate Friend</h2>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      {successMessage && <div className="text-green-500 mb-4">{successMessage}</div>}
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '8px' }}>
-          <label htmlFor="criterion" style={{ marginRight: '8px' }}>
-            Criterion:
-          </label>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">Select Criterion</label>
           <select
-            id="criterion"
             value={selectedCriterion}
-            onChange={(e) => setSelectedCriterion(Number(e.target.value))}
+            onChange={handleCriterionChange}
+            className="w-full border border-gray-300 rounded p-2"
           >
-            <option value="">Select criterion</option>
+            <option value="">-- Choose a criterion --</option>
             {criteria.map((criterion) => (
               <option key={criterion.id} value={criterion.id}>
                 {criterion.name}
@@ -110,20 +110,22 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
             ))}
           </select>
         </div>
-        <div style={{ marginBottom: '8px' }}>
-          <label htmlFor="score" style={{ marginRight: '8px' }}>
-            Score:
-          </label>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">Score (1-10)</label>
           <input
-            id="score"
             type="number"
-            min={1}
-            max={10}
+            min="1"
+            max="10"
             value={score}
-            onChange={(e) => setScore(Number(e.target.value))}
+            onChange={handleScoreChange}
+            className="w-full border border-gray-300 rounded p-2"
           />
         </div>
-        <button type="submit" disabled={loading}>
+        <button
+          type="submit"
+          className="bg-blue-500 text-white py-2 px-4 rounded"
+          disabled={loading}
+        >
           {loading ? 'Submitting...' : 'Submit Evaluation'}
         </button>
       </form>
@@ -131,4 +133,4 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
   );
 };
 
-eexport default FriendEvaluation;
+export default FriendEvaluation;
