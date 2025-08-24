@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions
+.from rest_framework import generics, permissions
 from rest_framework.authentication import TokenAuthentication
 
 from .models import Criterion, Evaluation
@@ -25,4 +25,5 @@ class EvaluationListCreateView(generics.ListCreateAPIView):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(evaluator=self.request.user)
+        subject_id = self.request.query_params.get('subject_id')
+        serializer.save(evaluator=self.request.user, subject_id=subject_id)
