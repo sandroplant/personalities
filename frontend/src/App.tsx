@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Navbar, Nav, Container } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Login from './components/Login';
@@ -20,24 +20,20 @@ function App() {
             <Nav className="me-auto">
               <Nav.Link href="/login">Login</Nav.Link>
               <Nav.Link href="/register">Register</Nav.Link>
-              <Nav.Link href="/profile">Profile</Nav.Link>
-              <Nav.Link href="/edit-profile">Edit Profile</Nav.Link>
+            <Nav.Link href="/profile">Profile</Nav.Link>
             <Nav.Link href="/evaluations">Friends Evaluations</Nav.Link>
             </Nav>
           </Navbar.Collapse>
         </Container>
       </Navbar>
-      <Container className="mt-4">
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/edit-profile" element={<ProfileForm />} />
-          <Route path="/evaluate/:subjectId" element={<FriendEvaluation />} />
-          <Route path="/evaluations" element={<FriendsEvaluations />} />
-        </Routes>
-      </Container>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/edit-profile" element={<ProfileForm />} />
+        <Route path="/evaluate/:subjectId" element={<FriendEvaluation />} />
+        <Route path="/evaluations" element={<FriendsEvaluations />} />
+      </Routes>
     </Router>
   );
 }
