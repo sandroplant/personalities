@@ -20,10 +20,69 @@ class Profile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='userprofile_profile'  # Updated to avoid conflict
+        related_name='userprofile_profile'
     )
+    # Basic info
     bio = models.TextField(blank=True)
     profile_picture = models.URLField(blank=True, null=True)
+    age_group = models.CharField(max_length=50, blank=True, null=True)
+    gender_identity = models.CharField(max_length=50, blank=True, null=True)
+    pronouns = models.CharField(max_length=50, blank=True, null=True)
+    nationality = models.CharField(max_length=50, blank=True, null=True)
+    languages = models.CharField(max_length=100, blank=True, null=True)
+    location_city = models.CharField(max_length=50, blank=True, null=True)
+    location_state = models.CharField(max_length=50, blank=True, null=True)
+    location_country = models.CharField(max_length=50, blank=True, null=True)
+    zodiac_sign = models.CharField(max_length=50, blank=True, null=True)
+
+    # Physical traits
+    eye_color = models.CharField(max_length=50, blank=True, null=True)
+    hair_color = models.CharField(max_length=50, blank=True, null=True)
+    hair_style = models.CharField(max_length=50, blank=True, null=True)
+    height = models.CharField(max_length=10, blank=True, null=True)
+    weight = models.CharField(max_length=10, blank=True, null=True)
+    body_type = models.CharField(max_length=50, blank=True, null=True)
+    skin_tone = models.CharField(max_length=50, blank=True, null=True)
+    tattoos_piercings = models.CharField(max_length=100, blank=True, null=True)
+
+    # Background
+    education_level = models.CharField(max_length=100, blank=True, null=True)
+    field_of_study = models.CharField(max_length=100, blank=True, null=True)
+    profession = models.CharField(max_length=100, blank=True, null=True)
+    job_title = models.CharField(max_length=100, blank=True, null=True)
+    industry = models.CharField(max_length=100, blank=True, null=True)
+
+    # Lifestyle & habits
+    diet = models.CharField(max_length=50, blank=True, null=True)
+    exercise_frequency = models.CharField(max_length=50, blank=True, null=True)
+    smoking = models.CharField(max_length=50, blank=True, null=True)
+    drinking = models.CharField(max_length=50, blank=True, null=True)
+    pets = models.CharField(max_length=100, blank=True, null=True)
+
+    # Hobbies & interests
+    hobbies = models.TextField(blank=True, null=True)
+
+    # Favorites
+    favorite_songs = models.CharField(max_length=200, blank=True, null=True)
+    favorite_artists = models.CharField(max_length=200, blank=True, null=True)
+    favorite_books = models.CharField(max_length=200, blank=True, null=True)
+    favorite_movies = models.CharField(max_length=200, blank=True, null=True)
+    favorite_tv_shows = models.CharField(max_length=200, blank=True, null=True)
+    favorite_food = models.CharField(max_length=200, blank=True, null=True)
+    favorite_travel_destinations = models.CharField(max_length=200, blank=True, null=True)
+    favorite_sport = models.CharField(max_length=100, blank=True, null=True)
+    favorite_podcasts = models.CharField(max_length=200, blank=True, null=True)
+    favorite_influencers = models.CharField(max_length=200, blank=True, null=True)
+
+    # Personality & values (stored as JSON: {value_name: {"self": int, "friends": bool}})
+    personality_values = models.JSONField(blank=True, null=True)
+
+    # Fun & miscellaneous
+    fun_fact = models.CharField(max_length=255, blank=True, null=True)
+    goals = models.CharField(max_length=255, blank=True, null=True)
+    achievements = models.CharField(max_length=255, blank=True, null=True)
+    personal_quote = models.CharField(max_length=255, blank=True, null=True)
+    social_links = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
