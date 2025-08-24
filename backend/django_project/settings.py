@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     'spotify_auth',
     'uploads',
     'custom_auth.apps.AuthConfig',
+      'evaluations',
     'posts',
 ]
 
