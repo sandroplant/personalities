@@ -21,4 +21,4 @@ class EvaluationSerializer(serializers.ModelSerializer):
 
             model = Evaluation
       
-      f        fields = ['id', 'evaluator', 'subject', 'criterion', 'criterion_id', 'subject_id', 'score', 'created_at']
+              fields = ['id', 'evaluator', 'subject', 'criterion', 'criterion_id', 'subject_id', 'score', 'created_at']
