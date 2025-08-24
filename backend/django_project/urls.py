@@ -13,6 +13,8 @@ urlpatterns = [
     path('userprofiles/', include('userprofiles.urls')),
     path('spotify/', include('spotify_auth.urls')),
     path('uploads/', include('uploads.urls')),
+      path('evaluations/', include('evaluations.urls')),
+
     path('auth/', include('custom_auth.urls')),
     path('posts/', include('posts.urls')),
     path('api/', include('core.urls')),  # API routes
