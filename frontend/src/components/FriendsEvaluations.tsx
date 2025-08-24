@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Card, Button, Form, Spinner, Alert } from 'react-bootstrap';
-import api from './services/api';
+// Use relative import to access the shared API instance. When this component
+// resides under src/components in the repository, the services directory is
+// one level up.
+import api from '../services/api';
 
 /**
  * FriendsEvaluations component
@@ -31,39 +34,19 @@ const FriendsEvaluations: React.FC = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   // Fetch a batch of evaluation tasks from the backend on mount
-  useEffect(() => {
+useEffect(() => {
     const fetchTasks = async () => {
       try {
-        // In a full implementation this would be a call like:
-        // const response = await api.get('/evaluations/shuffle/');
-        // setQueue(response.data);
-        // For now, build a placeholder queue of friends and criteria.
-        const mockQueue: EvaluationTask[] = [
-          {
-            subjectId: 2,
-            subjectName: 'George',
-            criterionId: 1,
-            criterionName: 'Humor',
-            firstTime: true,
-          },
-          {
-            subjectId: 3,
-            subjectName: 'Helen',
-            criterionId: 4,
-            criterionName: 'Open-mindedness',
-            firstTime: true,
-          },
-          {
-            subjectId: 2,
-            subjectName: 'George',
-            criterionId: 2,
-            criterionName: 'Intellect',
-            firstTime: false,
-          },
-        ];
-        setQueue(mockQueue);
-        setCurrent(mockQueue[0]);
+        // Fetch a list of evaluation tasks from the backend. Each task
+        // contains a subject (friend) and a criterion to rate. The backend
+        // returns an array of objects with keys: subjectId, subjectName,
+        // criterionId, criterionName, firstTime.
+        const response = await api.get('/evaluations/tasks/');
+        const tasks: EvaluationTask[] = response.data;
+        setQueue(tasks);
+        setCurrent(tasks[0] || null);
       } catch (err) {
+        console.error('Failed to load evaluation tasks', err);
         setError('Failed to load evaluation tasks');
       } finally {
         setLoading(false);
