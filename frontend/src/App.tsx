@@ -1,20 +1,39 @@
 import React from 'react';
-import './App.css'; // Keep this line if you want to include your styles
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Navbar, Nav, Container } from 'react-bootstrap';
+import Login from './components/Login';
+import Register from './components/Register';
+import Profile from './components/Profile';
+import ProfileForm from './components/ProfileForm';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <a
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-          data-testid="learn-react-link"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Navbar bg="light" expand="lg">
+        <Container>
+          <Navbar.Brand href="/">Personalities</Navbar.Brand>
+          <Navbar.Toggle aria-controls="basic-navbar-nav" />
+          <Navbar.Collapse id="basic-navbar-nav">
+            <Nav className="me-auto">
+              <Nav.Link href="/login">Login</Nav.Link>
+              <Nav.Link href="/register">Register</Nav.Link>
+              <Nav.Link href="/profile">Profile</Nav.Link>
+              <Nav.Link href="/edit-profile">Edit Profile</Nav.Link>
+            </Nav>
+          </Navbar.Collapse>
+        </Container>
+      </Navbar>
+      <Container className="mt-4">
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/edit-profile" element={<ProfileForm />} />
+        </Routes>
+      </Container>
+    </Router>
   );
 }
 
