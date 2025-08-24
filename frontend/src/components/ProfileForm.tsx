@@ -1,8 +1,11 @@
 // frontend/src/components/ProfileForm.tsx
 
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import { Container, Form, Row, Col, Button } from 'react-bootstrap';
 import options from '../config/options'; // Ensure this path is correct
+
+// Import the shared API service to communicate with the backend
+import api from '../services/api';
 
 // Define interfaces for different sections of the profile
 interface Criteria {
@@ -178,6 +181,72 @@ const ProfileForm: React.FC = () => {
   });
 
   /**
+   * Fetch the current user's profile from the backend on component mount.
+   * The API returns flat field names (e.g. eye_color) which are mapped back
+   * into the nested state structure here. If a field isn't present, a
+   * sensible default is used.
+   */
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/userprofiles/profile/');
+        const data = response.data;
+        setProfile((prev) => ({
+          ...prev,
+          fullName: data.full_name || prev.fullName,
+          bio: data.bio || prev.bio,
+          profilePicture: data.profile_picture || prev.profilePicture,
+          ageGroup: data.age_group || prev.ageGroup,
+          genderIdentity: data.gender_identity || prev.genderIdentity,
+          pronouns: data.pronouns || prev.pronouns,
+          nationality: data.nationality || prev.nationality,
+          languages: data.languages ? data.languages.split(',') : prev.languages,
+          locationCity: data.location_city || prev.locationCity,
+          locationState: data.location_state || prev.locationState,
+          locationCountry: data.location_country || prev.locationCountry,
+          zodiacSign: data.zodiac_sign || prev.zodiacSign,
+          diet: data.diet || prev.diet,
+          exerciseFrequency: data.exercise_frequency || prev.exerciseFrequency,
+          smoking: data.smoking || prev.smoking,
+          drinking: data.drinking || prev.drinking,
+          pets: data.pets || prev.pets,
+          hobbies: data.hobbies ? (Array.isArray(data.hobbies) ? data.hobbies : String(data.hobbies).split(',')) : prev.hobbies,
+          favoriteSongs: data.favorite_songs || prev.favoriteSongs,
+          favoriteArtists: data.favorite_artists || prev.favoriteArtists,
+          favoriteBooks: data.favorite_books || prev.favoriteBooks,
+          favoriteMovies: data.favorite_movies || prev.favoriteMovies,
+          favoriteTvShows: data.favorite_tv_shows || prev.favoriteTvShows,
+          favoriteFood: data.favorite_food || prev.favoriteFood,
+          favoriteTravelDestinations: data.favorite_travel_destinations || prev.favoriteTravelDestinations,
+          favoriteSport: data.favorite_sport || prev.favoriteSport,
+          favoritePodcasts: data.favorite_podcasts || prev.favoritePodcasts,
+          favoriteInfluencers: data.favorite_influencers || prev.favoriteInfluencers,
+          funFact: data.fun_fact || prev.funFact,
+          goals: data.goals || prev.goals,
+          achievements: data.achievements || prev.achievements,
+          personalQuote: data.personal_quote || prev.personalQuote,
+          socialLinks: data.social_links || prev.socialLinks,
+          personalityValues: data.personality_values || prev.personalityValues,
+          appearance: {
+            ...prev.appearance,
+            eyeColor: data.eye_color || prev.appearance.eyeColor,
+            height: data.height || prev.appearance.height,
+            weight: data.weight || prev.appearance.weight,
+            bodyType: data.body_type || prev.appearance.bodyType,
+            hairColor: data.hair_color || prev.appearance.hairColor,
+            skinColor: data.skin_tone || prev.appearance.skinColor,
+            hairStyle: data.hair_style || prev.appearance.hairStyle,
+            tattoosPiercings: data.tattoos_piercings || prev.appearance.tattoosPiercings,
+          },
+        }));
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  /**
    * Handle changes for single and multiple select inputs.
    * For multiple selects, it captures all selected options as an array.
    */
@@ -302,10 +371,61 @@ const ProfileForm: React.FC = () => {
    * Currently, it logs the profile data to the console.
    * You can modify this to send data to a backend or perform other actions.
    */
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log('Profile data saved:', profile);
-    // TODO: Implement actual save functionality (e.g., API call)
+    // Build a payload matching the backend fields. Arrays are joined into
+    // comma-separated strings and nested objects are flattened.
+    const payload: { [key: string]: any } = {
+      bio: profile.bio,
+      profile_picture: profile.profilePicture,
+      age_group: profile.ageGroup,
+      gender_identity: profile.genderIdentity,
+      pronouns: profile.pronouns,
+      nationality: profile.nationality,
+      languages: profile.languages.join(','),
+      location_city: profile.locationCity,
+      location_state: profile.locationState,
+      location_country: profile.locationCountry,
+      zodiac_sign: profile.zodiacSign,
+      eye_color: profile.appearance.eyeColor,
+      height: profile.appearance.height,
+      weight: profile.appearance.weight,
+      body_type: profile.appearance.bodyType,
+      hair_color: profile.appearance.hairColor,
+      hair_style: profile.appearance.hairStyle,
+      skin_tone: profile.appearance.skinColor,
+      tattoos_piercings: profile.appearance.tattoosPiercings,
+      education_level: profile.education,
+      profession: profile.profession,
+      diet: profile.diet,
+      exercise_frequency: profile.exerciseFrequency,
+      smoking: profile.smoking,
+      drinking: profile.drinking,
+      pets: profile.pets,
+      hobbies: profile.hobbies.join(','),
+      favorite_songs: profile.favoriteSongs,
+      favorite_artists: profile.favoriteArtists,
+      favorite_books: profile.favoriteBooks,
+      favorite_movies: profile.favoriteMovies,
+      favorite_tv_shows: profile.favoriteTvShows,
+      favorite_food: profile.favoriteFood,
+      favorite_travel_destinations: profile.favoriteTravelDestinations,
+      favorite_sport: profile.favoriteSport,
+      favorite_podcasts: profile.favoritePodcasts,
+      favorite_influencers: profile.favoriteInfluencers,
+      fun_fact: profile.funFact,
+      goals: profile.goals,
+      achievements: profile.achievements,
+      personal_quote: profile.personalQuote,
+      social_links: profile.socialLinks,
+      personality_values: profile.personalityValues,
+    };
+    try {
+      await api.post('/userprofiles/profile/update/', payload);
+      console.log('Profile updated successfully');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
   };
 
   return (
