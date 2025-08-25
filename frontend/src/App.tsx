@@ -8,6 +8,7 @@ import Profile from './components/Profile';
 import ProfileForm from './components/ProfileForm';
 import FriendEvaluation from './components/FriendEvaluation';
 import FriendsEvaluations from './components/FriendsEvaluations';
+import QuestionsFeed from './components/QuestionsFeed';
 
 function App() {
   return (
@@ -20,8 +21,9 @@ function App() {
             <Nav className="me-auto">
               <Nav.Link href="/login">Login</Nav.Link>
               <Nav.Link href="/register">Register</Nav.Link>
-            <Nav.Link href="/profile">Profile</Nav.Link>
-            <Nav.Link href="/evaluations">Friends Evaluations</Nav.Link>
+              <Nav.Link href="/profile">Profile</Nav.Link>
+              <Nav.Link href="/questions">Questions</Nav.Link>
+              <Nav.Link href="/evaluations">Friends Evaluations</Nav.Link>
             </Nav>
           </Navbar.Collapse>
         </Container>
@@ -33,6 +35,7 @@ function App() {
         <Route path="/edit-profile" element={<ProfileForm />} />
         <Route path="/evaluate/:subjectId" element={<FriendEvaluation />} />
         <Route path="/evaluations" element={<FriendsEvaluations />} />
+        <Route path="/questions" element={<QuestionsFeed />} />
       </Routes>
     </Router>
   );
