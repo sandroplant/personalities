@@ -1,9 +1,12 @@
-// src/services/api.ts
-
 import axios, { AxiosInstance } from 'axios';
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+// Base URL for the API. If REACT_APP_API_BASE_URL is provided in the
+// environment, it will be used; otherwise default to the Django backend
+// running at http://localhost:8000 (without the /api prefix). This ensures
+// that requests to endpoints like /questions/ will map correctly when the
+// questions app is mounted at the project root.
+const API_BASE_URL: string =
+  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -22,7 +25,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor to handle global errors
@@ -34,7 +37,7 @@ api.interceptors.response.use(
       window.location.href = '/login';
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
