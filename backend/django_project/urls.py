@@ -5,7 +5,6 @@ from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
-
     # Main application and other app routes
     path('', include('core.urls')),
     path('ai/', include('ai.urls')),
@@ -13,11 +12,14 @@ urlpatterns = [
     path('userprofiles/', include('userprofiles.urls')),
     path('spotify/', include('spotify_auth.urls')),
     path('uploads/', include('uploads.urls')),
-      path('evaluations/', include('evaluations.urls')),
+    # Added questions route
+    path('questions/', include('questions.urls')),
+    path('evaluations/', include('evaluations.urls')),
 
     path('auth/', include('custom_auth.urls')),
     path('posts/', include('posts.urls')),
-    path('api/', include('core.urls')),  # API routes
+    # API routes
+    path('api/', include('core.urls')),
     path('accounts/', include('allauth.urls')),  # Allauth routes
 
     # Schema and Documentation URLs
