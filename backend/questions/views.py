@@ -9,6 +9,8 @@ filtering are left for future iterations.
 
 from rest_framework import generics, permissions, filters
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.exceptions import ValidationError
+from django.db.models import Count
 
 from .models import Tag, Question, Answer
 from .serializers import TagSerializer, QuestionSerializer, AnswerSerializer
@@ -43,13 +45,22 @@ class QuestionListCreateView(generics.ListCreateAPIView):
     search_fields = ["text"]
 
     def get_queryset(self):
-        queryset = Question.objects.all().order_by("-created_at")
+        queryset = (
+            Question.objects.annotate(answer_count=Count("answers"))
+            .order_by("-answer_count", "-created_at")
+        )
         tag_id = self.request.query_params.get("tag")
         if tag_id:
             queryset = queryset.filter(tag_id=tag_id)
         return queryset
 
+
     def perform_create(self, serializer):
+        text = serializer.validated_data.get("text", "").strip().lower()
+        if Question.objects.filter(text__iexact=text).exists():
+            raise ValidationError(
+                {"text": "A similar question already exists. Please rephrase your question."}
+            )
         return serializer.save()
 
 
