@@ -37,7 +37,8 @@ interface Question {
  *
  * Displays a list of questions pulled from the backend and provides
  * functionality to create new questions via a modal form. Users can
- * filter questions by tag and search text. The question list shows
+ * filter questions by tag and search text, and choose to sort by
+ * “Trending” (default) or “Recent”. The question list shows
  * aggregated answer counts (yes/no) and allows users to submit their
  * own answers.
  */
@@ -46,6 +47,7 @@ const QuestionsFeed: React.FC = () => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTag, setSelectedTag] = useState<number | ''>('');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<'trending' | 'recent'>('trending');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,9 +61,9 @@ const QuestionsFeed: React.FC = () => {
 
   /**
    * Fetch tags and questions on mount. Also re-fetch when the selected
-   * tag or search query changes. Uses query parameters to filter
-   * questions by tag or search text. All calls require the user to be
-   * authenticated.
+   * tag, search query, or sort mode changes. Uses query parameters to filter
+   * questions by tag or search text and to specify sorting. All calls
+   * require the user to be authenticated.
    */
   useEffect(() => {
     const fetchData = async () => {
@@ -75,6 +77,7 @@ const QuestionsFeed: React.FC = () => {
         const params: any = {};
         if (selectedTag) params.tag = selectedTag;
         if (search.trim()) params.search = search.trim();
+        if (sort === 'recent') params.sort = 'recent';
         const questionResp = await api.get('/questions/questions/', { params });
         setQuestions(questionResp.data.results || questionResp.data);
       } catch (err) {
@@ -85,13 +88,12 @@ const QuestionsFeed: React.FC = () => {
       }
     };
     fetchData();
-  }, [selectedTag, search]);
+  }, [selectedTag, search, sort]);
 
   /**
    * Submit a new answer to a question. For yes/no polls the option
    * indices are 0 (Yes) and 1 (No). For multi-choice polls the index
-   * corresponds to the selected option. Users are not prompted for
-   * anonymity here; they can add anonymity in future iterations.
+   * corresponds to the selected option.
    */
   const submitAnswer = async (questionId: number, optionIndex: number) => {
     try {
@@ -104,6 +106,7 @@ const QuestionsFeed: React.FC = () => {
       const params: any = {};
       if (selectedTag) params.tag = selectedTag;
       if (search.trim()) params.search = search.trim();
+      if (sort === 'recent') params.sort = 'recent';
       const response = await api.get('/questions/questions/', { params });
       setQuestions(response.data.results || response.data);
     } catch (err) {
@@ -141,6 +144,7 @@ const QuestionsFeed: React.FC = () => {
       const params: any = {};
       if (selectedTag) params.tag = selectedTag;
       if (search.trim()) params.search = search.trim();
+      if (sort === 'recent') params.sort = 'recent';
       const response = await api.get('/questions/questions/', { params });
       setQuestions(response.data.results || response.data);
       // Reset modal state
@@ -169,7 +173,7 @@ const QuestionsFeed: React.FC = () => {
       </Row>
       {/* Filters */}
       <Row className="mb-3">
-        <Col md={6} className="mb-2">
+        <Col md={4} className="mb-2">
           <Form.Control
             type="text"
             placeholder="Search questions..."
@@ -177,7 +181,7 @@ const QuestionsFeed: React.FC = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </Col>
-        <Col md={6} className="mb-2">
+        <Col md={4} className="mb-2">
           <Form.Select
             value={selectedTag}
             onChange={(e) =>
@@ -192,6 +196,17 @@ const QuestionsFeed: React.FC = () => {
                 {tag.name}
               </option>
             ))}
+          </Form.Select>
+        </Col>
+        <Col md={4} className="mb-2">
+          <Form.Select
+            value={sort}
+            onChange={(e) =>
+              setSort(e.target.value === 'recent' ? 'recent' : 'trending')
+            }
+          >
+            <option value="trending">Trending</option>
+            <option value="recent">Recent</option>
           </Form.Select>
         </Col>
       </Row>
@@ -212,7 +227,11 @@ const QuestionsFeed: React.FC = () => {
             <Card key={q.id} className="mb-3">
               <Card.Body>
                 <Card.Title>{q.text}</Card.Title>
-                {q.tag && <Card.Subtitle className="mb-2 text-muted">{q.tag.name}</Card.Subtitle>}
+                {q.tag && (
+                  <Card.Subtitle className="mb-2 text-muted">
+                    {q.tag.name}
+                  </Card.Subtitle>
+                )}
                 {/* Display options and answer buttons */}
                 {q.options && q.options.length > 0 ? (
                   <>
@@ -310,10 +329,18 @@ const QuestionsFeed: React.FC = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)} disabled={submitting}>
+          <Button
+            variant="secondary"
+            onClick={() => setShowModal(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleQuestionSubmit} disabled={submitting}>
+          <Button
+            variant="primary"
+            onClick={handleQuestionSubmit}
+            disabled={submitting}
+          >
             {submitting ? 'Posting...' : 'Post Question'}
           </Button>
         </Modal.Footer>
