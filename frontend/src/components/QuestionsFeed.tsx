@@ -37,10 +37,8 @@ interface Question {
  *
  * Displays a list of questions pulled from the backend and provides
  * functionality to create new questions via a modal form. Users can
- * filter questions by tag and search text, and choose to sort by
- * “Trending” (default) or “Recent”. The question list shows
- * aggregated answer counts (yes/no) and allows users to submit their
- * own answers.
+ * filter questions by tag and search text, choose the sort order, and
+ * optionally create a custom tag when posting a question.
  */
 const QuestionsFeed: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -55,6 +53,7 @@ const QuestionsFeed: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [questionText, setQuestionText] = useState('');
   const [modalTagId, setModalTagId] = useState<number | ''>('');
+  const [customTag, setCustomTag] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [options, setOptions] = useState<string[]>(['', '', '', '']);
   const [submitting, setSubmitting] = useState(false);
@@ -62,8 +61,7 @@ const QuestionsFeed: React.FC = () => {
   /**
    * Fetch tags and questions on mount. Also re-fetch when the selected
    * tag, search query, or sort mode changes. Uses query parameters to filter
-   * questions by tag or search text and to specify sorting. All calls
-   * require the user to be authenticated.
+   * questions by tag or search text and to specify sorting.
    */
   useEffect(() => {
     const fetchData = async () => {
@@ -117,8 +115,8 @@ const QuestionsFeed: React.FC = () => {
 
   /**
    * Handle submission of a new question from the modal. Validates
-   * required fields and sends a POST request. If options are blank or
-   * less than two items, the poll is treated as yes/no. Clears state
+   * required fields and sends a POST request. If options are blank
+   * or less than two items, the poll is treated as yes/no. Clears state
    * after successful submission.
    */
   const handleQuestionSubmit = async () => {
@@ -133,7 +131,10 @@ const QuestionsFeed: React.FC = () => {
         text: questionText.trim(),
         is_anonymous: isAnonymous,
       };
-      if (modalTagId) {
+      // Prioritize custom tag over selected tag
+      if (customTag.trim()) {
+        payload.tag_name = customTag.trim();
+      } else if (modalTagId) {
         payload.tag_id = modalTagId;
       }
       if (filteredOptions.length > 0) {
@@ -150,6 +151,7 @@ const QuestionsFeed: React.FC = () => {
       // Reset modal state
       setQuestionText('');
       setModalTagId('');
+      setCustomTag('');
       setIsAnonymous(false);
       setOptions(['', '', '', '']);
       setShowModal(false);
@@ -286,7 +288,7 @@ const QuestionsFeed: React.FC = () => {
               />
             </Form.Group>
             <Form.Group controlId="tagSelect" className="mb-3">
-              <Form.Label>Tag</Form.Label>
+              <Form.Label>Select a tag</Form.Label>
               <Form.Select
                 value={modalTagId}
                 onChange={(e) =>
@@ -295,13 +297,25 @@ const QuestionsFeed: React.FC = () => {
                   )
                 }
               >
-                <option value="">Select a tag</option>
+                <option value="">Choose from existing tags</option>
                 {tags.map((tag) => (
                   <option key={tag.id} value={tag.id}>
                     {tag.name}
                   </option>
                 ))}
               </Form.Select>
+            </Form.Group>
+            <Form.Group controlId="customTag" className="mb-3">
+              <Form.Label>Custom Tag (optional)</Form.Label>
+              <Form.Control
+                type="text"
+                value={customTag}
+                onChange={(e) => setCustomTag(e.target.value)}
+                placeholder="Enter a new tag (e.g., family guy)"
+              />
+              <Form.Text className="text-muted">
+                Leave this blank to use the selected tag above.
+              </Form.Text>
             </Form.Group>
             <Form.Group controlId="anonymousCheck" className="mb-3">
               <Form.Check
