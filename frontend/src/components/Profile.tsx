@@ -1,8 +1,7 @@
+import { Link } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import {
   Container,
-  Row,
-  Col,
   Card,
   ListGroup,
   Spinner,
@@ -346,6 +345,15 @@ const Profile: React.FC = () => {
             ))}
           </ListGroup>
         </Card>
+      )}
+
+      {/* Action: link to rate this user */}
+      {profile.user && (
+        <div className="mt-3 text-center">
+          <Link to={`/evaluate/${profile.user.id}`} className="btn btn-primary">
+            Rate this user
+          </Link>
+        </div>
       )}
     </Container>
   );
