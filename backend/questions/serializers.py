@@ -51,6 +51,27 @@ class QuestionSerializer(serializers.ModelSerializer):
         """Return the number of answers selecting index 1 (No)."""
         return obj.answers.filter(selected_option_index=1).count()
 
+    def validate_options(self, value):
+        """
+        Ensure no more than four answer options are provided and strip empty strings.
+
+        If the incoming value is falsy, return an empty list (for yes/no polls).
+        Otherwise, ensure the number of entries does not exceed four and trim
+        whitespace from each option. Empty or whitespace-only entries are removed.
+        """
+        # Allow null/empty to signify a yes/no poll
+        if not value:
+            return []
+        # Enforce maximum of 4 options
+        if len(value) > 4:
+            raise serializers.ValidationError("A maximum of 4 options is allowed.")
+        cleaned = []
+        for opt in value:
+            text = str(opt).strip()
+            if text:
+                cleaned.append(text)
+        return cleaned
+
     def create(self, validated_data):
         # Attach the author from context
         author = self.context["request"].user
