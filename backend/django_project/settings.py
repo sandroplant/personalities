@@ -6,6 +6,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-your-secret-key'
 DEBUG = True
 ALLOWED_HOSTS = []
+# Override settings from environment variables
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', SECRET_KEY)
+if os.getenv('DJANGO_DEBUG') is not None:
+    DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if os.getenv('DJANGO_ALLOWED_HOSTS') else ALLOWED_HOSTS
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
