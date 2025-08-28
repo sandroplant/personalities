@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-bootstrap';
 import api from './services/api';
+import EvaluationSummary from './EvaluationSummary';  // <-- import the new component
 
 /**
  * Profile component
@@ -114,6 +115,10 @@ const Profile: React.FC = () => {
     social_links,
     personality_values,
   } = profile;
+
+  // Determine the user ID for evaluation summary; falls back to profile.id if user is nested.
+  const userId: number | undefined =
+    profile.user?.id ?? profile.id;
 
   return (
     <Container className="mt-5">
@@ -344,6 +349,16 @@ const Profile: React.FC = () => {
               </ListGroup.Item>
             ))}
           </ListGroup>
+        </Card>
+      )}
+
+      {/* Ratings Summary */}
+      {userId && (
+        <Card className="mb-3">
+          <Card.Header>Your Ratings Summary</Card.Header>
+          <Card.Body>
+            <EvaluationSummary userId={userId} />
+          </Card.Body>
         </Card>
       )}
 

@@ -1,17 +1,20 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
+from django.db.models import Avg
 
 from .models import Criterion, Evaluation
 from .serializers import CriterionSerializer, EvaluationSerializer
+
 
 class CriterionListCreateView(generics.ListCreateAPIView):
     queryset = Criterion.objects.all()
     serializer_class = CriterionSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+
 
 class EvaluationListCreateView(generics.ListCreateAPIView):
     serializer_class = EvaluationSerializer
@@ -28,6 +31,7 @@ class EvaluationListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         subject_id = self.request.query_params.get('subject_id')
         serializer.save(evaluator=self.request.user, subject_id=subject_id)
+
 
 class EvaluationTasksView(APIView):
     """
@@ -64,3 +68,46 @@ class EvaluationTasksView(APIView):
         import random
         random.shuffle(tasks)
         return Response(tasks)
+
+
+class EvaluationSummaryView(APIView):
+    """
+    Returns aggregated evaluation results for a subject.
+
+    The endpoint expects a ``subject_id`` query parameter. It returns, for each
+    criterion, the criterion's ID, name and the average score across all
+    evaluations of the specified subject. An empty list is returned if the user
+    has no evaluations yet.
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        subject_id = request.query_params.get('subject_id')
+        if not subject_id:
+            return Response(
+                {"detail": "subject_id query parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        evaluations = Evaluation.objects.filter(subject_id=subject_id)
+        if not evaluations.exists():
+            return Response([])
+
+        # Aggregate average score per criterion
+        summary = (
+            evaluations
+            .values('criterion__id', 'criterion__name')
+            .annotate(avg_score=Avg('score'))
+            .order_by('criterion__name')
+        )
+
+        results = [
+            {
+                'criterion_id': item['criterion__id'],
+                'criterion_name': item['criterion__name'],
+                'average_score': item['avg_score'],
+            }
+            for item in summary
+        ]
+        return Response(results)
