@@ -4,15 +4,15 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ImproperlyConfigured
 from rest_framework.decorators import api_view
 from rest_framework import status
-from openai import OpenAI
+import openai
 
 # Ensure OpenAI API key is present
 openai_api_key = os.getenv('OPENAI_API_KEY')
 if not openai_api_key:
     raise ImproperlyConfigured('OpenAI API key is missing in environment variables')
 
-# Initialize OpenAI client
-openai_client = OpenAI(api_key=openai_api_key)
+# Initialize OpenAI client by setting API key
+openai.api_key = openai_api_key
 
 @csrf_exempt  # CSRF exemption for API purposes; adjust based on security needs
 @api_view(['POST'])
@@ -29,7 +29,7 @@ def generate_ai_response(request):
 
     # Call OpenAI API
     try:
-        response = openai_client.ChatCompletion.create(
+        response = openai.ChatCompletion.create(
             model='gpt-3.5-turbo',
             messages=[{'role': 'user', 'content': prompt}],
             max_tokens=max_tokens
