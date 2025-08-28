@@ -7,6 +7,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 urlpatterns = [
     # Main application and other app routes
     path('', include('core.urls')),
+    path('ai/', include('ai.urls')),
     path('messaging/', include('messaging.urls')),
     path('userprofiles/', include('userprofiles.urls')),
     path('spotify/', include('spotify_auth.urls')),
