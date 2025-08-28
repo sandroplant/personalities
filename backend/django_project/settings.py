@@ -96,3 +96,20 @@ REST_FRAMEWORK = {
     ),
 }
 
+# Additional configuration reading from environment variables
+# Spotify and OpenAI API keys
+SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID', '')
+SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET', '')
+SPOTIFY_REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', '')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+
+# Redis configuration
+REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
+REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+
+# Database configuration using DATABASE_URL if provided
+import environ
+env = environ.Env()
+env.read_env()
+DATABASES['default'] = env.db(default=f'sqlite:///' + str(BASE_DIR / 'db.sqlite3'))
+
