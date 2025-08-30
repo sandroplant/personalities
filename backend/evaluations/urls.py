@@ -1,14 +1,14 @@
 from django.urls import path
 from .views import (
-    CriterionListCreateView,
-    EvaluationListCreateView,
+    EvaluationCriteriaListView,
+    EvaluationCreateView,
     EvaluationTasksView,
-    EvaluationSummaryView,  # add this import
+    EvaluationSummaryView,
 )
 
 urlpatterns = [
-    path('criteria/', CriterionListCreateView.as_view(), name='criteria-list-create'),
-    path('evaluations/', EvaluationListCreateView.as_view(), name='evaluation-list-create'),
-    path('summary/', EvaluationSummaryView.as_view(), name='evaluation-summary'),
-    path('tasks/', EvaluationTasksView.as_view(), name='evaluation-tasks'),
+    path("criteria/", EvaluationCriteriaListView.as_view(), name="evaluation-criteria-list"),
+    path("create/", EvaluationCreateView.as_view(), name="evaluation-create"),
+    path("tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
+    path("summary/", EvaluationSummaryView.as_view(), name="evaluation-summary"),
 ]
