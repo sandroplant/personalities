@@ -1,5 +1,10 @@
 from django.urls import path
-from .views import CriterionListCreateView, EvaluationListCreateView, EvaluationTasksView
+from .views import (
+    CriterionListCreateView,
+    EvaluationListCreateView,
+    EvaluationTasksView,
+    EvaluationSummaryView,  # add this import
+)
 
 urlpatterns = [
     path('criteria/', CriterionListCreateView.as_view(), name='criteria-list-create'),
