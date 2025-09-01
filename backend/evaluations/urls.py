@@ -12,3 +12,4 @@ urlpatterns = [
     path("tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
     path("summary/", EvaluationSummaryView.as_view(), name="evaluation-summary"),
 ]
+

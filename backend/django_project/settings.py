@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.sites',
     'django.contrib.staticfiles',
 
     # Your apps
@@ -39,12 +40,17 @@ INSTALLED_APPS = [
     'questions',
 
     # 3rd-party
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
     'rest_framework',
     'corsheaders',
     'social_django',
     'rest_framework_simplejwt',
     'core',
 ]
+
+SITE_ID = 1  # required for django‑allauth
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

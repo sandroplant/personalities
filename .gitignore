@@ -224,3 +224,10 @@ docs/_build/
 
 # Exclude local settings files
 local_settings.py
+# Local dev artifacts
+.venv/
+codex-report/
+repo/
+db-data/
+personalities.zip
+tools/

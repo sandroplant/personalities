@@ -1,18 +1,15 @@
 import os
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.core.exceptions import ImproperlyConfigured
+from django.conf import settings
 from rest_framework.decorators import api_view
 from rest_framework import status
 import openai
 
-# Ensure OpenAI API key is present
-openai_api_key = os.getenv('OPENAI_API_KEY')
-if not openai_api_key:
-    raise ImproperlyConfigured('OpenAI API key is missing in environment variables')
-
-# Initialize OpenAI client by setting API key
-openai.api_key = openai_api_key
+# Fetch the key from settings or fall back to OS environment
+openai_api_key = getattr(settings, 'OPENAI_API_KEY', None) or os.getenv('OPENAI_API_KEY')
+if openai_api_key:
+    openai.api_key = openai_api_key
 
 @csrf_exempt  # CSRF exemption for API purposes; adjust based on security needs
 @api_view(['POST'])
@@ -25,6 +22,13 @@ def generate_ai_response(request):
         return JsonResponse(
             {'error': 'Prompt is required and must be a string.'},
             status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Return a clear error if the key is missing
+    if not openai_api_key:
+        return JsonResponse(
+            {'error': 'OpenAI API key is missing in environment variables.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
     # Call OpenAI API
