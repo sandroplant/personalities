@@ -140,5 +140,67 @@ SPOTIFY_REDIRECT_URI = env("SPOTIFY_REDIRECT_URI", default="")
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 
 # Redis configuration
+<<<<<<< HEAD
 REDIS_HOST = env("REDIS_HOST", default="redis")
 REDIS_PORT = env("REDIS_PORT", default="6379")
+=======
+REDIS_HOST = env('REDIS_HOST', default='redis')
+REDIS_PORT = env('REDIS_PORT', default='6379')
+# --- Additive CORS/CSRF config for local SPA development (idempotent) ---
+try:
+    # Ensure INSTALLED_APPS exists and include corsheaders
+    if 'INSTALLED_APPS' in globals():
+        _apps = list(INSTALLED_APPS)  # type: ignore[name-defined]
+        if 'corsheaders' not in _apps:
+            _apps.append('corsheaders')
+        if 'core' not in _apps:
+            _apps.append('core')
+        INSTALLED_APPS = _apps  # type: ignore[assignment]
+except Exception:
+    pass
+
+try:
+    # Ensure MIDDLEWARE exists and cors middleware is first
+    if 'MIDDLEWARE' in globals():
+        _mw = list(MIDDLEWARE)  # type: ignore[name-defined]
+        if 'corsheaders.middleware.CorsMiddleware' not in _mw:
+            _mw.insert(0, 'corsheaders.middleware.CorsMiddleware')
+        MIDDLEWARE = _mw  # type: ignore[assignment]
+except Exception:
+    pass
+
+try:
+    # Allowed hosts for local dev
+    _hosts = set(globals().get('ALLOWED_HOSTS', []))
+    _hosts.update({'127.0.0.1', 'localhost'})
+    ALLOWED_HOSTS = list(_hosts)
+except Exception:
+    ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
+try:
+    # CSRF trusted origins
+    _csrf = set(globals().get('CSRF_TRUSTED_ORIGINS', []))
+    _csrf.update({'http://localhost:3000', 'http://127.0.0.1:3000'})
+    CSRF_TRUSTED_ORIGINS = list(_csrf)
+except Exception:
+    CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
+
+try:
+    # CORS allowed origins and credentials
+    _cors = set(globals().get('CORS_ALLOWED_ORIGINS', []))
+    _cors.update({'http://localhost:3000', 'http://127.0.0.1:3000'})
+    CORS_ALLOWED_ORIGINS = list(_cors)
+except Exception:
+    CORS_ALLOWED_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
+
+CORS_ALLOW_CREDENTIALS = True
+
+# Ensure custom user model is configured
+try:
+    AUTH_USER_MODEL  # type: ignore[name-defined]
+except NameError:
+    AUTH_USER_MODEL = 'core.User'
+else:
+    if AUTH_USER_MODEL != 'core.User':  # type: ignore[name-defined]
+        AUTH_USER_MODEL = 'core.User'
+>>>>>>> fddbe62 (Privacy + profile requests backend scaffolding; viewer-aware privacy; CI; frontend stubs)

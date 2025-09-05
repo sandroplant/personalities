@@ -27,3 +27,5 @@ root.render(
 
 // Log results to the console or send to an analytics endpoint
 reportWebVitals(console.log);
+// Provide a minimal process shim for Safari/webpack when code references process.env
+try { require('./shims/process'); } catch (_) {}

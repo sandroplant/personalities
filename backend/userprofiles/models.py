@@ -91,6 +91,7 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+<<<<<<< HEAD
 
 
 class Friendship(models.Model):
@@ -112,3 +113,11 @@ class Friendship(models.Model):
 
     def __str__(self):
         return f"Friendship from {self.from_user} to {self.to_user}"
+=======
+"""Codex CLI: import privacy models so Django registers them."""
+try:
+    # Import side-effect: registers additional model classes in this app
+    from .privacy_models import ProfileVisibility, InfoRequest  # noqa: F401
+except Exception:
+    pass
+>>>>>>> fddbe62 (Privacy + profile requests backend scaffolding; viewer-aware privacy; CI; frontend stubs)
