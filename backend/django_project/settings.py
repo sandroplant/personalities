@@ -22,6 +22,7 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
 # Application definition
 INSTALLED_APPS = [
+    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -29,32 +30,35 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.sites",
     "django.contrib.staticfiles",
+
+    # Third-party
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "drf_spectacular",
+    "corsheaders",
+    "social_django",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+
     # Your apps
+    "core",
+    "evaluations.apps.EvaluationsConfig",  # ensures ready() registers RaterStats
     "userprofiles",
     "spotify_auth",
     "custom_auth",
     "messaging",
-    "evaluations",
     "posts",
     "questions",
-    # 3rd-party
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "rest_framework",
-    "corsheaders",
-    "social_django",
-    "rest_framework_simplejwt",
-    "core",
 ]
 
-SITE_ID = 1  # required for django‑allauth
+SITE_ID = 1  # required for django-allauth
 
 # Use custom user model defined in core app
 AUTH_USER_MODEL = "core.User"
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # keep first
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -88,9 +92,7 @@ WSGI_APPLICATION = "django_project.wsgi.application"
 
 # Database configuration
 DATABASES = {
-    "default": env.db(
-        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
-    )
+    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
 
 # Password validation
@@ -107,12 +109,8 @@ AUTH_PASSWORD_VALIDATORS = [
             "MinimumLengthValidator"
         ),
     },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 LANGUAGE_CODE = "en-us"
@@ -125,13 +123,33 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# CORS/CSRF for local dev (adjust per env as needed)
 CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Personalities API",
+    "DESCRIPTION": "API schema for the Personalities app",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+
+# Env-backed threshold for Evaluations summary gating
+EVALUATIONS_MIN_RATINGS = int(os.getenv("EVALUATIONS_MIN_RATINGS", "10"))
 
 # Additional configuration reading from environment variables
 SPOTIFY_CLIENT_ID = env("SPOTIFY_CLIENT_ID", default="")
@@ -140,67 +158,5 @@ SPOTIFY_REDIRECT_URI = env("SPOTIFY_REDIRECT_URI", default="")
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 
 # Redis configuration
-<<<<<<< HEAD
 REDIS_HOST = env("REDIS_HOST", default="redis")
 REDIS_PORT = env("REDIS_PORT", default="6379")
-=======
-REDIS_HOST = env('REDIS_HOST', default='redis')
-REDIS_PORT = env('REDIS_PORT', default='6379')
-# --- Additive CORS/CSRF config for local SPA development (idempotent) ---
-try:
-    # Ensure INSTALLED_APPS exists and include corsheaders
-    if 'INSTALLED_APPS' in globals():
-        _apps = list(INSTALLED_APPS)  # type: ignore[name-defined]
-        if 'corsheaders' not in _apps:
-            _apps.append('corsheaders')
-        if 'core' not in _apps:
-            _apps.append('core')
-        INSTALLED_APPS = _apps  # type: ignore[assignment]
-except Exception:
-    pass
-
-try:
-    # Ensure MIDDLEWARE exists and cors middleware is first
-    if 'MIDDLEWARE' in globals():
-        _mw = list(MIDDLEWARE)  # type: ignore[name-defined]
-        if 'corsheaders.middleware.CorsMiddleware' not in _mw:
-            _mw.insert(0, 'corsheaders.middleware.CorsMiddleware')
-        MIDDLEWARE = _mw  # type: ignore[assignment]
-except Exception:
-    pass
-
-try:
-    # Allowed hosts for local dev
-    _hosts = set(globals().get('ALLOWED_HOSTS', []))
-    _hosts.update({'127.0.0.1', 'localhost'})
-    ALLOWED_HOSTS = list(_hosts)
-except Exception:
-    ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-
-try:
-    # CSRF trusted origins
-    _csrf = set(globals().get('CSRF_TRUSTED_ORIGINS', []))
-    _csrf.update({'http://localhost:3000', 'http://127.0.0.1:3000'})
-    CSRF_TRUSTED_ORIGINS = list(_csrf)
-except Exception:
-    CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
-
-try:
-    # CORS allowed origins and credentials
-    _cors = set(globals().get('CORS_ALLOWED_ORIGINS', []))
-    _cors.update({'http://localhost:3000', 'http://127.0.0.1:3000'})
-    CORS_ALLOWED_ORIGINS = list(_cors)
-except Exception:
-    CORS_ALLOWED_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
-
-CORS_ALLOW_CREDENTIALS = True
-
-# Ensure custom user model is configured
-try:
-    AUTH_USER_MODEL  # type: ignore[name-defined]
-except NameError:
-    AUTH_USER_MODEL = 'core.User'
-else:
-    if AUTH_USER_MODEL != 'core.User':  # type: ignore[name-defined]
-        AUTH_USER_MODEL = 'core.User'
->>>>>>> fddbe62 (Privacy + profile requests backend scaffolding; viewer-aware privacy; CI; frontend stubs)
