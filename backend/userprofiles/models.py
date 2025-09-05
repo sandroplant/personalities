@@ -86,3 +86,9 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+"""Codex CLI: import privacy models so Django registers them."""
+try:
+    # Import side-effect: registers additional model classes in this app
+    from .privacy_models import ProfileVisibility, InfoRequest  # noqa: F401
+except Exception:
+    pass
