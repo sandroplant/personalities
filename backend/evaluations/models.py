@@ -21,3 +21,9 @@ class Evaluation(models.Model):
 
     def __str__(self):
         return f"{self.subject} rated by {self.evaluator} on {self.criterion}"
+# Codex CLI: ensure additive models register with this app
+try:
+    from .meta_models import EvaluationMeta  # noqa: F401
+    from .rater_models import RaterStats  # noqa: F401
+except Exception:
+    pass
