@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'drf_spectacular',
     'rest_framework',
     'corsheaders',
     'social_django',
@@ -122,6 +123,13 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+        'TITLE': 'Personalities API',
+        'DESCRIPTION': 'API schema for the Personalities app',
+        'VERSION': '1.0.0',
 }
 
 # Additional configuration reading from environment variables
