@@ -12,7 +12,7 @@ createsuperuser:
 	python manage.py createsuperuser
 
 lint:
-	flake8 .
+	python -m flake8 userprofiles/views.py
 
 format:
 	black .
