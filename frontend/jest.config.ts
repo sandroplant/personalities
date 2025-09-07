@@ -5,7 +5,7 @@ const config: JestConfigWithTsJest = {
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/src'],
   moduleDirectories: ['node_modules', 'src'],
-  setupFilesAfterEnv: ['<rootDir>/setupTests.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest',
   },

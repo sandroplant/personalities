@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Spinner, Alert, ListGroup } from 'react-bootstrap';
-import '../../../server/src/config/env.js';
 
 interface Evaluation {
   id: string;

@@ -34,7 +34,7 @@ const FriendsEvaluations: React.FC = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   // Fetch a batch of evaluation tasks from the backend on mount
-useEffect(() => {
+  useEffect(() => {
     const fetchTasks = async () => {
       try {
         // Fetch a list of evaluation tasks from the backend. Each task
@@ -82,7 +82,7 @@ useEffect(() => {
       }
       await api.post(
         `/evaluations/evaluations/?subject_id=${current.subjectId}`,
-        payload,
+        payload
       );
     } catch (err) {
       console.error('Error submitting evaluation', err);
@@ -158,10 +158,18 @@ useEffect(() => {
             <div>Selected: {score}</div>
           </Form.Group>
           <div className="d-flex justify-content-between">
-            <Button variant="secondary" onClick={handleSkip} disabled={submitting}>
+            <Button
+              variant="secondary"
+              onClick={handleSkip}
+              disabled={submitting}
+            >
               Skip
             </Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
               Submit
             </Button>
           </div>

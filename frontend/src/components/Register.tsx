@@ -1,7 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import axios from 'axios';
 import { Container, Form, Button, Alert } from 'react-bootstrap';
-import '../../../server/src/config/env.js';
 
 const Register: React.FC = () => {
   const [email, setEmail] = useState<string>('');

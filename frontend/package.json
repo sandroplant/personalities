@@ -92,11 +92,6 @@
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^5.1.0"
   },
-  "jest": {
-    "setupFilesAfterEnv": [
-      "<rootDir>/src/tests/setupTests.ts"
-    ]
-  },
   "browserslist": [
     "last 1 chrome version",
     "last 1 firefox version",

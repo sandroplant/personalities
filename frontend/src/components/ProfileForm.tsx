@@ -200,7 +200,9 @@ const ProfileForm: React.FC = () => {
           genderIdentity: data.gender_identity || prev.genderIdentity,
           pronouns: data.pronouns || prev.pronouns,
           nationality: data.nationality || prev.nationality,
-          languages: data.languages ? data.languages.split(',') : prev.languages,
+          languages: data.languages
+            ? data.languages.split(',')
+            : prev.languages,
           locationCity: data.location_city || prev.locationCity,
           locationState: data.location_state || prev.locationState,
           locationCountry: data.location_country || prev.locationCountry,
@@ -210,17 +212,24 @@ const ProfileForm: React.FC = () => {
           smoking: data.smoking || prev.smoking,
           drinking: data.drinking || prev.drinking,
           pets: data.pets || prev.pets,
-          hobbies: data.hobbies ? (Array.isArray(data.hobbies) ? data.hobbies : String(data.hobbies).split(',')) : prev.hobbies,
+          hobbies: data.hobbies
+            ? Array.isArray(data.hobbies)
+              ? data.hobbies
+              : String(data.hobbies).split(',')
+            : prev.hobbies,
           favoriteSongs: data.favorite_songs || prev.favoriteSongs,
           favoriteArtists: data.favorite_artists || prev.favoriteArtists,
           favoriteBooks: data.favorite_books || prev.favoriteBooks,
           favoriteMovies: data.favorite_movies || prev.favoriteMovies,
           favoriteTvShows: data.favorite_tv_shows || prev.favoriteTvShows,
           favoriteFood: data.favorite_food || prev.favoriteFood,
-          favoriteTravelDestinations: data.favorite_travel_destinations || prev.favoriteTravelDestinations,
+          favoriteTravelDestinations:
+            data.favorite_travel_destinations ||
+            prev.favoriteTravelDestinations,
           favoriteSport: data.favorite_sport || prev.favoriteSport,
           favoritePodcasts: data.favorite_podcasts || prev.favoritePodcasts,
-          favoriteInfluencers: data.favorite_influencers || prev.favoriteInfluencers,
+          favoriteInfluencers:
+            data.favorite_influencers || prev.favoriteInfluencers,
           funFact: data.fun_fact || prev.funFact,
           goals: data.goals || prev.goals,
           achievements: data.achievements || prev.achievements,
@@ -236,7 +245,8 @@ const ProfileForm: React.FC = () => {
             hairColor: data.hair_color || prev.appearance.hairColor,
             skinColor: data.skin_tone || prev.appearance.skinColor,
             hairStyle: data.hair_style || prev.appearance.hairStyle,
-            tattoosPiercings: data.tattoos_piercings || prev.appearance.tattoosPiercings,
+            tattoosPiercings:
+              data.tattoos_piercings || prev.appearance.tattoosPiercings,
           },
         }));
       } catch (error) {
@@ -1042,7 +1052,7 @@ const ProfileForm: React.FC = () => {
               </Form.Group>
             </Col>
             <Col md={3}>
-              <Form.Group controlId={`pvFriends${index}`}> 
+              <Form.Group controlId={`pvFriends${index}`}>
                 <Form.Check
                   type="checkbox"
                   label="Allow Friends to Rate"
