@@ -7,7 +7,7 @@ import {
   Spinner,
   Alert,
 } from 'react-bootstrap';
-import api from './services/api';
+import api from '../services/api';
 import EvaluationSummary from './EvaluationSummary';  // <-- import the new component
 
 /**
@@ -343,13 +343,13 @@ const Profile: React.FC = () => {
         <Card className="mb-3">
           <Card.Header>Personality Values</Card.Header>
           <ListGroup variant="flush">
-              {Object.entries(personality_values).map(([trait, value]) => (
-                <ListGroup.Item key={trait}>
-                  <>
-                    <strong>{trait}:</strong> {value}
-                  </>
-                </ListGroup.Item>
-              ))}
+            {Object.entries(personality_values).map(([trait, value]) => (
+              <ListGroup.Item key={trait}>
+                <>
+                  <strong>{trait}:</strong> {value}
+                </>
+              </ListGroup.Item>
+            ))}
           </ListGroup>
         </Card>
       )}
