@@ -2,7 +2,7 @@
 
 import logging
 import re
-import bleach
+
 
 class SensitiveInfoFormatter(logging.Formatter):
     """
@@ -12,9 +12,10 @@ class SensitiveInfoFormatter(logging.Formatter):
     def format(self, record):
         original = super().format(record)
         # Example: Mask email addresses
-        masked = re.sub(r'[\w\.-]+@[\w\.-]+', '****@****.***', original)
+        masked = re.sub(r"[\w\.-]+@[\w\.-]+", "****@****.***", original)
         # Add more masking rules as needed
         return masked
+
 
 logger = logging.getLogger(__name__)
 

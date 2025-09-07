@@ -23,13 +23,13 @@ class EvaluationListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         queryset = Evaluation.objects.all()
-        subject_id = self.request.query_params.get('subject_id')
+        subject_id = self.request.query_params.get("subject_id")
         if subject_id:
             queryset = queryset.filter(subject__id=subject_id)
         return queryset
 
     def perform_create(self, serializer):
-        subject_id = self.request.query_params.get('subject_id')
+        subject_id = self.request.query_params.get("subject_id")
         serializer.save(evaluator=self.request.user, subject_id=subject_id)
 
 
@@ -40,6 +40,7 @@ class EvaluationTasksView(APIView):
     The `firstTime` flag indicates whether the user has rated that
     friend on that criterion before.
     """
+
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
@@ -54,18 +55,19 @@ class EvaluationTasksView(APIView):
             for criterion in criteria:
                 # Check if the user has previously rated this subject on this criterion
                 exists = Evaluation.objects.filter(
-                    evaluator=user,
-                    subject=subject,
-                    criterion=criterion
+                    evaluator=user, subject=subject, criterion=criterion
                 ).exists()
-                tasks.append({
-                    "subjectId": subject.id,
-                    "subjectName": getattr(subject, "username", str(subject)),
-                    "criterionId": criterion.id,
-                    "criterionName": criterion.name,
-                    "firstTime": not exists,
-                })
+                tasks.append(
+                    {
+                        "subjectId": subject.id,
+                        "subjectName": getattr(subject, "username", str(subject)),
+                        "criterionId": criterion.id,
+                        "criterionName": criterion.name,
+                        "firstTime": not exists,
+                    }
+                )
         import random
+
         random.shuffle(tasks)
         return Response(tasks)
 
@@ -79,11 +81,12 @@ class EvaluationSummaryView(APIView):
     evaluations of the specified subject. An empty list is returned if the user
     has no evaluations yet.
     """
+
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        subject_id = request.query_params.get('subject_id')
+        subject_id = request.query_params.get("subject_id")
         if not subject_id:
             return Response(
                 {"detail": "subject_id query parameter is required"},
@@ -96,17 +99,16 @@ class EvaluationSummaryView(APIView):
 
         # Aggregate average score per criterion
         summary = (
-            evaluations
-            .values('criterion__id', 'criterion__name')
-            .annotate(avg_score=Avg('score'))
-            .order_by('criterion__name')
+            evaluations.values("criterion__id", "criterion__name")
+            .annotate(avg_score=Avg("score"))
+            .order_by("criterion__name")
         )
 
         results = [
             {
-                'criterion_id': item['criterion__id'],
-                'criterion_name': item['criterion__name'],
-                'average_score': item['avg_score'],
+                "criterion_id": item["criterion__id"],
+                "criterion_name": item["criterion__name"],
+                "average_score": item["avg_score"],
             }
             for item in summary
         ]
