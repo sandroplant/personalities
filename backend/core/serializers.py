@@ -71,8 +71,8 @@ class LoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'spotify_id', 'display_name', 'email']  # Adjusted fields
-        read_only_fields = ['id', 'spotify_id']  # Marked fields as read-only
+        fields = ['id', 'username', 'email']  # Fields available on custom user model
+        read_only_fields = ['id']  # Marked id as read-only
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
