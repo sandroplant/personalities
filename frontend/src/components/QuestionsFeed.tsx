@@ -271,7 +271,12 @@ const QuestionsFeed: React.FC = () => {
         </>
       )}
       {/* Ask Question Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} backdrop="static" size="lg">
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        backdrop="static"
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Ask a Question</Modal.Title>
         </Modal.Header>
