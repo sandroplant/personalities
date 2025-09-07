@@ -18,7 +18,6 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 # Verify that the OPENAI_API_KEY is set
 if not openai.api_key:
     logger.error("Error: OPENAI_API_KEY is not set in the environment variables.")
-    exit(1)
 else:
     logger.info("OPENAI_API_KEY is set")  # Avoid logging the actual key for security
 
