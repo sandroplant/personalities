@@ -3,11 +3,12 @@
 from django.conf import settings
 from django.db import models
 
+
 class SpotifyProfile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='userprofile_spotify_profile'  # Updated to avoid conflict
+        related_name="userprofile_spotify_profile",  # Updated to avoid conflict
     )
     display_name = models.CharField(max_length=100)
     email = models.EmailField()
@@ -16,11 +17,12 @@ class SpotifyProfile(models.Model):
     def __str__(self):
         return self.display_name
 
+
 class Profile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='userprofile_profile'
+        related_name="userprofile_profile",
     )
     # Basic info
     bio = models.TextField(blank=True)
@@ -69,12 +71,15 @@ class Profile(models.Model):
     favorite_movies = models.CharField(max_length=200, blank=True, null=True)
     favorite_tv_shows = models.CharField(max_length=200, blank=True, null=True)
     favorite_food = models.CharField(max_length=200, blank=True, null=True)
-    favorite_travel_destinations = models.CharField(max_length=200, blank=True, null=True)
+    favorite_travel_destinations = models.CharField(
+        max_length=200, blank=True, null=True
+    )
     favorite_sport = models.CharField(max_length=100, blank=True, null=True)
     favorite_podcasts = models.CharField(max_length=200, blank=True, null=True)
     favorite_influencers = models.CharField(max_length=200, blank=True, null=True)
 
-    # Personality & values (stored as JSON: {value_name: {"self": int, "friends": bool}})
+    # Personality & values stored as JSON:
+    # {value_name: {"self": int, "friends": bool}}
     personality_values = models.JSONField(blank=True, null=True)
 
     # Fun & miscellaneous

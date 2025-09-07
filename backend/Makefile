@@ -1,6 +1,6 @@
 # backend/Makefile
 
-.PHONY: runserver migrate lint format
+.PHONY: runserver migrate lint format test createsuperuser
 
 runserver:
 	python manage.py runserver
@@ -12,10 +12,10 @@ createsuperuser:
 	python manage.py createsuperuser
 
 lint:
-	python -m flake8 userprofiles/views.py
+	python -m flake8 ..
 
 format:
-	black .
+	black ..
 
 test:
 	python manage.py test

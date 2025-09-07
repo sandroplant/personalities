@@ -12,12 +12,13 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import ValidationError
 from django.db.models import Count
 
-from .models import Tag, Question, Answer
+from .models import Tag, Question
 from .serializers import TagSerializer, QuestionSerializer, AnswerSerializer
 
 
 class TagListView(generics.ListAPIView):
     """Return a list of available tags for questions."""
+
     queryset = Tag.objects.all().order_by("name")
     serializer_class = TagSerializer
     authentication_classes = [TokenAuthentication]
@@ -82,7 +83,12 @@ class QuestionListCreateView(generics.ListCreateAPIView):
         # Check for duplicate questions (case-insensitive)
         if Question.objects.filter(text__iexact=text).exists():
             raise ValidationError(
-                {"text": "A similar question already exists. Please rephrase your question."}
+                {
+                    "text": (
+                        "A similar question already exists. "
+                        "Please rephrase your question."
+                    )
+                }
             )
 
         # If the request included a raw tag name, normalize it and either
@@ -101,6 +107,7 @@ class QuestionListCreateView(generics.ListCreateAPIView):
 
 class AnswerCreateView(generics.CreateAPIView):
     """Create a new answer to a question."""
+
     serializer_class = AnswerSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]

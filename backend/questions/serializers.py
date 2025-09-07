@@ -3,7 +3,6 @@ Serializers for the questions app.  These translate Question and Answer
 instances to and from JSON for API consumption.
 """
 
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import Tag, Question, Answer

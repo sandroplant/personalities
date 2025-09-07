@@ -7,9 +7,10 @@ from .views import (
 )
 
 urlpatterns = [
-    path("criteria/", CriterionListCreateView.as_view(), name="evaluation-criteria-list"),
+    path(
+        "criteria/", CriterionListCreateView.as_view(), name="evaluation-criteria-list"
+    ),
     path("create/", EvaluationListCreateView.as_view(), name="evaluation-create"),
     path("tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
     path("summary/", EvaluationSummaryView.as_view(), name="evaluation-summary"),
 ]
-
