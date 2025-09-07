@@ -6,6 +6,6 @@ import App from './App';
 
 test('renders navbar brand', () => {
   render(<App />);
-  const linkElement = screen.getByText(/Personalities/i);
-  expect(linkElement).toBeInTheDocument();
+  const brandElement = screen.getByText(/Personalities/i);
+  expect(brandElement).toBeInTheDocument();
 });
