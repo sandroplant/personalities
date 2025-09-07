@@ -1,4 +1,17 @@
 Comprehensive Feature Plan and Evaluation Algorithm for the Personalities App
+
+## Docker Setup
+
+1. Copy `.env.example` to `.env` and supply production values such as `SECRET_KEY` and database credentials.
+2. Build and start the stack:
+
+   ```bash
+   docker compose up --build -d
+   ```
+
+3. Access the React frontend at <http://localhost> and the Django API at <http://localhost:8000>.
+
+The compose configuration runs Django with Gunicorn and serves the compiled React build through an Nginx proxy that forwards `/api/` requests to the backend while preserving HTTPS headers for secure deployments.
 This report restates the full feature set for the Personalities App, integrates the additional requirements you provided (privacy settings and anti‑bias mechanisms), and proposes a plan for implementing the evaluation and objectivity algorithms. Citations reference the existing repository and external sources.
  
 1 Core features of the current phase
