@@ -40,4 +40,10 @@ class EvaluationSerializer(serializers.ModelSerializer):
             "score",
             "created_at",
         ]
-        read_only_fields = ("id", "evaluator", "subject", "criterion", "created_at")
+        read_only_fields = (
+            "id",
+            "evaluator",
+            "subject",
+            "criterion",
+            "created_at",
+        )

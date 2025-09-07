@@ -12,6 +12,10 @@ from .views import TagListView, QuestionListCreateView, AnswerCreateView
 
 urlpatterns = [
     path("tags/", TagListView.as_view(), name="tag-list"),
-    path("questions/", QuestionListCreateView.as_view(), name="question-list-create"),
+    path(
+        "questions/",
+        QuestionListCreateView.as_view(),
+        name="question-list-create",
+    ),
     path("answers/", AnswerCreateView.as_view(), name="answer-create"),
 ]

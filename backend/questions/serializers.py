@@ -3,7 +3,6 @@ Serializers for the questions app.  These translate Question and Answer
 instances to and from JSON for API consumption.
 """
 
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import Tag, Question, Answer
@@ -22,7 +21,10 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     tag = TagSerializer(read_only=True)
     tag_id = serializers.PrimaryKeyRelatedField(
-        queryset=Tag.objects.all(), source="tag", write_only=True, required=False
+        queryset=Tag.objects.all(),
+        source="tag",
+        write_only=True,
+        required=False,
     )
     options = serializers.JSONField(required=False)
     yes_count = serializers.SerializerMethodField()
@@ -53,18 +55,22 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     def validate_options(self, value):
         """
-        Ensure no more than four answer options are provided and strip empty strings.
+        Ensure no more than four answer options are provided and strip
+        empty strings.
 
-        If the incoming value is falsy, return an empty list (for yes/no polls).
-        Otherwise, ensure the number of entries does not exceed four and trim
-        whitespace from each option. Empty or whitespace-only entries are removed.
+        If the incoming value is falsy, return an empty list (for yes/no
+        polls). Otherwise, ensure the number of entries does not exceed
+        four and trim whitespace from each option. Empty or
+        whitespace-only entries are removed.
         """
         # Allow null/empty to signify a yes/no poll
         if not value:
             return []
         # Enforce maximum of 4 options
         if len(value) > 4:
-            raise serializers.ValidationError("A maximum of 4 options is allowed.")
+            raise serializers.ValidationError(
+                "A maximum of 4 options is allowed."
+            )
         cleaned = []
         for opt in value:
             text = str(opt).strip()
@@ -88,7 +94,12 @@ class AnswerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Answer
-        fields = ["question_id", "selected_option_index", "is_anonymous", "user"]
+        fields = [
+            "question_id",
+            "selected_option_index",
+            "is_anonymous",
+            "user",
+        ]
 
     def create(self, validated_data):
         # unique constraint ensures only one answer per user per question

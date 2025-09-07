@@ -1,10 +1,10 @@
 from django.utils.deprecation import MiddlewareMixin
 from django.http import JsonResponse
-from django.conf import settings
 from django_ratelimit.decorators import ratelimit
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class RateLimitMiddleware(MiddlewareMixin):
     def process_view(self, request, view_func, view_args, view_kwargs):
@@ -13,19 +13,19 @@ class RateLimitMiddleware(MiddlewareMixin):
             ip = self.get_client_ip(request)
             logger.warning(f"Rate limit exceeded for IP: {ip}")
             return JsonResponse(
-                {'error': 'Too many requests, please try again later.'},
-                status=429
+                {"error": "Too many requests, please try again later."},
+                status=429,
             )
         return None  # Continue processing if rate limit not reached
 
-    @ratelimit(key='ip', rate='100/15m', method='GET', block=True)
+    @ratelimit(key="ip", rate="100/15m", method="GET", block=True)
     def is_rate_limited(self, request):
-        return getattr(request, 'limited', False)
+        return getattr(request, "limited", False)
 
     def get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
+            ip = x_forwarded_for.split(",")[0]
         else:
-            ip = request.META.get('REMOTE_ADDR')
+            ip = request.META.get("REMOTE_ADDR")
         return ip
