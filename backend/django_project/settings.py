@@ -52,6 +52,9 @@ INSTALLED_APPS = [
 
 SITE_ID = 1  # required for django‑allauth
 
+# Use custom user model defined in core app
+AUTH_USER_MODEL = 'core.User'
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',

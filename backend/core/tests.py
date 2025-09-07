@@ -1,32 +1,38 @@
-# core/tests.py
+"""API tests for user profile operations."""
 
-from django.test import TestCase, Client
 from django.urls import reverse
-from .models import User
+from django.contrib.auth import get_user_model
+from django.apps import apps
+from rest_framework.test import APITestCase
 
-class ProfileAPITest(TestCase):
+
+class ProfileAPITest(APITestCase):
+    """Ensure profile endpoints operate correctly for authenticated users."""
+
     def setUp(self):
-        self.client = Client()
-        self.user = User.objects.create(
-            spotify_id='test_spotify_id',
-            display_name='Test User',
-            email='test@example.com'
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            username="tester",
+            email="test@example.com",
+            password="secret",
         )
-        self.client.session['user_id'] = str(self.user.id)
-        self.client.session.save()
+        Profile = apps.get_model("core", "Profile")
+        self.profile = Profile.objects.create(user=self.user, full_name="Test User")
+        self.client.force_authenticate(user=self.user)
 
     def test_get_user_profile(self):
-        response = self.client.get(reverse('get_user_profile_api'))
+        response = self.client.get(reverse("get_user_profile"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['display_name'], 'Test User')
+        self.assertEqual(response.json()["full_name"], "Test User")
 
     def test_update_user_profile(self):
-        data = {
-            'display_name': 'Updated User',
-            'email': 'updated@example.com'
-        }
-        response = self.client.post(reverse('update_user_profile_api'), data, content_type='application/json')
+        data = {"full_name": "Updated User", "bio": "Updated bio"}
+        response = self.client.put(
+            reverse("update_user_profile"),
+            data,
+            format="json",
+        )
         self.assertEqual(response.status_code, 200)
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.display_name, 'Updated User')
-        self.assertEqual(self.user.email, 'updated@example.com')
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.full_name, "Updated User")
+        self.assertEqual(self.profile.bio, "Updated bio")
