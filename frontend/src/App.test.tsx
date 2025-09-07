@@ -2,10 +2,19 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import App from './App';
 
-test('renders learn react link', () => {
+jest.mock('./components/Login', () => () => <div />);
+jest.mock('./components/Register', () => () => <div />);
+jest.mock('./components/Profile', () => () => <div />);
+jest.mock('./components/ProfileForm', () => () => <div />);
+jest.mock('./components/FriendEvaluation', () => () => <div />);
+jest.mock('./components/FriendsEvaluations', () => () => <div />);
+jest.mock('./components/QuestionsFeed', () => () => <div />);
+
+const App = require('./App').default;
+
+test('renders navigation brand', () => {
   render(<App />);
-  const linkElement = screen.getByTestId('learn-react-link');
-  expect(linkElement).toBeInTheDocument();
+  const brand = screen.getByText('Personalities');
+  expect(brand).toBeInTheDocument();
 });
