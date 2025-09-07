@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client'; // Removed unused 'Socket' import
 import axios from 'axios';
-import '../../../server/src/config/env.js';
 // Removed unused 'FormControl' import
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';

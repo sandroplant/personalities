@@ -1,6 +1,5 @@
 import React, { useState, ChangeEvent } from 'react';
 import axios from 'axios';
-import '../../../server/src/config/env.js';
 import {
   TabContainer,
   Form,
@@ -12,6 +11,9 @@ import FormLabel from 'react-bootstrap/FormLabel';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Alert from 'react-bootstrap/Alert';
+
+// Define server URL with a fallback for tests and development
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:80';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState<string>('');
@@ -26,7 +28,7 @@ const Login: React.FC = () => {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_URL}/api/login`,
+        `${SERVER_URL}/api/login`,
         { email, password },
         { withCredentials: true }
       );

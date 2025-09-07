@@ -4,8 +4,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders navigation brand', () => {
   render(<App />);
-  const linkElement = screen.getByTestId('learn-react-link');
-  expect(linkElement).toBeInTheDocument();
+  expect(screen.getByText(/Personalities/i)).toBeInTheDocument();
 });
