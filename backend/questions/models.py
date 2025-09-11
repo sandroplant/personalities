@@ -22,10 +22,11 @@ class Tag(models.Model):
 class Question(models.Model):
     """A poll question posted by a user.
 
-    A question includes free‐form text and up to four answer options.  If
-    ``options`` is empty then the frontend should default to a simple
-    yes/no poll.  The ``is_anonymous`` flag controls whether the
-    asker's identity is hidden from other users.
+    A question includes free‐form text and up to four answer options.  The
+    ``question_type`` field determines whether the question is a yes/no poll,
+    a multiple‑choice poll, or a numeric rating. If ``options`` is empty then
+    yes/no polls default to a simple binary choice. The ``is_anonymous`` flag
+    controls whether the asker's identity is hidden from other users.
     """
 
     author = models.ForeignKey(
@@ -41,6 +42,17 @@ class Question(models.Model):
         blank=True,
         related_name="questions",
     )
+
+    class QuestionType(models.TextChoices):
+        YES_NO = "yesno", "Yes/No"
+        MULTIPLE_CHOICE = "multiple_choice", "Multiple Choice"
+        RATING = "rating", "Rating"
+
+    question_type = models.CharField(
+        max_length=20,
+        choices=QuestionType.choices,
+        default=QuestionType.YES_NO,
+    )
     options = models.JSONField(default=list, blank=True)
     is_anonymous = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -53,10 +65,10 @@ class Answer(models.Model):
     """A user's answer to a question.
 
     ``selected_option_index`` stores the index of the chosen option in the
-    question's ``options`` list.  For yes/no polls, index 0 represents
-    “Yes” and index 1 represents “No”.  ``is_anonymous`` indicates
-    whether the user's identity should be hidden when aggregating
-    results.
+    question's ``options`` list for yes/no and multiple‑choice polls. For
+    rating questions the ``rating`` field stores the numeric score (1‑10).
+    ``is_anonymous`` indicates whether the user's identity should be hidden
+    when aggregating results.
     """
 
     question = models.ForeignKey(
@@ -69,7 +81,8 @@ class Answer(models.Model):
         on_delete=models.CASCADE,
         related_name="answers_user",
     )
-    selected_option_index = models.PositiveIntegerField()
+    selected_option_index = models.PositiveIntegerField(null=True, blank=True)
+    rating = models.PositiveIntegerField(null=True, blank=True)
     is_anonymous = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
