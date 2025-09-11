@@ -237,3 +237,6 @@ tools/
 *.env.*
 backend/.env*
 
+
+# Postgres data
+/db-data/
