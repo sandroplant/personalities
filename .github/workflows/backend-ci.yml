@@ -37,9 +37,11 @@ jobs:
           pip install -r backend/requirements.txt
 
       - name: Lint
-        run: make lint
+        run: |
           source .venv/bin/activate
-          flake8 backend
+          make lint
+
       - name: Test
-        run: make test
-          python manage.py test
+        run: |
+          source .venv/bin/activate
+          make test
