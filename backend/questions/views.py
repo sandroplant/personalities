@@ -10,7 +10,7 @@ normalizes tags when a new question is posted.
 from rest_framework import generics, permissions, filters
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import ValidationError
-from django.db.models import Count
+from django.db.models import Count, Q, Avg
 
 from .models import Tag, Question
 from .serializers import TagSerializer, QuestionSerializer, AnswerSerializer
@@ -70,11 +70,25 @@ class QuestionListCreateView(generics.ListCreateAPIView):
         # Determine ordering
         sort_param = self.request.query_params.get("sort", "").lower()
         if sort_param == "recent":
-            return queryset.order_by("-created_at")
+            queryset = queryset.order_by("-created_at")
+        else:
+            # Default: trending sort by answer count then recency
+            queryset = queryset.annotate(answer_count=Count("answers")).order_by(
+                "-answer_count", "-created_at"
+            )
 
-        # Default: trending sort by answer count then recency
-        return queryset.annotate(answer_count=Count("answers")).order_by(
-            "-answer_count", "-created_at"
+        # Always annotate yes/no counts and rating statistics
+        return queryset.annotate(
+            yes_count=Count(
+                "answers", filter=Q(answers__selected_option_index=0)
+            ),
+            no_count=Count(
+                "answers", filter=Q(answers__selected_option_index=1)
+            ),
+            average_rating=Avg("answers__rating"),
+            rating_count=Count(
+                "answers", filter=Q(answers__rating__isnull=False)
+            ),
         )
 
     def perform_create(self, serializer):
