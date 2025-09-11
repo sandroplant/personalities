@@ -23,6 +23,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     tag_id = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), source="tag", write_only=True, required=False
     )
+    question_type = serializers.ChoiceField(choices=Question.QuestionType.choices)
     options = serializers.JSONField(required=False)
     yes_count = serializers.SerializerMethodField()
     no_count = serializers.SerializerMethodField()
@@ -34,6 +35,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             "text",
             "tag",
             "tag_id",
+            "question_type",
             "options",
             "is_anonymous",
             "created_at",
@@ -58,10 +60,10 @@ class QuestionSerializer(serializers.ModelSerializer):
         Otherwise, ensure the number of entries does not exceed four and trim
         whitespace from each option. Empty or whitespace-only entries are removed.
         """
-        # Allow null/empty to signify a yes/no poll
+        # Allow null/empty to signify a yes/no or rating poll
         if not value:
             return []
-        # Enforce maximum of 4 options
+        # Enforce maximum of 4 options overall
         if len(value) > 4:
             raise serializers.ValidationError("A maximum of 4 options is allowed.")
         cleaned = []
@@ -70,6 +72,22 @@ class QuestionSerializer(serializers.ModelSerializer):
             if text:
                 cleaned.append(text)
         return cleaned
+
+    def validate(self, attrs):
+        """Validate option counts based on question_type."""
+        qtype = attrs.get("question_type")
+        options = attrs.get("options") or []
+        if qtype == Question.QuestionType.MULTIPLE_CHOICE:
+            if len(options) < 2:
+                raise serializers.ValidationError(
+                    {"options": "Multiple choice questions require 2-4 options."}
+                )
+        else:
+            if options:
+                raise serializers.ValidationError(
+                    {"options": "Options are only allowed for multiple choice questions."}
+                )
+        return attrs
 
     def create(self, validated_data):
         # Attach the author from context
@@ -83,11 +101,62 @@ class AnswerSerializer(serializers.ModelSerializer):
     question_id = serializers.PrimaryKeyRelatedField(
         queryset=Question.objects.all(), source="question"
     )
+    selected_option_index = serializers.IntegerField(required=False, min_value=0)
+    rating = serializers.IntegerField(required=False, min_value=1, max_value=10)
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Answer
-        fields = ["question_id", "selected_option_index", "is_anonymous", "user"]
+        fields = [
+            "question_id",
+            "selected_option_index",
+            "rating",
+            "is_anonymous",
+            "user",
+        ]
+
+    def validate(self, attrs):
+        """Ensure the answer matches the question type."""
+        question: Question = attrs["question"]
+        qtype = question.question_type
+        option_index = attrs.get("selected_option_index")
+        rating = attrs.get("rating")
+
+        if qtype == Question.QuestionType.RATING:
+            if rating is None:
+                raise serializers.ValidationError(
+                    {"rating": "Rating value required for rating questions."}
+                )
+            if option_index is not None:
+                raise serializers.ValidationError(
+                    {
+                        "selected_option_index": "Option index not used for rating questions."
+                    }
+                )
+        else:
+            if option_index is None:
+                raise serializers.ValidationError(
+                    {
+                        "selected_option_index": "Option index required for this question."
+                    }
+                )
+            if rating is not None:
+                raise serializers.ValidationError(
+                    {"rating": "Rating not allowed for this question."}
+                )
+            if qtype == Question.QuestionType.YES_NO:
+                if option_index not in (0, 1):
+                    raise serializers.ValidationError(
+                        {
+                            "selected_option_index": "Yes/No questions expect option 0 or 1."
+                        }
+                    )
+            elif qtype == Question.QuestionType.MULTIPLE_CHOICE:
+                if option_index >= len(question.options):
+                    raise serializers.ValidationError(
+                        {"selected_option_index": "Invalid option index."}
+                    )
+        return attrs
 
     def create(self, validated_data):
         # unique constraint ensures only one answer per user per question

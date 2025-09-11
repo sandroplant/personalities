@@ -25,6 +25,7 @@ interface Question {
   text: string;
   tag: Tag | null;
   tag_id?: number;
+  question_type: 'yesno' | 'multiple_choice' | 'rating';
   options?: string[] | null;
   is_anonymous: boolean;
   created_at: string;
@@ -57,6 +58,7 @@ const QuestionsFeed: React.FC = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [options, setOptions] = useState<string[]>(['', '', '', '']);
   const [submitting, setSubmitting] = useState(false);
+  const [ratings, setRatings] = useState<Record<number, number>>({});
 
   /**
    * Fetch tags and questions on mount. Also re-fetch when the selected
@@ -113,6 +115,19 @@ const QuestionsFeed: React.FC = () => {
     }
   };
 
+  const submitRating = async (questionId: number, rating: number) => {
+    try {
+      await api.post('/questions/answers/', {
+        question_id: questionId,
+        rating,
+        is_anonymous: false,
+      });
+    } catch (err) {
+      console.error('Error submitting rating', err);
+      alert('There was an error submitting your rating. Please try again.');
+    }
+  };
+
   /**
    * Handle submission of a new question from the modal. Validates
    * required fields and sends a POST request. If options are blank
@@ -130,6 +145,7 @@ const QuestionsFeed: React.FC = () => {
       const payload: any = {
         text: questionText.trim(),
         is_anonymous: isAnonymous,
+        question_type: filteredOptions.length > 0 ? 'multiple_choice' : 'yesno',
       };
       // Prioritize custom tag over selected tag
       if (customTag.trim()) {
@@ -234,8 +250,27 @@ const QuestionsFeed: React.FC = () => {
                     {q.tag.name}
                   </Card.Subtitle>
                 )}
-                {/* Display options and answer buttons */}
-                {q.options && q.options.length > 0 ? (
+                {/* Display options and answer inputs */}
+                {q.question_type === 'rating' ? (
+                  <>
+                    <Form.Range
+                      min={1}
+                      max={10}
+                      value={ratings[q.id] || 5}
+                      onChange={(e) =>
+                        setRatings({ ...ratings, [q.id]: parseInt(e.target.value) })
+                      }
+                      className="mb-2"
+                    />
+                    <div className="mb-2">Rating: {ratings[q.id] || 5}</div>
+                    <Button
+                      variant="primary"
+                      onClick={() => submitRating(q.id, ratings[q.id] || 5)}
+                    >
+                      Submit Rating
+                    </Button>
+                  </>
+                ) : q.options && q.options.length > 0 ? (
                   <>
                     {q.options.map((opt, idx) => (
                       <Button
