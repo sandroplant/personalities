@@ -69,23 +69,16 @@ def register_user(request):
 # User Login
 @api_view(["POST"])
 def login_user(request):
-    email = request.data.get("email")
+    username = request.data.get("username")
     password = request.data.get("password")
 
-    if not email or not password:
+    if not username or not password:
         return JsonResponse(
-            {"error": "Email and password are required"},
+            {"error": "Username and password are required"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    user_obj = User.objects.filter(email=email).first()
-    if not user_obj:
-        return JsonResponse(
-            {"error": "Invalid credentials"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    user = authenticate(request, username=user_obj.username, password=password)
+    user = authenticate(request, username=username, password=password)
     if not user:
         return JsonResponse(
             {"error": "Invalid credentials"},

@@ -27,8 +27,20 @@ class UserAuthTests(APITestCase):
         )
 
         url = reverse("login_user")
-        data = {"email": "login@example.com", "password": "pass1234"}
+        data = {"username": "loginuser", "password": "pass1234"}
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("_auth_user_id", self.client.session)
+
+    def test_login_invalid_credentials(self):
+        User = get_user_model()
+        User.objects.create_user(
+            username="loginuser", email="login@example.com", password="pass1234"
+        )
+
+        url = reverse("login_user")
+        data = {"username": "loginuser", "password": "wrongpass"}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn("_auth_user_id", self.client.session)
 
