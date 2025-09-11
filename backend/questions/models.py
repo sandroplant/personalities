@@ -42,6 +42,7 @@ class Question(models.Model):
         blank=True,
         related_name="questions",
     )
+
     class QuestionType(models.TextChoices):
         YES_NO = "yesno", "Yes/No"
         MULTIPLE_CHOICE = "multiple_choice", "Multiple Choice"
