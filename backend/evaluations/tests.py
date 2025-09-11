@@ -72,4 +72,3 @@ class EvaluationTasksViewTests(APITestCase):
         tasks = response.data["tasks"]
         pairs = {(t["subjectId"], t["criterionId"]) for t in tasks}
         self.assertIn((self.friend.id, self.criterion.id), pairs)
-
