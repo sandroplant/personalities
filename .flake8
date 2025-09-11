@@ -12,5 +12,8 @@ exclude =
     db-data,
     backend/**/migrations/**,
     **/site-packages/**,
-    **/_vendor/**
+    **/_vendor/**,
+    frontend/**,
+    frontend/node_modules/**,
+    node_modules/**
 ignore = E203,W503
