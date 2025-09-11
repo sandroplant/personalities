@@ -36,6 +36,10 @@ jobs:
           python -m pip install -U pip
           pip install -r backend/requirements.txt
 
+      - name: Lint (flake8)
+        run: |
+          source .venv/bin/activate
+          flake8 backend
       - name: Run Django tests
         working-directory: backend
         run: |
