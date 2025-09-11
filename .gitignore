@@ -231,3 +231,9 @@ repo/
 db-data/
 personalities.zip
 tools/
+
+# Ignore env files
+*.env
+*.env.*
+backend/.env*
+

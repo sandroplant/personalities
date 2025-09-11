@@ -1,7 +1,9 @@
+# core/consumers.py
+
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
-import logging
 import bleach
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         logger.info(f"🔌 Client disconnected from room {self.room_name}")
 
-    # Receive message from WebSocket
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = bleach.clean(text_data_json.get("message", ""))
@@ -38,7 +39,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             },
         )
 
-    # Receive message from room group
     async def chat_message(self, event):
         message = event["message"]
         sender = event["sender"]

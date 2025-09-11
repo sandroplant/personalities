@@ -1,23 +1,35 @@
-# Ignore backend dependencies and generated files
+# Ignore virtual environments and Python cache
 venv/
+env/
 __pycache__/
 *.pyc
-db-data/
-logs/
-media/
-staticfiles/
-*.sqlite3
 
 # Ignore system files and logs
 .DS_Store
 *.log
 
-# Ignore Docker-related files (if not required inside container)
+# Ignore local settings and environment files
+*.local
+.env
+.env.*
+
+# Ignore media and static files (if they are generated)
+media/
+static/
+staticfiles/
+logs/
+db-data/
+coverage/
+*.sqlite3
+
+# Ignore Docker-related files (since they're not needed inside the container)
 docker-compose.yml
+Dockerfile
 frontend/
 frontend/Dockerfile
-backend/Dockerfile  # Optional if copying from root
+backend/
+backend/Dockerfile  # If .dockerignore is inside backend directory
 
 # Ignore test and backup files
-coverage/
 *.test.*
+*.bak

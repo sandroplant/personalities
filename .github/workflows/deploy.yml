@@ -1,3 +1,4 @@
+# deploy.yml (for GitHub Actions)
 name: Deploy to EC2
 
 on:
@@ -13,51 +14,73 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      # Set up Node.js for the React Frontend
+      - name: Set up Node.js (Frontend)
         uses: actions/setup-node@v3
         with:
           node-version: "20"
 
-      - name: Install Dependencies (Server)
-        run: npm install
-
-      - name: Install Dependencies (Client)
+      - name: Install Dependencies (Frontend)
         run: |
-          cd client
+          cd frontend
           npm install
 
-      - name: Install webpack-cli
-        run: npm install --save-dev webpack-cli
+      - name: Build React Frontend
+        run: |
+          cd frontend
+          npm run build
 
-      - name: Build Project
-        run: npm run build
+      # Set up Node.js for Backend (Django Backend, Node.js for any utility)
+      - name: Install Dependencies (Backend)
+        run: |
+          cd backend
+          npm install  # Only if you have Node.js utilities like webpack in your backend
 
+      # Add SSH Key for EC2 Access
       - name: Adding SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa && chmod 400 ~/.ssh/id_rsa || { echo 'EC2_SSH_KEY secret not found or invalid'; exit 1; }
           chmod 600 ~/.ssh/id_rsa
 
+      # Debugging SSH Connection (Check if SSH connection works)
       - name: Debugging SSH Connection
         run: |
           echo "Connecting to EC2"
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "echo 'Connection Successful!'"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@34.226.155.135 "echo 'Connection Successful!'"
 
-      - name: Deploy to EC2
+      # Copy the React build files to the EC2 instance
+      - name: Deploy React Frontend to EC2
         run: |
-          echo "Deploying to EC2"
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ec2-user@54.197.63.5:/home/ec2-user/personalities/server
+          echo "Deploying React Frontend to EC2"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r frontend/dist/* ubuntu@34.226.155.135:/home/ubuntu/personalities/frontend/dist
 
-      - name: Install and Restart Services on EC2
+      # Deploy the Django Backend to EC2
+      - name: Deploy Django Backend to EC2
         run: |
-          echo "Running npm install, build, and restarting pm2 on EC2"
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "
-            cd /home/ec2-user/personalities/server &&
-            npm install &&
-            npm run build &&
-            pm2 reload all --update-env || pm2 start /home/ec2-user/personalities/server/dist/app.js --name 'app'"
+          echo "Deploying Django Backend to EC2"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend/* ubuntu@34.226.155.135:/home/ubuntu/personalities/backend
 
-      - name: Verify App Running
+      # Install Dependencies for the Django Backend
+      - name: Install Django Backend Dependencies on EC2
+        run: |
+          echo "Installing Django Backend Dependencies on EC2"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@34.226.155.135 "cd /home/ubuntu/personalities/backend && pip install -r requirements.txt"
+
+      # Run Migrations and Start Django Application (with Gunicorn)
+      - name: Run Migrations and Start Django on EC2
+        run: |
+          echo "Running Django Migrations and starting Gunicorn on EC2"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@34.226.155.135 "             cd /home/ubuntu/personalities/backend &&             python manage.py migrate &&             gunicorn django_project.wsgi:application --bind 0.0.0.0:8000 --daemon"
+
+      # Ensure Nginx (if used) is serving the React and Django correctly
+      - name: Restart Nginx (if used) on EC2
+        run: |
+          echo "Restarting Nginx to serve React and Django"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@34.226.155.135 "sudo systemctl restart nginx"
+
+      # Verify the Application is Running
+      - name: Verify Application Running on EC2
         run: |
           echo "Verifying app status"
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@54.197.63.5 "pm2 status"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@34.226.155.135 "ps aux | grep gunicorn"
