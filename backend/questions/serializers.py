@@ -25,8 +25,10 @@ class QuestionSerializer(serializers.ModelSerializer):
     )
     question_type = serializers.ChoiceField(choices=Question.QuestionType.choices)
     options = serializers.JSONField(required=False)
-    yes_count = serializers.SerializerMethodField()
-    no_count = serializers.SerializerMethodField()
+    yes_count = serializers.IntegerField(read_only=True)
+    no_count = serializers.IntegerField(read_only=True)
+    average_rating = serializers.FloatField(read_only=True)
+    rating_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Question
@@ -41,16 +43,17 @@ class QuestionSerializer(serializers.ModelSerializer):
             "created_at",
             "yes_count",
             "no_count",
+            "average_rating",
+            "rating_count",
         ]
-        read_only_fields = ["id", "created_at", "yes_count", "no_count"]
-
-    def get_yes_count(self, obj: Question) -> int:
-        """Return the number of answers selecting index 0 (Yes)."""
-        return obj.answers.filter(selected_option_index=0).count()
-
-    def get_no_count(self, obj: Question) -> int:
-        """Return the number of answers selecting index 1 (No)."""
-        return obj.answers.filter(selected_option_index=1).count()
+        read_only_fields = [
+            "id",
+            "created_at",
+            "yes_count",
+            "no_count",
+            "average_rating",
+            "rating_count",
+        ]
 
     def validate_options(self, value):
         """

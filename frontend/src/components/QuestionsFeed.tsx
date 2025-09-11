@@ -29,8 +29,10 @@ interface Question {
   options?: string[] | null;
   is_anonymous: boolean;
   created_at: string;
-  yes_count: number;
-  no_count: number;
+  yes_count?: number;
+  no_count?: number;
+  average_rating?: number;
+  rating_count?: number;
 }
 
 /**
@@ -122,6 +124,13 @@ const QuestionsFeed: React.FC = () => {
         rating,
         is_anonymous: false,
       });
+      // Refresh questions to show updated rating results
+      const params: any = {};
+      if (selectedTag) params.tag = selectedTag;
+      if (search.trim()) params.search = search.trim();
+      if (sort === 'recent') params.sort = 'recent';
+      const response = await api.get('/questions/questions/', { params });
+      setQuestions(response.data.results || response.data);
     } catch (err) {
       console.error('Error submitting rating', err);
       alert('There was an error submitting your rating. Please try again.');
@@ -263,6 +272,12 @@ const QuestionsFeed: React.FC = () => {
                       className="mb-2"
                     />
                     <div className="mb-2">Rating: {ratings[q.id] || 5}</div>
+                    {typeof q.average_rating === 'number' && (
+                      <div className="mb-2">
+                        Average: {q.average_rating.toFixed(1)} (
+                        {q.rating_count ?? 0} votes)
+                      </div>
+                    )}
                     <Button
                       variant="primary"
                       onClick={() => submitRating(q.id, ratings[q.id] || 5)}
@@ -290,13 +305,13 @@ const QuestionsFeed: React.FC = () => {
                       className="me-2"
                       onClick={() => submitAnswer(q.id, 0)}
                     >
-                      Yes ({q.yes_count})
+                      Yes ({q.yes_count ?? 0})
                     </Button>
                     <Button
                       variant="outline-danger"
                       onClick={() => submitAnswer(q.id, 1)}
                     >
-                      No ({q.no_count})
+                      No ({q.no_count ?? 0})
                     </Button>
                   </>
                 )}
