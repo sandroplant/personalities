@@ -2,7 +2,6 @@ import os
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view
 import openai  # openai==0.28.0
