@@ -38,6 +38,27 @@ class EvaluationSerializer(serializers.ModelSerializer):
             "criterion_id",
             "subject_id",
             "score",
+            "familiarity",
+            "normalized_score",
+            "pending",
+            "rater_mean",
+            "rater_stddev",
+            "reliability_weight",
+            "extreme_rate_weight",
+            "objectivity_score",
             "created_at",
         ]
-        read_only_fields = ("id", "evaluator", "subject", "criterion", "created_at")
+        read_only_fields = (
+            "id",
+            "evaluator",
+            "subject",
+            "criterion",
+            "normalized_score",
+            "pending",
+            "rater_mean",
+            "rater_stddev",
+            "reliability_weight",
+            "extreme_rate_weight",
+            "objectivity_score",
+            "created_at",
+        )

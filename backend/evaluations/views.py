@@ -3,9 +3,11 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from django.db.models import Avg
+from django.db.models import Avg, StdDev
+from rest_framework.exceptions import ValidationError
 
 from .models import Criterion, Evaluation
+from .signals import evaluation_submitted
 from .serializers import CriterionSerializer, EvaluationSerializer
 
 
@@ -30,7 +32,27 @@ class EvaluationListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         subject_id = self.request.query_params.get("subject_id")
-        serializer.save(evaluator=self.request.user, subject_id=subject_id)
+        evaluator = self.request.user
+        first_rating = not Evaluation.objects.filter(
+            evaluator=evaluator, subject_id=subject_id
+        ).exists()
+        if first_rating and serializer.validated_data.get("familiarity") is None:
+            raise ValidationError({"familiarity": "This field is required."})
+        evaluation = serializer.save(evaluator=evaluator, subject_id=subject_id)
+
+        stats = Evaluation.objects.filter(evaluator=evaluator).aggregate(
+            mean=Avg("score"), stddev=StdDev("score")
+        )
+        mean = stats["mean"] or 0
+        stddev = stats["stddev"] or 0
+        normalized = (evaluation.score - mean) / stddev if stddev else 0
+        Evaluation.objects.filter(pk=evaluation.pk).update(
+            rater_mean=mean,
+            rater_stddev=stddev,
+            normalized_score=normalized,
+        )
+        evaluation.refresh_from_db()
+        evaluation_submitted.send(sender=Evaluation, evaluation=evaluation)
 
 
 class EvaluationTasksView(APIView):
