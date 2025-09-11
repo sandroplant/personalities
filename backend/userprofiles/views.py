@@ -1,15 +1,13 @@
 # userprofiles/views.py
 
 import os
-import bcrypt
 import json
 import spotipy
 from functools import wraps
 from django.shortcuts import redirect, render
 from django.http import JsonResponse, HttpResponse
 from django.views import View
-from django.contrib.auth.models import User
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from rest_framework.decorators import api_view, permission_classes
@@ -20,6 +18,9 @@ from cloudinary import uploader
 from spotipy.oauth2 import SpotifyOAuth
 from .models import Profile, SpotifyProfile
 from .serializers import ProfileSerializer
+
+
+User = get_user_model()
 
 
 # Middleware for user authentication
@@ -56,14 +57,8 @@ def register_user(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Use bcrypt to hash password manually
-    hashed_password = bcrypt.hashpw(
-        password.encode("utf-8"),
-        bcrypt.gensalt(),
-    ).decode("utf-8")
-
-    user = User(username=username, email=email, password=hashed_password)
-    user.save()
+    # Create user with Django's built-in helper
+    User.objects.create_user(username=username, email=email, password=password)
 
     return JsonResponse(
         {"message": "User registered successfully"},
@@ -83,18 +78,15 @@ def login_user(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    user = User.objects.filter(email=email).first()
-    if not user:
+    user_obj = User.objects.filter(email=email).first()
+    if not user_obj:
         return JsonResponse(
             {"error": "Invalid credentials"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Use bcrypt to check password
-    if not bcrypt.checkpw(
-        password.encode("utf-8"),
-        user.password.encode("utf-8"),
-    ):
+    user = authenticate(request, username=user_obj.username, password=password)
+    if not user:
         return JsonResponse(
             {"error": "Invalid credentials"},
             status=status.HTTP_400_BAD_REQUEST,
