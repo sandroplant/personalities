@@ -72,3 +72,42 @@ class EvaluationTasksViewTests(APITestCase):
         tasks = response.data["tasks"]
         pairs = {(t["subjectId"], t["criterionId"]) for t in tasks}
         self.assertIn((self.friend.id, self.criterion.id), pairs)
+
+    def test_repeat_evaluation_allowed_after_cooldown(self):
+        Friendship.objects.create(
+            from_user=self.user, to_user=self.friend, is_confirmed=True
+        )
+        self._auth()
+
+        url = reverse("evaluation-create") + f"?subject_id={self.friend.id}"
+
+        data = {
+            "subject_id": self.friend.id,
+            "criterion_id": self.criterion.id,
+            "score": 5,
+            "familiarity": 5,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 201)
+
+        Evaluation.objects.filter(
+            evaluator=self.user,
+            subject=self.friend,
+            criterion=self.criterion,
+        ).update(created_at=timezone.now() - timedelta(days=REPEAT_DAYS + 1))
+
+        data2 = {
+            "subject_id": self.friend.id,
+            "criterion_id": self.criterion.id,
+            "score": 4,
+        }
+        response = self.client.post(url, data2)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            Evaluation.objects.filter(
+                evaluator=self.user,
+                subject=self.friend,
+                criterion=self.criterion,
+            ).count(),
+            2,
+        )
