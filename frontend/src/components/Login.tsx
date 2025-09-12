@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, ChangeEvent } from 'react';
 import axios from 'axios';
 import {
@@ -11,80 +12,101 @@ import FormLabel from 'react-bootstrap/FormLabel';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Alert from 'react-bootstrap/Alert';
+=======
+import React, { useState } from 'react';
+import api from './services/api';
+>>>>>>> fddbe62 (Privacy + profile requests backend scaffolding; viewer-aware privacy; CI; frontend stubs)
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const handleSubmit: FormProps['onSubmit'] = async (e) => {
+  const tryEndpoints = async (emailVal: string, passwordVal: string): Promise<void> => {
+    const endpoints = [
+      '/auth/login/',
+      '/custom_auth/login/',
+      '/api/login/',
+      '/api/token/', // JWT fallback
+    ];
+    let lastErr: any = null;
+    for (const ep of endpoints) {
+      // Build common payloads for different backends
+      const jsonPayload = {
+        email: emailVal,
+        username: emailVal,
+        password: passwordVal,
+      } as any;
+      try {
+        // Try JSON first
+        const res = await api.post(ep, jsonPayload, { withCredentials: true });
+        if (res.status >= 200 && res.status < 300) {
+          setSuccess('Login successful.');
+          setError(null);
+          return;
+        }
+      } catch (e: any) {
+        lastErr = e;
+        // If JSON failed, try form-encoded
+        try {
+          const form = new URLSearchParams();
+          form.append('email', emailVal);
+          form.append('username', emailVal);
+          form.append('password', passwordVal);
+          // SimpleJWT expects 'username' and 'password' (unless customized)
+          if (ep === '/api/token/') {
+            // Some setups use 'email' as username field; keep both in form
+          }
+          const res2 = await api.post(ep, form, {
+            withCredentials: true,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          });
+          if (res2.status >= 200 && res2.status < 300) {
+            setSuccess('Login successful.');
+            setError(null);
+            return;
+          }
+        } catch (e2: any) {
+          lastErr = e2;
+        }
+      }
+    }
+    throw lastErr || new Error('Login failed');
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
+    setError(null);
+    setSuccess(null);
     try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_URL}/api/login`,
-        { email, password },
-        { withCredentials: true }
-      );
-      console.log('Login successful', response.data);
-      // Handle successful login (e.g., redirect to dashboard)
-    } catch (error) {
-      console.error('Login error', error);
-      setError('Invalid email or password. Please try again.');
-    } finally {
-      setLoading(false);
+      // Ensure CSRF cookie is set
+      try { await api.get('/auth/csrf/', { withCredentials: true }); } catch {}
+      await tryEndpoints(email, password);
+    } catch (e: any) {
+      console.error('Login error', e);
+      const msg = e?.response?.data?.detail || e?.message || 'Login failed';
+      setError(String(msg));
     }
   };
 
-  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setEmail((e.target as HTMLInputElement).value);
-  };
-
-  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setPassword((e.target as HTMLInputElement).value);
-  };
-
   return (
-    <Container>
-      <TabContainer></TabContainer>
-      <h2>Login</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
-      <Form onSubmit={handleSubmit}>
-        <FormGroup controlId="formEmail">
-          <FormLabel>Email</FormLabel>
-          <FormControl
-            type="email"
-            value={email}
-            onChange={handleEmailChange}
-            required
-          />
-        </FormGroup>
-        <FormGroup controlId="formPassword" className="mt-3">
-          <FormLabel>Password</FormLabel>
-          <FormControl
-            type="password"
-            value={password}
-            onChange={(e) =>
-              handlePasswordChange(
-                e as unknown as ChangeEvent<HTMLInputElement>
-              )
-            }
-            required
-          />
-        </FormGroup>
-        <Button
-          variant="primary"
-          type="submit"
-          className="mt-3"
-          disabled={loading}
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </Button>
-      </Form>
-    </Container>
+    <div className="container mt-5" style={{ maxWidth: 480 }}>
+      <h2 className="mb-3">Login</h2>
+      {error && <div className="alert alert-danger">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
+      <form onSubmit={onSubmit}>
+        <div className="mb-3">
+          <label className="form-label">Email</label>
+          <input className="form-control" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </div>
+        <div className="mb-3">
+          <label className="form-label">Password</label>
+          <input className="form-control" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </div>
+        <button className="btn btn-primary" type="submit">Login</button>
+      </form>
+    </div>
   );
 };
 

@@ -1,8 +1,8 @@
 # spotify_auth_utils.py
 
 import base64
-import os
 import hashlib
+import os
 
 
 def generate_code_verifier() -> str:

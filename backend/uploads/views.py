@@ -1,14 +1,16 @@
+from urllib.parse import urljoin
+
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import api_view
 from rest_framework import status
-from django.core.files.storage import FileSystemStorage
-from django.conf import settings
-from urllib.parse import urljoin
-from .validators import (
-    validate_file_size,
+from rest_framework.decorators import api_view
+
+from .validators import (  # Custom validators for file upload
     validate_file_extension,
-)  # Custom validators for file upload
+    validate_file_size,
+)
 
 
 # Upload a single file route with CSRF protection and rate limiting

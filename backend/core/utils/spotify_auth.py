@@ -1,6 +1,7 @@
 # core/utils/spotify_auth.py
 
 import os
+
 from spotipy.oauth2 import SpotifyOAuth
 
 # Spotify OAuth Configuration

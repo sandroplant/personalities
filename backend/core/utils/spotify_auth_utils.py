@@ -1,16 +1,15 @@
 # core/utils/spotify_auth_utils.py
 
-import os
 import base64
 import hashlib
+import os
 import secrets
 
 
 def generate_code_verifier(length: int = 64) -> str:
     """
-    Generates a secure code verifier for the PKCE (Proof Key for Code Exchange)
-    flow. The code verifier is a high-entropy cryptographic random string using
-    unreserved characters.
+    Generates a secure code verifier for the PKCE (Proof Key for Code Exchange) flow.
+    The code verifier is a high-entropy cryptographic random string using the unreserved characters.
 
     Args:
         length (int): The length of the code verifier. Defaults to 64 characters.

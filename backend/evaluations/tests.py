@@ -3,11 +3,10 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
-from rest_framework.test import APITestCase
-
 from evaluations.models import Criterion, Evaluation
-from userprofiles.models import Friendship
 from evaluations.views import REPEAT_DAYS
+from rest_framework.test import APITestCase
+from userprofiles.models import Friendship
 
 
 class EvaluationTasksViewTests(APITestCase):

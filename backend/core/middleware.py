@@ -1,7 +1,8 @@
-from django.utils.deprecation import MiddlewareMixin
-from django.http import JsonResponse
-from django_ratelimit.decorators import ratelimit
 import logging
+
+from django.http import JsonResponse
+from django.utils.deprecation import MiddlewareMixin
+from django_ratelimit.decorators import ratelimit
 
 logger = logging.getLogger(__name__)
 

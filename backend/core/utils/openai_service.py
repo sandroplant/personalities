@@ -1,7 +1,9 @@
 # core/utils/openai_service.py
 
 import os
+
 import openai
+
 from .logger import logger
 
 openai.api_key = os.getenv("OPENAI_API_KEY")

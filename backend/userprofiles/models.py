@@ -8,11 +8,11 @@ class SpotifyProfile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="userprofile_spotify_profile",  # Updated to avoid conflict
+        related_name="userprofile_spotify_profile",
     )
     display_name = models.CharField(max_length=100)
     email = models.EmailField()
-    images = models.JSONField()  # Store user images from Spotify
+    images = models.JSONField()
 
     def __str__(self):
         return self.display_name
@@ -78,8 +78,7 @@ class Profile(models.Model):
     favorite_podcasts = models.CharField(max_length=200, blank=True, null=True)
     favorite_influencers = models.CharField(max_length=200, blank=True, null=True)
 
-    # Personality & values stored as JSON:
-    # {value_name: {"self": int, "friends": bool}}
+    # Personality & values
     personality_values = models.JSONField(blank=True, null=True)
 
     # Fun & miscellaneous
@@ -93,22 +92,8 @@ class Profile(models.Model):
         return f"{self.user.username}'s Profile"
 
 
-class Friendship(models.Model):
-    from_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="friendships_sent",
-    )
-    to_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="friendships_received",
-    )
-    is_confirmed = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ("from_user", "to_user")
-
-    def __str__(self):
-        return f"Friendship from {self.from_user} to {self.to_user}"
+# Ensure privacy models are registered with the app
+try:
+    from .privacy_models import InfoRequest, ProfileVisibility  # noqa: F401
+except Exception:
+    pass

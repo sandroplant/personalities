@@ -1,13 +1,15 @@
 # spotify_auth/views.py
 
-import requests
-from django.http import JsonResponse, HttpResponseRedirect
-from rest_framework.decorators import api_view
-from rest_framework import status
-from django.conf import settings
-from urllib.parse import urlencode
-from .spotify_auth_utils import generate_code_verifier, generate_code_challenge
 import uuid
+from urllib.parse import urlencode
+
+import requests
+from django.conf import settings
+from django.http import HttpResponseRedirect, JsonResponse
+from rest_framework import status
+from rest_framework.decorators import api_view
+
+from .spotify_auth_utils import generate_code_challenge, generate_code_verifier
 
 # Constants for Spotify
 SPOTIFY_CLIENT_ID = settings.SPOTIFY_CLIENT_ID

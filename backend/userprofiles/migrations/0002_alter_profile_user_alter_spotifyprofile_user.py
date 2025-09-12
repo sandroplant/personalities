@@ -8,19 +8,27 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('userprofiles', '0001_initial'),
+        ("userprofiles", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='profile',
-            name='user',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='userprofile_profile', to=settings.AUTH_USER_MODEL),
+            model_name="profile",
+            name="user",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="userprofile_profile",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='spotifyprofile',
-            name='user',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='userprofile_spotify_profile', to=settings.AUTH_USER_MODEL),
+            model_name="spotifyprofile",
+            name="user",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="userprofile_spotify_profile",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]
