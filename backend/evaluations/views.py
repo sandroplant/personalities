@@ -40,12 +40,15 @@ class EvaluationListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         subject_id = self.request.query_params.get("subject_id")
         evaluator = self.request.user
+        criterion = serializer.validated_data.get("criterion")
         first_rating = not Evaluation.objects.filter(
-            evaluator=evaluator, subject_id=subject_id
+            evaluator=evaluator, subject_id=subject_id, criterion=criterion
         ).exists()
         if first_rating and serializer.validated_data.get("familiarity") is None:
             raise ValidationError({"familiarity": "This field is required."})
-        evaluation = serializer.save(evaluator=evaluator, subject_id=subject_id)
+        evaluation = serializer.save(
+            evaluator=evaluator, subject_id=subject_id, criterion=criterion
+        )
 
         stats = Evaluation.objects.filter(evaluator=evaluator).aggregate(
             mean=Avg("score"), stddev=StdDev("score")
