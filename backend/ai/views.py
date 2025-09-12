@@ -1,10 +1,11 @@
 import os
+
+import openai
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-from rest_framework.decorators import api_view
 from rest_framework import status
-import openai
+from rest_framework.decorators import api_view
 
 # Fetch the key from settings or fall back to OS environment
 openai_api_key = getattr(settings, "OPENAI_API_KEY", None) or os.getenv(

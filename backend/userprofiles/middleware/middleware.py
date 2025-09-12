@@ -1,11 +1,11 @@
-from django.views import View
-import jwt
 import os
-from django.http import JsonResponse
 from functools import wraps
+
+import jwt
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
-from rest_framework import status
 from django.views import View
+from rest_framework import status
 from your_app.models import User  # Adjust import based on your User model
 
 

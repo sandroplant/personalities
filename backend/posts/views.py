@@ -1,9 +1,10 @@
 from django.http import JsonResponse
-from rest_framework.decorators import api_view
-from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
-from .models import Post  # Import your Post model
+from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+from .models import Post  # Import your Post model
 from .serializers import PostSerializer  # Create a serializer for Post
 
 

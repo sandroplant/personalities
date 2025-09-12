@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .privacy_models import ProfileVisibility, InfoRequest
+
+from .privacy_models import InfoRequest, ProfileVisibility
 
 
 class ProfileVisibilitySerializer(serializers.ModelSerializer):

@@ -1,11 +1,11 @@
 from django.urls import path
+
 from .privacy_views import (
-    ProfileVisibilityView,
-    InfoRequestListCreateView,
     InfoRequestActionView,
+    InfoRequestListCreateView,
+    ProfileVisibilityView,
     VisibleProfileView,
 )
-
 
 urlpatterns = [
     path("visibility/", ProfileVisibilityView.as_view(), name="profile-visibility"),

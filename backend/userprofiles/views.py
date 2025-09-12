@@ -1,27 +1,27 @@
 # userprofiles/views.py
 
-import os
-import bcrypt
 import json
-import spotipy  # Ensure spotipy is imported
+import os
 from functools import wraps
-from django.shortcuts import redirect, render
-from django.http import JsonResponse, HttpResponse
-from django.views import View
-from django.contrib.auth.models import User
+
+import bcrypt
+import spotipy  # Ensure spotipy is imported
+from cloudinary import uploader
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
-from rest_framework.decorators import api_view, permission_classes
+from django.views import View
 from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from cloudinary import uploader
 from spotipy.oauth2 import SpotifyOAuth
+
 from .models import Profile, SpotifyProfile
-from .serializers import (
-    ProfileSerializer,
-)  # Ensure these serializers exist
+from .serializers import ProfileSerializer  # Ensure these serializers exist
 
 
 # Middleware for user authentication

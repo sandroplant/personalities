@@ -1,33 +1,34 @@
-from rest_framework import generics, status, viewsets
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.decorators import api_view, permission_classes
-from django.http import JsonResponse
-from django.contrib.auth import login, logout
-from django.shortcuts import redirect, render
-from django.conf import settings
-from django_ratelimit.decorators import ratelimit
-from django.views.decorators.csrf import csrf_exempt
-import requests
-import secrets
-import string
-import bleach
 import base64
 import json
+import secrets
+import string
 
-from .models import User, Profile, Post, Message
+import bleach
+import requests
+from django.conf import settings
+from django.contrib.auth import login, logout
+from django.http import JsonResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.csrf import csrf_exempt
+from django_ratelimit.decorators import ratelimit
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .models import Message, Post, Profile, User
 from .serializers import (
-    UserSerializer,
-    RegisterSerializer,
     LoginSerializer,
-    ProfileSerializer,
-    PostSerializer,
     MessageSerializer,
+    PostSerializer,
+    ProfileSerializer,
+    RegisterSerializer,
+    UserSerializer,
 )
 from .utils.logger import logger
-from .utils.spotify_auth_utils import generate_code_verifier, generate_code_challenge
 from .utils.openai_service import get_openai_response
+from .utils.spotify_auth_utils import generate_code_challenge, generate_code_verifier
 
 
 @api_view(["PUT"])

@@ -7,7 +7,6 @@ from rest_framework import serializers
 
 from .models_privacy import Friendship, ProfileRequest
 
-
 User = get_user_model()
 
 

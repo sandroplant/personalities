@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Any, Iterable
+from typing import Any, Dict, Iterable
 
 from django.contrib.auth import get_user_model
 
 from .models_privacy import Friendship
-
 
 User = get_user_model()
 

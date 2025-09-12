@@ -1,8 +1,9 @@
 # core/apps.py
 
-from django.apps import AppConfig
-import sys
 import logging
+import sys
+
+from django.apps import AppConfig
 
 logger = logging.getLogger(__name__)
 

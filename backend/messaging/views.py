@@ -1,14 +1,16 @@
 import json
+from functools import wraps
+
+from core.utils.openai_service import get_openai_response
+from django.db.models import Q
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import api_view
-from rest_framework import status
 from django.utils.decorators import method_decorator
 from django.views import View
-from functools import wraps
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import status
+from rest_framework.decorators import api_view
+
 from .models import Message  # Adjust the import based on your Message model location
-from django.db.models import Q
-from core.utils.openai_service import get_openai_response
 
 
 # Middleware for user authentication

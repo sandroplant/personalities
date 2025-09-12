@@ -1,16 +1,15 @@
-from django.contrib import admin
-from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
-    SpectacularSwaggerView,
     SpectacularRedocView,
+    SpectacularSwaggerView,
 )
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
     # Main application and other app routes
     path("", include("core.urls")),
     path("ai/", include("ai.urls")),
@@ -22,10 +21,8 @@ urlpatterns = [
     path("evaluations/", include("evaluations.urls")),
     path("auth/", include("custom_auth.urls")),
     path("posts/", include("posts.urls")),
-
     # API routes (if core also exposes API)
     path("api/", include("core.urls")),
-
     # Schema and Documentation URLs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 from django.db.models import Q
-from rest_framework import permissions, viewsets, status
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .models_privacy import Friendship, ProfileRequest
-from .serializers_privacy import (
-    FriendshipSerializer,
-    ProfileRequestSerializer,
-)
+from .serializers_privacy import FriendshipSerializer, ProfileRequestSerializer
 
 
 class IsAuthenticated(permissions.BasePermission):

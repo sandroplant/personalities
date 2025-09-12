@@ -1,24 +1,25 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 from . import views
 from .views import (
-    UserViewSet,
-    ProfileViewSet,
-    PostViewSet,
-    MessageViewSet,
-    RegisterView,
     LoginView,
-    logout_view,
-    spotify_login,
-    spotify_callback,
-    spotify_profile,
+    MessageViewSet,
+    PostViewSet,
+    ProfileViewSet,
+    RegisterView,
+    UserViewSet,
     ai_response_view,
     example_api_view,
-    test_logging,
     get_user_profile_api,
-    update_user_profile_api,
     health_check,
+    logout_view,
+    spotify_callback,
+    spotify_login,
+    spotify_profile,
+    test_logging,
+    update_user_profile_api,
 )
 
 # Initialize the router and register viewsets

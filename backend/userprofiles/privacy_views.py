@@ -1,17 +1,13 @@
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from django.contrib.auth import get_user_model
-
-from .privacy_models import ProfileVisibility, InfoRequest
+from .privacy_models import InfoRequest, ProfileVisibility
+from .privacy_serializers import InfoRequestSerializer, ProfileVisibilitySerializer
 from .serializers import ProfileSerializer  # type: ignore
-from .privacy_serializers import (
-    ProfileVisibilitySerializer,
-    InfoRequestSerializer,
-)
 
 
 def get_or_create_visibility(profile):

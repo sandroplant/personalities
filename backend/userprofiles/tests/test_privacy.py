@@ -5,7 +5,6 @@ from rest_framework.test import APIClient
 
 from backend.userprofiles.models_privacy import ProfileRequest
 
-
 pytestmark = pytest.mark.django_db
 User = get_user_model()
 

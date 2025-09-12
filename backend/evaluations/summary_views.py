@@ -1,22 +1,14 @@
 from __future__ import annotations
 
 from django.conf import settings
-from django.db.models import (
-    Avg,
-    Case,
-    ExpressionWrapper,
-    F,
-    FloatField,
-    Value,
-    When,
-)
+from django.db.models import Avg, Case, ExpressionWrapper, F, FloatField, Value, When
 from django.db.models.functions import Coalesce
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Evaluation, Criterion  # noqa: F401 (used via F-expressions)
+from .models import Criterion, Evaluation  # noqa: F401 (used via F-expressions)
 
 
 class EvaluationSummaryV2View(APIView):

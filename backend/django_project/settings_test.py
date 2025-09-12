@@ -1,5 +1,5 @@
-from .settings import BASE_DIR  # noqa: F401
 from .settings import *  # noqa
+from .settings import BASE_DIR  # noqa: F401
 
 # Force SQLite for tests
 DATABASES = {

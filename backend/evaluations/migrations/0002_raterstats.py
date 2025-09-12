@@ -8,25 +8,44 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('evaluations', '0001_initial'),
+        ("evaluations", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RaterStats',
+            name="RaterStats",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ratings_count', models.PositiveIntegerField(default=0)),
-                ('mean_score', models.FloatField(default=0.0)),
-                ('std_score', models.FloatField(default=0.0)),
-                ('extreme_rate', models.FloatField(default=0.0)),
-                ('reliability', models.FloatField(default=1.0)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='rater_stats', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("ratings_count", models.PositiveIntegerField(default=0)),
+                ("mean_score", models.FloatField(default=0.0)),
+                ("std_score", models.FloatField(default=0.0)),
+                ("extreme_rate", models.FloatField(default=0.0)),
+                ("reliability", models.FloatField(default=1.0)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="rater_stats",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'indexes': [models.Index(fields=['ratings_count'], name='evaluations_ratings_7259ac_idx')],
+                "indexes": [
+                    models.Index(
+                        fields=["ratings_count"], name="evaluations_ratings_7259ac_idx"
+                    )
+                ],
             },
         ),
     ]

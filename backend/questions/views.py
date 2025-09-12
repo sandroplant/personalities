@@ -7,13 +7,13 @@ aggregates answer counts, detects duplicate questions on creation, and
 normalizes tags when a new question is posted.
 """
 
-from rest_framework import generics, permissions, filters
+from django.db.models import Count
+from rest_framework import filters, generics, permissions
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import ValidationError
-from django.db.models import Count
 
-from .models import Tag, Question
-from .serializers import TagSerializer, QuestionSerializer, AnswerSerializer
+from .models import Question, Tag
+from .serializers import AnswerSerializer, QuestionSerializer, TagSerializer
 
 
 class TagListView(generics.ListAPIView):

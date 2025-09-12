@@ -5,7 +5,7 @@ instances to and from JSON for API consumption.
 
 from rest_framework import serializers
 
-from .models import Tag, Question, Answer
+from .models import Answer, Question, Tag
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -88,7 +88,9 @@ class QuestionSerializer(serializers.ModelSerializer):
         else:
             if options:
                 raise serializers.ValidationError(
-                    {"options": "Options are only allowed for multiple choice questions."}
+                    {
+                        "options": "Options are only allowed for multiple choice questions."
+                    }
                 )
         return attrs
 

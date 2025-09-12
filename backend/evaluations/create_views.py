@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 from django.apps import apps
@@ -7,7 +9,58 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .meta_models import EvaluationMeta
-from .summary_views import _pick_fk_field, _pick_numeric_field
+
+# Prefer helpers from summary_views if exported there; otherwise use local fallbacks
+try:
+    from .summary_views import _pick_fk_field, _pick_numeric_field  # type: ignore
+except Exception:
+
+    def _pick_fk_field(model, preferred_names):
+        # Exact name match first
+        for f in model._meta.get_fields():
+            if getattr(f, "is_relation", False) and not getattr(
+                f, "many_to_many", False
+            ):
+                if f.name in preferred_names:
+                    return f.name
+        # Then partial match
+        for f in model._meta.get_fields():
+            if getattr(f, "is_relation", False) and not getattr(
+                f, "many_to_many", False
+            ):
+                for p in preferred_names:
+                    if p in f.name:
+                        return f.name
+        return None
+
+    def _pick_numeric_field(model, preferred_names):
+        numeric_types = {
+            "IntegerField",
+            "SmallIntegerField",
+            "PositiveIntegerField",
+            "PositiveSmallIntegerField",
+            "BigIntegerField",
+            "FloatField",
+            "DecimalField",
+        }
+        # Exact name match first
+        for f in model._meta.get_fields():
+            if (
+                hasattr(f, "get_internal_type")
+                and f.get_internal_type() in numeric_types
+            ):
+                if f.name in preferred_names:
+                    return f.name
+        # Then partial match
+        for f in model._meta.get_fields():
+            if (
+                hasattr(f, "get_internal_type")
+                and f.get_internal_type() in numeric_types
+            ):
+                for p in preferred_names:
+                    if p in f.name:
+                        return f.name
+        return None
 
 
 def _get_model(app_label: str, model_name: str):
@@ -23,10 +76,13 @@ class EvaluationCreateV2View(APIView):
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         Evaluation = _get_model("evaluations", "Evaluation")  # type: ignore
-        Criterion = _get_model("evaluations", "Criterion") or _get_model("evaluations", "EvaluationCriterion")  # type: ignore  # noqa: E501
+        Criterion = _get_model("evaluations", "Criterion") or _get_model(
+            "evaluations", "EvaluationCriterion"
+        )  # type: ignore
         if Evaluation is None or Criterion is None:
             return Response({"detail": "Evaluation models not available"}, status=500)
 
+        # subject_id must be in query params
         try:
             subject_id = int(request.query_params.get("subject_id", ""))
         except Exception:
@@ -34,15 +90,16 @@ class EvaluationCreateV2View(APIView):
                 {"detail": "subject_id query param is required"}, status=400
             )
 
+        # required in body
         criterion_id = request.data.get("criterion_id")
         score_val = request.data.get("score")
-        familiarity_val = request.data.get("familiarity")
+        familiarity_val = request.data.get("familiarity")  # optional
         if not criterion_id or score_val is None:
             return Response(
                 {"detail": "criterion_id and score are required"}, status=400
             )
 
-        # Dynamically resolve field names
+        # Dynamically resolve field names on Evaluation
         subject_field = _pick_fk_field(
             Evaluation, ["subject", "target", "rated_user", "profile", "user"]
         )
@@ -56,12 +113,8 @@ class EvaluationCreateV2View(APIView):
         familiarity_field = _pick_numeric_field(
             Evaluation, ["familiarity", "weight", "confidence"]
         )  # optional
-        if (
-            not subject_field
-            or not rater_field
-            or not criterion_field
-            or not score_field
-        ):
+
+        if not (subject_field and rater_field and criterion_field and score_field):
             return Response(
                 {"detail": "Evaluation model fields could not be inferred."}, status=500
             )
@@ -72,7 +125,7 @@ class EvaluationCreateV2View(APIView):
         except Criterion.DoesNotExist:
             return Response({"detail": "criterion_id not found"}, status=404)
 
-        # Create evaluation instance
+        # Create evaluation
         payload = {
             f"{subject_field}_id": subject_id,
             f"{rater_field}_id": request.user.id,
@@ -84,14 +137,16 @@ class EvaluationCreateV2View(APIView):
 
         ev = Evaluation.objects.create(**payload)
 
-        # Participation gating for the SUBJECT (rated user): count their outbound ratings
+        # Participation gating for SUBJECT (rated user): count their outbound ratings
         outbound_count = Evaluation.objects.filter(
             **{f"{rater_field}_id": subject_id}
         ).count()
+
         try:
             min_outbound = int(os.environ.get("DJANGO_EVAL_MIN_OUTBOUND", "10"))
         except ValueError:
             min_outbound = 10
+
         status_value = (
             EvaluationMeta.STATUS_ACTIVE
             if outbound_count >= min_outbound
@@ -99,10 +154,4 @@ class EvaluationCreateV2View(APIView):
         )
         EvaluationMeta.objects.create(evaluation=ev, status=status_value)
 
-        return Response(
-            {
-                "id": ev.pk,
-                "status": status_value,
-            },
-            status=201,
-        )
+        return Response({"id": ev.pk, "status": status_value}, status=201)
