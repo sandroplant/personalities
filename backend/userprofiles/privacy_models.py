@@ -16,13 +16,15 @@ class ProfileVisibility(models.Model):
     """
 
     profile = models.OneToOneField(
-        'userprofiles.Profile', on_delete=models.CASCADE, related_name='visibility_settings'
+        "userprofiles.Profile",
+        on_delete=models.CASCADE,
+        related_name="visibility_settings",
     )
     data = models.JSONField(default=dict, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        app_label = 'userprofiles'
+        app_label = "userprofiles"
 
 
 class InfoRequest(models.Model):
@@ -33,30 +35,42 @@ class InfoRequest(models.Model):
     one approved request in the opposite direction.
     """
 
-    STATUS_PENDING = 'PENDING'
-    STATUS_APPROVED = 'APPROVED'
-    STATUS_DENIED = 'DENIED'
-    STATUS_CANCELLED = 'CANCELLED'
+    STATUS_PENDING = "PENDING"
+    STATUS_APPROVED = "APPROVED"
+    STATUS_DENIED = "DENIED"
+    STATUS_CANCELLED = "CANCELLED"
     STATUS_CHOICES = [
-        (STATUS_PENDING, 'Pending'),
-        (STATUS_APPROVED, 'Approved'),
-        (STATUS_DENIED, 'Denied'),
-        (STATUS_CANCELLED, 'Cancelled'),
+        (STATUS_PENDING, "Pending"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_DENIED, "Denied"),
+        (STATUS_CANCELLED, "Cancelled"),
     ]
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='info_requests_received')
-    requester = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='info_requests_sent')
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="info_requests_received",
+    )
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="info_requests_sent",
+    )
     section_key = models.CharField(max_length=100)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        app_label = 'userprofiles'
+        app_label = "userprofiles"
         indexes = [
-            models.Index(fields=['owner', 'requester', 'status']),
+            models.Index(fields=["owner", "requester", "status"]),
         ]
         constraints = [
-            models.CheckConstraint(check=~models.Q(owner=models.F('requester')), name='info_request_not_self')
+            models.CheckConstraint(
+                check=~models.Q(owner=models.F("requester")),
+                name="info_request_not_self",
+            )
         ]
-

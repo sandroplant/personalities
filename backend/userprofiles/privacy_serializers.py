@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
 from .privacy_models import ProfileVisibility, InfoRequest
 
 
@@ -42,4 +41,3 @@ class InfoRequestCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = InfoRequest
         fields = ["id", "owner", "requester", "section_key"]
-

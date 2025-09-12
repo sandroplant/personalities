@@ -11,4 +11,3 @@ router.register(r"profile-requests", ProfileRequestViewSet, basename="profile-re
 urlpatterns = [
     path("", include(router.urls)),
 ]
-

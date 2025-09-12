@@ -1,13 +1,15 @@
 # userprofiles/views.py
 
 import os
+import bcrypt
 import json
-import spotipy
+import spotipy  # Ensure spotipy is imported
 from functools import wraps
 from django.shortcuts import redirect, render
 from django.http import JsonResponse, HttpResponse
 from django.views import View
-from django.contrib.auth import login, authenticate, get_user_model
+from django.contrib.auth.models import User
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from rest_framework.decorators import api_view, permission_classes
@@ -17,10 +19,9 @@ from rest_framework.response import Response
 from cloudinary import uploader
 from spotipy.oauth2 import SpotifyOAuth
 from .models import Profile, SpotifyProfile
-from .serializers import ProfileSerializer
-
-
-User = get_user_model()
+from .serializers import (
+    ProfileSerializer,
+)  # Ensure these serializers exist
 
 
 # Middleware for user authentication
@@ -29,8 +30,7 @@ def ensure_authenticated(view_func):
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return JsonResponse(
-                {"error": "User not authenticated"},
-                status=status.HTTP_401_UNAUTHORIZED,
+                {"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
         return view_func(request, *args, **kwargs)
 
@@ -46,52 +46,56 @@ def register_user(request):
 
     if not username or not email or not password:
         return JsonResponse(
-            {"error": "All fields are required"},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     # Validate email uniqueness
     if User.objects.filter(email=email).exists():
         return JsonResponse(
-            {"error": "User already exists"},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Create user with Django's built-in helper
-    User.objects.create_user(username=username, email=email, password=password)
+    # Use bcrypt to hash password manually
+    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode(
+        "utf-8"
+    )
+
+    user = User(username=username, email=email, password=hashed_password)
+    user.save()
 
     return JsonResponse(
-        {"message": "User registered successfully"},
-        status=status.HTTP_201_CREATED,
+        {"message": "User registered successfully"}, status=status.HTTP_201_CREATED
     )
 
 
 # User Login
 @api_view(["POST"])
 def login_user(request):
-    username = request.data.get("username")
+    email = request.data.get("email")
     password = request.data.get("password")
 
-    if not username or not password:
+    if not email or not password:
         return JsonResponse(
-            {"error": "Username and password are required"},
+            {"error": "Email and password are required"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    user = authenticate(request, username=username, password=password)
+    user = User.objects.filter(email=email).first()
     if not user:
         return JsonResponse(
-            {"error": "Invalid credentials"},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Use bcrypt to check password
+    if not bcrypt.checkpw(password.encode("utf-8"), user.password.encode("utf-8")):
+        return JsonResponse(
+            {"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     # Create a session for the user
     login(request, user)
 
-    return JsonResponse(
-        {"message": "Login successful"},
-        status=status.HTTP_200_OK,
-    )
+    return JsonResponse({"message": "Login successful"}, status=status.HTTP_200_OK)
 
 
 # Get User Profile
@@ -103,8 +107,7 @@ def get_user_profile(request):
 
     if not profile:
         return JsonResponse(
-            {"error": "Profile not found"},
-            status=status.HTTP_404_NOT_FOUND,
+            {"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND
         )
 
     serializer = ProfileSerializer(profile)
@@ -135,8 +138,7 @@ def delete_user_profile(request):
     user = request.user
     Profile.objects.filter(user=user).delete()
     return JsonResponse(
-        {"message": "Profile deleted successfully"},
-        status=status.HTTP_204_NO_CONTENT,
+        {"message": "Profile deleted successfully"}, status=status.HTTP_204_NO_CONTENT
     )
 
 
@@ -164,6 +166,7 @@ def spotify_callback(request):
         redirect_uri=os.getenv("SPOTIFY_REDIRECT_URI"),
     )
     token_info = sp_oauth.get_access_token(code)
+    # token stored via token_info, no direct use
 
     # Save the access token in the session
     request.session["spotify_token_info"] = token_info
@@ -179,11 +182,7 @@ def get_user_spotify_profile(request):
     spotify = spotipy.Spotify(auth=token_info["access_token"])
     user_profile = spotify.current_user()
 
-    return render(
-        request,
-        "userprofiles/profile.html",
-        {"profile": user_profile},
-    )
+    return render(request, "userprofiles/profile.html", {"profile": user_profile})
 
 
 # Upload Profile Picture
@@ -192,8 +191,7 @@ def get_user_spotify_profile(request):
 def upload_profile_picture(request):
     if "profilePicture" not in request.FILES:
         return JsonResponse(
-            {"error": "No file uploaded"},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     try:
@@ -203,10 +201,7 @@ def upload_profile_picture(request):
         profile = Profile.objects.get(user=request.user)
         profile.profile_picture = result["secure_url"]
         profile.save()
-        return JsonResponse(
-            {"url": result["secure_url"]},
-            status=status.HTTP_200_OK,
-        )
+        return JsonResponse({"url": result["secure_url"]}, status=status.HTTP_200_OK)
     except Exception as e:
         print("Cloudinary Upload Error:", e)
         return JsonResponse(
@@ -221,10 +216,7 @@ def upload_profile_picture(request):
 def fetch_spotify_profile(request):
     token_info = request.session.get("spotify_token_info")
     if not token_info:
-        return JsonResponse(
-            {"error": "Access token missing"},
-            status=401,
-        )
+        return JsonResponse({"error": "Access token missing"}, status=401)
 
     spotify = spotipy.Spotify(auth=token_info["access_token"])
     profile_data = spotify.current_user()
@@ -251,8 +243,7 @@ class ProfileView(View):
 
         if not profile:
             return JsonResponse(
-                {"error": "Profile not found"},
-                status=status.HTTP_404_NOT_FOUND,
+                {"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
         serializer = ProfileSerializer(profile)

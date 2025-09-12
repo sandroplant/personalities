@@ -3,6 +3,11 @@ from django.db import models
 from django.db.models import Q
 
 
+STATUS_PENDING = "PENDING"
+STATUS_APPROVED = "APPROVED"
+STATUS_DENIED = "DENIED"
+
+
 User = settings.AUTH_USER_MODEL
 
 
@@ -29,8 +34,12 @@ class Friendship(models.Model):
     For the first iteration we only persist accepted friendships.
     """
 
-    user_a = models.ForeignKey(User, on_delete=models.CASCADE, related_name="friendships_a")
-    user_b = models.ForeignKey(User, on_delete=models.CASCADE, related_name="friendships_b")
+    user_a = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="friendships_a"
+    )
+    user_b = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="friendships_b"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -75,10 +84,16 @@ class ProfileRequest(models.Model):
         (STATUS_CANCELLED, STATUS_CANCELLED),
     ]
 
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="incoming_profile_requests")
-    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="outgoing_profile_requests")
+    owner = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="incoming_profile_requests"
+    )
+    requester = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="outgoing_profile_requests"
+    )
     section = models.CharField(max_length=64)
-    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    status = models.CharField(
+        max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -93,4 +108,3 @@ class ProfileRequest(models.Model):
 
     def can_view_after_approval(self, viewer_id: int) -> bool:
         return self.status == self.STATUS_APPROVED and self.requester_id == viewer_id
-

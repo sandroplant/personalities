@@ -1,3 +1,4 @@
+from django.views import View
 import jwt
 import os
 from django.http import JsonResponse

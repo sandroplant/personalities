@@ -3,19 +3,10 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from django.db.models import Avg, StdDev
-from rest_framework.exceptions import ValidationError
+from django.db.models import Avg
 
 from .models import Criterion, Evaluation
-from userprofiles.models import Friendship
-from django.db.models import Q
-from django.utils import timezone
-from datetime import timedelta
-from .signals import evaluation_submitted
 from .serializers import CriterionSerializer, EvaluationSerializer
-
-
-REPEAT_DAYS = 30
 
 
 class CriterionListCreateView(generics.ListCreateAPIView):
@@ -39,30 +30,7 @@ class EvaluationListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         subject_id = self.request.query_params.get("subject_id")
-        evaluator = self.request.user
-        criterion = serializer.validated_data.get("criterion")
-        first_rating = not Evaluation.objects.filter(
-            evaluator=evaluator, subject_id=subject_id, criterion=criterion
-        ).exists()
-        if first_rating and serializer.validated_data.get("familiarity") is None:
-            raise ValidationError({"familiarity": "This field is required."})
-        evaluation = serializer.save(
-            evaluator=evaluator, subject_id=subject_id, criterion=criterion
-        )
-
-        stats = Evaluation.objects.filter(evaluator=evaluator).aggregate(
-            mean=Avg("score"), stddev=StdDev("score")
-        )
-        mean = stats["mean"] or 0
-        stddev = stats["stddev"] or 0
-        normalized = (evaluation.score - mean) / stddev if stddev else 0
-        Evaluation.objects.filter(pk=evaluation.pk).update(
-            rater_mean=mean,
-            rater_stddev=stddev,
-            normalized_score=normalized,
-        )
-        evaluation.refresh_from_db()
-        evaluation_submitted.send(sender=Evaluation, evaluation=evaluation)
+        serializer.save(evaluator=self.request.user, subject_id=subject_id)
 
 
 class EvaluationTasksView(APIView):
@@ -79,52 +47,29 @@ class EvaluationTasksView(APIView):
     def get(self, request):
         user = request.user
         User = get_user_model()
-
-        limit = int(request.query_params.get("limit", 20))
-        offset = int(request.query_params.get("offset", 0))
-
-        friendships = Friendship.objects.filter(
-            Q(from_user=user, is_confirmed=True) | Q(to_user=user, is_confirmed=True)
-        )
-        friend_ids = [
-            f.to_user_id if f.from_user_id == user.id else f.from_user_id for f in friendships
-        ]
-        subjects = User.objects.filter(id__in=friend_ids)
+        # Exclude current user from subjects
+        subjects = User.objects.exclude(id=user.id)
         criteria = Criterion.objects.all()
-
         tasks = []
-        count = 0
-        repeat_threshold = timezone.now() - timedelta(days=REPEAT_DAYS)
-
-        for subject in subjects.iterator():
-            for criterion in criteria.iterator():
-                latest = (
-                    Evaluation.objects.filter(
-                        evaluator=user, subject=subject, criterion=criterion
-                    )
-                    .order_by("-created_at")
-                    .first()
+        for subject in subjects:
+            for criterion in criteria:
+                # Check if the user has previously rated this subject on this criterion
+                exists = Evaluation.objects.filter(
+                    evaluator=user, subject=subject, criterion=criterion
+                ).exists()
+                tasks.append(
+                    {
+                        "subjectId": subject.id,
+                        "subjectName": getattr(subject, "username", str(subject)),
+                        "criterionId": criterion.id,
+                        "criterionName": criterion.name,
+                        "firstTime": not exists,
+                    }
                 )
-                if latest and latest.created_at >= repeat_threshold:
-                    continue
+        import random
 
-                first_time = latest is None
-
-                if count >= offset:
-                    tasks.append(
-                        {
-                            "subjectId": subject.id,
-                            "subjectName": getattr(subject, "username", str(subject)),
-                            "criterionId": criterion.id,
-                            "criterionName": criterion.name,
-                            "firstTime": first_time,
-                        }
-                    )
-                    if len(tasks) >= limit:
-                        return Response({"tasks": tasks, "next_offset": offset + len(tasks)})
-                count += 1
-
-        return Response({"tasks": tasks, "next_offset": None})
+        random.shuffle(tasks)
+        return Response(tasks)
 
 
 class EvaluationSummaryView(APIView):

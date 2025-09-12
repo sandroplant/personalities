@@ -58,7 +58,11 @@ def build_privacy_filtered_profile(
     visibility_map = visibility_map or {}
 
     if role == ViewerRole.SELF:
-        return {k: v for k, v in raw_profile_data.items() if (not allowed_fields or k in allowed_fields)}
+        return {
+            k: v
+            for k, v in raw_profile_data.items()
+            if (not allowed_fields or k in allowed_fields)
+        }
 
     filtered: Dict[str, Any] = {}
     for key, value in raw_profile_data.items():
@@ -68,4 +72,3 @@ def build_privacy_filtered_profile(
         if is_visible(level, role):
             filtered[key] = value
     return filtered
-

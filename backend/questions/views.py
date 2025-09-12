@@ -10,7 +10,7 @@ normalizes tags when a new question is posted.
 from rest_framework import generics, permissions, filters
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import ValidationError
-from django.db.models import Count, Q, Avg
+from django.db.models import Count
 
 from .models import Tag, Question
 from .serializers import TagSerializer, QuestionSerializer, AnswerSerializer
@@ -34,13 +34,13 @@ class QuestionListCreateView(generics.ListCreateAPIView):
     sort parameter, questions are ranked by answer count (trending) then
     by creation date.
 
-    POST: Accepts ``text``, ``question_type`` (``yesno``, ``multiple_choice``,
-    or ``rating``), optional ``tag_id``, optional list of ``options`` (max 4
-    items) and an ``is_anonymous`` flag.  For ``multiple_choice`` questions
-    2–4 options must be supplied. ``yesno`` and ``rating`` questions must not
-    include options. Duplicate questions (case-insensitive) are rejected. If
-    ``tag_name`` is supplied instead of ``tag_id``, the tag is normalized
-    (lower-case, trimmed) and created if it does not already exist.
+    POST: Accepts ``text``, optional ``tag_id``, optional list of
+    ``options`` (max 4 items) and an ``is_anonymous`` flag.  If
+    ``options`` is omitted or empty the frontend should treat the
+    question as a yes/no poll. Duplicate questions (case-insensitive)
+    are rejected. If ``tag_name`` is supplied instead of ``tag_id``,
+    the tag is normalized (lower-case, trimmed) and created if it does
+    not already exist.
     """
 
     serializer_class = QuestionSerializer
@@ -70,25 +70,11 @@ class QuestionListCreateView(generics.ListCreateAPIView):
         # Determine ordering
         sort_param = self.request.query_params.get("sort", "").lower()
         if sort_param == "recent":
-            queryset = queryset.order_by("-created_at")
-        else:
-            # Default: trending sort by answer count then recency
-            queryset = queryset.annotate(answer_count=Count("answers")).order_by(
-                "-answer_count", "-created_at"
-            )
+            return queryset.order_by("-created_at")
 
-        # Always annotate yes/no counts and rating statistics
-        return queryset.annotate(
-            yes_count=Count(
-                "answers", filter=Q(answers__selected_option_index=0)
-            ),
-            no_count=Count(
-                "answers", filter=Q(answers__selected_option_index=1)
-            ),
-            average_rating=Avg("answers__rating"),
-            rating_count=Count(
-                "answers", filter=Q(answers__rating__isnull=False)
-            ),
+        # Default: trending sort by answer count then recency
+        return queryset.annotate(answer_count=Count("answers")).order_by(
+            "-answer_count", "-created_at"
         )
 
     def perform_create(self, serializer):
@@ -98,10 +84,7 @@ class QuestionListCreateView(generics.ListCreateAPIView):
         if Question.objects.filter(text__iexact=text).exists():
             raise ValidationError(
                 {
-                    "text": (
-                        "A similar question already exists. "
-                        "Please rephrase your question."
-                    )
+                    "text": "A similar question already exists. Please rephrase your question."
                 }
             )
 
@@ -115,20 +98,6 @@ class QuestionListCreateView(generics.ListCreateAPIView):
             if normalized:
                 tag_obj, _created = Tag.objects.get_or_create(name=normalized)
                 serializer.validated_data["tag"] = tag_obj
-
-        # Ensure options match question type limits
-        qtype = serializer.validated_data.get("question_type")
-        options = serializer.validated_data.get("options", [])
-        if qtype == Question.QuestionType.MULTIPLE_CHOICE:
-            if not options or len(options) < 2:
-                raise ValidationError(
-                    {"options": "Multiple choice questions require 2-4 options."}
-                )
-        else:
-            if options:
-                raise ValidationError(
-                    {"options": "Options are only allowed for multiple choice questions."}
-                )
 
         return serializer.save()
 

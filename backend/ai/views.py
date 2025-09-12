@@ -1,73 +1,53 @@
 import os
-
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import status
+from django.conf import settings
 from rest_framework.decorators import api_view
-import openai  # openai==0.28.0
+from rest_framework import status
+import openai
+
+# Fetch the key from settings or fall back to OS environment
+openai_api_key = getattr(settings, "OPENAI_API_KEY", None) or os.getenv(
+    "OPENAI_API_KEY"
+)
+if openai_api_key:
+    openai.api_key = openai_api_key
 
 
-# Configure OpenAI once if a key is present; don't crash at import time.
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if OPENAI_API_KEY:
-    openai.api_key = OPENAI_API_KEY
-
-
-@csrf_exempt  # adjust based on your CSRF strategy
+@csrf_exempt  # CSRF exemption for API purposes; adjust based on security needs
 @api_view(["POST"])
 def generate_ai_response(request):
-    """
-    POST JSON body:
-      {
-        "prompt": "Your question...",
-        "maxTokens": 150   # optional, int
-      }
-    Returns: {"result": "..."} or {"error": "..."} with appropriate status code.
-    """
-    # Ensure API key is configured (fail fast per-request rather than at import)
-    if not openai.api_key:
-        return JsonResponse(
-            {"error": "OPENAI_API_KEY is not configured on the server."},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE,
-        )
-
-    # Validate prompt
+    # Validate request data
     prompt = request.data.get("prompt")
-    if not isinstance(prompt, str) or not prompt.strip():
+    max_tokens = request.data.get("maxTokens", 150)
+
+    if not prompt or not isinstance(prompt, str):
         return JsonResponse(
-            {"error": "Prompt is required and must be a non-empty string."},
+            {"error": "Prompt is required and must be a string."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Validate maxTokens
-    max_tokens_raw = request.data.get("maxTokens", 150)
-    try:
-        max_tokens = int(max_tokens_raw)
-    except (TypeError, ValueError):
+    # Return a clear error if the key is missing
+    if not openai_api_key:
         return JsonResponse(
-            {"error": "maxTokens must be an integer."},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": "OpenAI API key is missing in environment variables."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    # Clamp to a safe range for this endpoint
-    max_tokens = max(1, min(max_tokens, 1024))
 
+    # Call OpenAI API
     try:
-        # openai==0.28.0 uses ChatCompletion.create
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=max_tokens,
-            temperature=0.7,
         )
 
-        message = ""
-        if getattr(response, "choices", None):
-            message = (response.choices[0].message.get("content") or "").strip()
-
-        return JsonResponse({"result": message})
+        ai_message = response.choices[0].message.get("content", "").strip()
+        return JsonResponse({"result": ai_message})
 
     except Exception as e:
+        error_message = str(e)
         return JsonResponse(
-            {"error": f"Error generating response: {e}"},
+            {"error": f"Error generating response: {error_message}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

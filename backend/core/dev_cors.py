@@ -1,6 +1,3 @@
-from typing import Iterable
-
-
 class DevCorsMiddleware:
     """Very small CORS middleware for local development.
 
@@ -36,6 +33,9 @@ class DevCorsMiddleware:
     def _set_headers(self, response, origin: str):
         response["Access-Control-Allow-Origin"] = origin
         response["Access-Control-Allow-Credentials"] = "true"
-        response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-        response["Access-Control-Allow-Headers"] = "Content-Type, X-CSRFToken, Authorization"
-
+        response["Access-Control-Allow-Methods"] = (
+            "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        )
+        response["Access-Control-Allow-Headers"] = (
+            "Content-Type, X-CSRFToken, Authorization"
+        )

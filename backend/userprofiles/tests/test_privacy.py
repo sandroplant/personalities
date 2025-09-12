@@ -1,11 +1,9 @@
-import json
-
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from backend.userprofiles.models_privacy import Friendship, ProfileRequest
+from backend.userprofiles.models_privacy import ProfileRequest
 
 
 pytestmark = pytest.mark.django_db
@@ -51,4 +49,3 @@ def test_profile_request_lifecycle():
     cancel_url = reverse("profile-request-cancel", args=[rid])
     res = c.post(cancel_url)
     assert res.status_code == 400
-

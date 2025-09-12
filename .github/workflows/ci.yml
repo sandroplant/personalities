@@ -1,41 +1,66 @@
 name: CI
 
 on:
-  push:
-    branches: [ main, master ]
   pull_request:
-    branches: [ main, master ]
+  push:
+    branches: [ main ]
 
 jobs:
-  backend:
+  test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements*.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install dependencies
+      - name: Install deps
+        working-directory: backend
         run: |
+          python -m venv .venv
+          source .venv/bin/activate
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          pip install -r requirements.txt || true
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install black isort flake8 pytest pytest-django
 
-      - name: Django checks
-        env:
-          SECRET_KEY: dummy
-          DEBUG: 'True'
+      - name: Lint & format
+        working-directory: backend
         run: |
-          python backend/manage.py check
-          python backend/manage.py makemigrations --check --dry-run || true
+          source .venv/bin/activate
+          black --check .
+          python -m isort --check-only .
+          flake8 .
 
+      - name: Run Django checks & migrations (SQLite)
+        env:
+          DJANGO_SETTINGS_MODULE: django_project.settings_test
+          PYTHONPATH: backend
+          DJANGO_USE_SQLITE: "1"
+        working-directory: backend
+        run: |
+          source .venv/bin/activate
+          python manage.py makemigrations --check --dry-run
+          python manage.py migrate --noinput
+          python manage.py check
+          python manage.py recompute_rater_stats
+
+      - name: Pytest
+        env:
+          DJANGO_SETTINGS_MODULE: django_project.settings_test
+          PYTHONPATH: backend
+        run: |
+          pytest -q backend/evaluations/tests.py
+          pytest -q backend/userprofiles/tests.py

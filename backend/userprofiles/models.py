@@ -78,8 +78,7 @@ class Profile(models.Model):
     favorite_podcasts = models.CharField(max_length=200, blank=True, null=True)
     favorite_influencers = models.CharField(max_length=200, blank=True, null=True)
 
-    # Personality & values stored as JSON:
-    # {value_name: {"self": int, "friends": bool}}
+    # Personality & values (stored as JSON: {value_name: {"self": int, "friends": bool}})
     personality_values = models.JSONField(blank=True, null=True)
 
     # Fun & miscellaneous
@@ -91,33 +90,11 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
-<<<<<<< HEAD
 
 
-class Friendship(models.Model):
-    from_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="friendships_sent",
-    )
-    to_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="friendships_received",
-    )
-    is_confirmed = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ("from_user", "to_user")
-
-    def __str__(self):
-        return f"Friendship from {self.from_user} to {self.to_user}"
-=======
 """Codex CLI: import privacy models so Django registers them."""
 try:
     # Import side-effect: registers additional model classes in this app
     from .privacy_models import ProfileVisibility, InfoRequest  # noqa: F401
 except Exception:
     pass
->>>>>>> fddbe62 (Privacy + profile requests backend scaffolding; viewer-aware privacy; CI; frontend stubs)

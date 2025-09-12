@@ -65,4 +65,3 @@ class ProfileRequestStatusSerializer(serializers.ModelSerializer):
         }:
             raise serializers.ValidationError("Invalid status transition.")
         return value
-

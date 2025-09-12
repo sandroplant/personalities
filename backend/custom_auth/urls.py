@@ -12,9 +12,10 @@ urlpatterns = [
 try:
     from django.urls import path as _path  # ensure path is available
     from core.csrf_views import csrf as csrf_view
+
     try:
-        urlpatterns.insert(0, _path('csrf/', csrf_view, name='csrf'))
+        urlpatterns.insert(0, _path("csrf/", csrf_view, name="csrf"))
     except Exception:
-        urlpatterns += [_path('csrf/', csrf_view, name='csrf')]
+        urlpatterns += [_path("csrf/", csrf_view, name="csrf")]
 except Exception:
     pass
