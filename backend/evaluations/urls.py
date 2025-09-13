@@ -1,6 +1,6 @@
 from django.urls import path
 
-# Primary endpoints that tests reverse()
+# Primary endpoints that the tests reverse()
 from .views import EvaluationCreateView, EvaluationTasksView
 
 # Optional v2 endpoints (import if present)
@@ -14,7 +14,7 @@ try:
 except Exception:  # pragma: no cover
     EvaluationCreateV2View = None  # type: ignore
 
-# Namespace (so reverse('evaluations:evaluation-tasks') also works)
+# Namespace (so reverse('evaluations:evaluation-tasks') would also work if namespaced)
 app_name = "evaluations"
 
 urlpatterns = [
