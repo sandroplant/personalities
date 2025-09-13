@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from . import views
+from .views import GetUserProfileApi, UpdateUserProfileApi
 
 # Initialize the router and register viewsets
 router = DefaultRouter()
@@ -26,13 +27,15 @@ urlpatterns = [
     path("spotify/callback/", views.spotify_callback, name="spotify_callback"),
     path("spotify/profile/", views.spotify_profile, name="spotify_profile"),
     # User Profile API Routes (tests expect *_api names)
-    path("profile/", views.get_user_profile_api, name="get_user_profile_api"),
+    path("profile/", GetUserProfileApi.as_view(), name="get_user_profile_api"),
     path(
-        "profile/update/", views.update_user_profile_api, name="update_user_profile_api"
+        "profile/update/",
+        UpdateUserProfileApi.as_view(),
+        name="update_user_profile_api",
     ),
-    # Backward-compat short names
-    path("profile/", views.get_user_profile_api, name="get_user_profile"),
-    path("profile/update/", views.update_user_profile_api, name="update_user_profile"),
+    # Backward-compat short names (optional; keep if used elsewhere)
+    path("profile/", GetUserProfileApi.as_view(), name="get_user_profile"),
+    path("profile/update/", UpdateUserProfileApi.as_view(), name="update_user_profile"),
     # JWT Authentication Endpoints
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),

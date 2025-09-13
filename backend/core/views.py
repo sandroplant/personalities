@@ -13,13 +13,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django_ratelimit.decorators import ratelimit
 from rest_framework import generics, status, viewsets
 from rest_framework.authentication import SessionAuthentication
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -57,31 +54,32 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 
 
 # ---------------------------------------------------------------------------
-# Profile API (tests expect these names)
+# Profile API (tests expect these names) - class-based, CSRF-exempt Session + JWT
 # ---------------------------------------------------------------------------
-@api_view(["GET"])
-@authentication_classes([CsrfExemptSessionAuthentication, JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def get_user_profile_api(request):
-    user = request.user
-    profile = _get_or_create_profile(user)
-    serializer = ProfileSerializer(profile, context={"request": request})
-    return Response(serializer.data)
+class GetUserProfileApi(APIView):
+    authentication_classes = [CsrfExemptSessionAuthentication, JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        profile = _get_or_create_profile(user)
+        serializer = ProfileSerializer(profile, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(["PUT"])
-@authentication_classes([CsrfExemptSessionAuthentication, JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def update_user_profile_api(request):
-    user = request.user
-    profile = _get_or_create_profile(user)
-    serializer = ProfileSerializer(
-        profile, data=request.data, partial=True, context={"request": request}
-    )
-    if serializer.is_valid():
+class UpdateUserProfileApi(APIView):
+    authentication_classes = [CsrfExemptSessionAuthentication, JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+        user = request.user
+        profile = _get_or_create_profile(user)
+        serializer = ProfileSerializer(
+            profile, data=request.data, partial=True, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ---------------------------------------------------------------------------
