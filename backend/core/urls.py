@@ -33,7 +33,7 @@ urlpatterns = [
         UpdateUserProfileApi.as_view(),
         name="update_user_profile_api",
     ),
-    # Backward-compat short names (optional; keep if used elsewhere)
+    # Backward-compat short names (optional)
     path("profile/", GetUserProfileApi.as_view(), name="get_user_profile"),
     path("profile/update/", UpdateUserProfileApi.as_view(), name="update_user_profile"),
     # JWT Authentication Endpoints

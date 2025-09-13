@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib.auth import login, logout
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django_ratelimit.decorators import ratelimit
 from rest_framework import generics, status, viewsets
@@ -56,6 +57,7 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 # ---------------------------------------------------------------------------
 # Profile API (tests expect these names) - class-based, CSRF-exempt Session + JWT
 # ---------------------------------------------------------------------------
+@method_decorator(csrf_exempt, name="dispatch")
 class GetUserProfileApi(APIView):
     authentication_classes = [CsrfExemptSessionAuthentication, JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -67,6 +69,7 @@ class GetUserProfileApi(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class UpdateUserProfileApi(APIView):
     authentication_classes = [CsrfExemptSessionAuthentication, JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -77,7 +80,9 @@ class UpdateUserProfileApi(APIView):
         serializer = ProfileSerializer(
             profile, data=request.data, partial=True, context={"request": request}
         )
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid(
+            raise_ok=True
+        )  # DRF 3.15+; for older use is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
