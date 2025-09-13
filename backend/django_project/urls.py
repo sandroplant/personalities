@@ -7,6 +7,7 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from evaluations.views import EvaluationCreateView, EvaluationTasksView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -35,6 +36,10 @@ urlpatterns = [
         "api/schema/redoc/",
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
+    ),
+    path("evaluations/tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
+    path(
+        "evaluations/create/", EvaluationCreateView.as_view(), name="evaluation-create"
     ),
 ]
 
