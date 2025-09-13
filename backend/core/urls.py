@@ -30,7 +30,7 @@ urlpatterns = [
     path(
         "profile/update/", views.update_user_profile_api, name="update_user_profile_api"
     ),
-    # Backward-compat names (keep existing routes alive if anything used them)
+    # Backward-compat short names
     path("profile/", views.get_user_profile_api, name="get_user_profile"),
     path("profile/update/", views.update_user_profile_api, name="update_user_profile"),
     # JWT Authentication Endpoints
