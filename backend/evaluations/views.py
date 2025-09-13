@@ -11,8 +11,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from userprofiles.models import Friendship
+
 from .models import Criterion, Evaluation
 from .serializers import CriterionSerializer, EvaluationSerializer
 
