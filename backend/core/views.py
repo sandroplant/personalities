@@ -31,11 +31,29 @@ from .utils.openai_service import get_openai_response
 from .utils.spotify_auth_utils import generate_code_challenge, generate_code_verifier
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def _get_or_create_profile(user: User) -> Profile:
+    """
+    Ensure a core.Profile exists for the given user.
+    """
+    profile, _ = Profile.objects.get_or_create(
+        user=user,
+        defaults={"full_name": user.username, "bio": ""},
+    )
+    return profile
+
+
+# ---------------------------------------------------------------------------
+# Profile API (function-based; kept for backward compatibility)
+# Tests expect the route names: get_user_profile_api / update_user_profile_api
+# ---------------------------------------------------------------------------
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_user_profile_api(request):
     user = request.user
-    profile = user.profile
+    profile = _get_or_create_profile(user)
     serializer = ProfileSerializer(profile, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
@@ -47,11 +65,14 @@ def update_user_profile_api(request):
 @permission_classes([IsAuthenticated])
 def get_user_profile_api(request):
     user = request.user
-    serializer = ProfileSerializer(user.profile)
+    profile = _get_or_create_profile(user)
+    serializer = ProfileSerializer(profile)
     return Response(serializer.data)
 
 
+# ---------------------------------------------------------------------------
 # User Management Views
+# ---------------------------------------------------------------------------
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -84,7 +105,9 @@ class UserViewSet(viewsets.ModelViewSet):
         return super().handle_exception(exc)
 
 
+# ---------------------------------------------------------------------------
 # Profile Management Views
+# ---------------------------------------------------------------------------
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
@@ -117,7 +140,9 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return super().handle_exception(exc)
 
 
+# ---------------------------------------------------------------------------
 # Post Management Views
+# ---------------------------------------------------------------------------
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
@@ -150,7 +175,9 @@ class PostViewSet(viewsets.ModelViewSet):
         return super().handle_exception(exc)
 
 
+# ---------------------------------------------------------------------------
 # Message Management Views
+# ---------------------------------------------------------------------------
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
@@ -183,7 +210,9 @@ class MessageViewSet(viewsets.ModelViewSet):
         return super().handle_exception(exc)
 
 
+# ---------------------------------------------------------------------------
 # Spotify OAuth Views
+# ---------------------------------------------------------------------------
 @api_view(["GET"])
 @permission_classes([AllowAny])
 @ratelimit(key="ip", rate="20/15m", block=True)
@@ -350,7 +379,9 @@ def spotify_profile(request):
         return JsonResponse({"error": "Failed to fetch profile data"}, status=500)
 
 
+# ---------------------------------------------------------------------------
 # Authentication Views
+# ---------------------------------------------------------------------------
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
@@ -427,25 +458,8 @@ def sanitize_input(html_input):
 def health_check(request):
     """
     A simple health check endpoint that returns a 200 OK response.
-
-    This endpoint is typically used by load balancers, monitoring tools,
-    or other services to verify that the application is running and responsive.
-
-    Args:
-        request (HttpRequest): The Django request object.
-
-    Returns:
-        JsonResponse: A JSON response with status "ok" and HTTP 200 status code.
-
-    Example Response:
-        {
-            "status": "ok"
-        }
     """
     return JsonResponse({"status": "ok"})
-
-
-# Set up logger
 
 
 @csrf_exempt
