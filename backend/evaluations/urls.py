@@ -35,6 +35,8 @@ if EvaluationCreateView is not None:
 
 # V2 endpoints (always present in this file)
 urlpatterns += [
-    path("summary-v2/", EvaluationSummaryV2View.as_view(), name="evaluation-summary-v2"),
+    path(
+        "summary-v2/", EvaluationSummaryV2View.as_view(), name="evaluation-summary-v2"
+    ),
     path("create-v2/", EvaluationCreateV2View.as_view(), name="evaluation-create-v2"),
 ]

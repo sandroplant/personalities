@@ -32,7 +32,9 @@ class ProfileVisibilityView(APIView):
         if profile is None:
             return Response({"detail": "Profile not found for user"}, status=404)
         vis = get_or_create_visibility(profile)
-        serializer = ProfileVisibilitySerializer(instance=vis, data=request.data, partial=True)
+        serializer = ProfileVisibilitySerializer(
+            instance=vis, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=200)
@@ -44,7 +46,9 @@ class InfoRequestListCreateView(APIView):
     def get(self, request, *args, **kwargs):
         # List requests involving the current user
         inbox = InfoRequest.objects.filter(owner=request.user).order_by("-created_at")
-        outbox = InfoRequest.objects.filter(requester=request.user).order_by("-created_at")
+        outbox = InfoRequest.objects.filter(requester=request.user).order_by(
+            "-created_at"
+        )
         return Response(
             {
                 "received": InfoRequestSerializer(inbox, many=True).data,
@@ -58,7 +62,9 @@ class InfoRequestListCreateView(APIView):
         owner_id = request.data.get("owner_id")
         section_key = request.data.get("section_key")
         if not owner_id or not section_key:
-            return Response({"detail": "owner_id and section_key are required"}, status=400)
+            return Response(
+                {"detail": "owner_id and section_key are required"}, status=400
+            )
 
         User = get_user_model()
         try:
@@ -67,7 +73,9 @@ class InfoRequestListCreateView(APIView):
             return Response({"detail": "Owner user not found"}, status=404)
 
         if owner == request.user:
-            return Response({"detail": "Cannot request your own profile info"}, status=400)
+            return Response(
+                {"detail": "Cannot request your own profile info"}, status=400
+            )
 
         # Reciprocity rule & single pending constraint
         approved_forward = InfoRequest.objects.filter(
@@ -81,15 +89,22 @@ class InfoRequestListCreateView(APIView):
         ).count()
 
         if pending_forward > 0:
-            return Response({"detail": "You already have a pending request for this user"}, status=400)
+            return Response(
+                {"detail": "You already have a pending request for this user"},
+                status=400,
+            )
 
         if approved_forward > approved_reverse:
             return Response(
-                {"detail": "Reciprocity required before requesting more info from this user"},
+                {
+                    "detail": "Reciprocity required before requesting more info from this user"
+                },
                 status=403,
             )
 
-        req = InfoRequest.objects.create(owner=owner, requester=request.user, section_key=section_key)
+        req = InfoRequest.objects.create(
+            owner=owner, requester=request.user, section_key=section_key
+        )
         return Response(InfoRequestSerializer(req).data, status=201)
 
 

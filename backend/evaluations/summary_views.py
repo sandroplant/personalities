@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 from django.conf import settings
-from django.db.models import Avg, Case, Count, ExpressionWrapper, F, FloatField, Value, When
+from django.db.models import (
+    Avg,
+    Case,
+    Count,
+    ExpressionWrapper,
+    F,
+    FloatField,
+    Value,
+    When,
+)
 from django.db.models.functions import Coalesce
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -69,7 +78,7 @@ class EvaluationSummaryV2View(APIView):
         agg = (
             qs.values(f"{subject_field}_id", f"{criterion_field}_id")
             .annotate(
-                raw_count=Count("id"),               # ← real count of rows
+                raw_count=Count("id"),  # ← real count of rows
                 weighted_sum=Avg(weighted_score_expr),
                 weight_mean=Avg(final_weight_expr),
             )
