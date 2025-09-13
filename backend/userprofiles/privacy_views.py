@@ -19,23 +19,23 @@ class ProfileVisibilityView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        profile = getattr(request.user, "profile", None)
+        # NOTE: userprofiles.Profile uses related_name="userprofile_profile"
+        profile = getattr(request.user, "userprofile_profile", None)
         if profile is None:
             return Response({"detail": "Profile not found for user"}, status=404)
         vis = get_or_create_visibility(profile)
         return Response(ProfileVisibilitySerializer(vis).data)
 
     def put(self, request, *args, **kwargs):
-        profile = getattr(request.user, "profile", None)
+        # NOTE: userprofiles.Profile uses related_name="userprofile_profile"
+        profile = getattr(request.user, "userprofile_profile", None)
         if profile is None:
             return Response({"detail": "Profile not found for user"}, status=404)
         vis = get_or_create_visibility(profile)
-        serializer = ProfileVisibilitySerializer(
-            instance=vis, data=request.data, partial=True
-        )
+        serializer = ProfileVisibilitySerializer(instance=vis, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        return Response(serializer.data, status=200)
 
 
 class InfoRequestListCreateView(APIView):
@@ -44,9 +44,7 @@ class InfoRequestListCreateView(APIView):
     def get(self, request, *args, **kwargs):
         # List requests involving the current user
         inbox = InfoRequest.objects.filter(owner=request.user).order_by("-created_at")
-        outbox = InfoRequest.objects.filter(requester=request.user).order_by(
-            "-created_at"
-        )
+        outbox = InfoRequest.objects.filter(requester=request.user).order_by("-created_at")
         return Response(
             {
                 "received": InfoRequestSerializer(inbox, many=True).data,
@@ -60,21 +58,18 @@ class InfoRequestListCreateView(APIView):
         owner_id = request.data.get("owner_id")
         section_key = request.data.get("section_key")
         if not owner_id or not section_key:
-            return Response(
-                {"detail": "owner_id and section_key are required"}, status=400
-            )
+            return Response({"detail": "owner_id and section_key are required"}, status=400)
+
         User = get_user_model()
         try:
             owner = User.objects.get(pk=owner_id)
         except User.DoesNotExist:
             return Response({"detail": "Owner user not found"}, status=404)
-        if owner == request.user:
-            return Response(
-                {"detail": "Cannot request your own profile info"}, status=400
-            )
 
-        # Reciprocity rule: requester cannot have more approved requests toward owner than
-        # owner has approved toward requester; also only one pending at a time.
+        if owner == request.user:
+            return Response({"detail": "Cannot request your own profile info"}, status=400)
+
+        # Reciprocity rule & single pending constraint
         approved_forward = InfoRequest.objects.filter(
             owner=owner, requester=request.user, status=InfoRequest.STATUS_APPROVED
         ).count()
@@ -84,22 +79,17 @@ class InfoRequestListCreateView(APIView):
         pending_forward = InfoRequest.objects.filter(
             owner=owner, requester=request.user, status=InfoRequest.STATUS_PENDING
         ).count()
+
         if pending_forward > 0:
-            return Response(
-                {"detail": "You already have a pending request for this user"},
-                status=400,
-            )
+            return Response({"detail": "You already have a pending request for this user"}, status=400)
+
         if approved_forward > approved_reverse:
             return Response(
-                {
-                    "detail": "Reciprocity required before requesting more info from this user"
-                },
+                {"detail": "Reciprocity required before requesting more info from this user"},
                 status=403,
             )
 
-        req = InfoRequest.objects.create(
-            owner=owner, requester=request.user, section_key=section_key
-        )
+        req = InfoRequest.objects.create(owner=owner, requester=request.user, section_key=section_key)
         return Response(InfoRequestSerializer(req).data, status=201)
 
 
@@ -117,13 +107,32 @@ class InfoRequestActionView(APIView):
             return Response({"detail": "Invalid action"}, status=400)
 
         now = timezone.now()
+
         if action == "approve":
             if req.owner != request.user:
                 return Response({"detail": "Only the owner can approve"}, status=403)
             req.status = InfoRequest.STATUS_APPROVED
             req.resolved_at = now
             req.save(update_fields=["status", "resolved_at"])
-            return Response(InfoRequestSerializer(req).data)
+            return Response(InfoRequestSerializer(req).data, status=200)
+
+        if action == "deny":
+            if req.owner != request.user:
+                return Response({"detail": "Only the owner can deny"}, status=403)
+            req.status = InfoRequest.STATUS_DENIED
+            req.resolved_at = now
+            req.save(update_fields=["status", "resolved_at"])
+            return Response(InfoRequestSerializer(req).data, status=200)
+
+        if action == "cancel":
+            # Typically only the requester can cancel their own request
+            if req.requester != request.user:
+                return Response({"detail": "Only the requester can cancel"}, status=403)
+            # Model uses STATUS_CANCELLED per existing TODO comments
+            req.status = InfoRequest.STATUS_CANCELLED
+            req.resolved_at = now
+            req.save(update_fields=["status", "resolved_at"])
+            return Response(InfoRequestSerializer(req).data, status=200)
 
 
 class VisibleProfileView(APIView):
@@ -143,7 +152,9 @@ class VisibleProfileView(APIView):
                 target_user = get_user_model().objects.get(pk=int(user_id))
             except Exception:
                 return Response({"detail": "Target user not found"}, status=404)
-        profile = getattr(target_user, "profile", None)
+
+        # NOTE: userprofiles.Profile uses related_name="userprofile_profile"
+        profile = getattr(target_user, "userprofile_profile", None)
         if profile is None:
             return Response({"detail": "Profile not found"}, status=404)
 
@@ -151,7 +162,6 @@ class VisibleProfileView(APIView):
         data = ProfileSerializer(profile).data  # type: ignore
 
         # Apply visibility filtering
-        vis = None
         try:
             vis = ProfileVisibility.objects.get(profile=profile)
         except ProfileVisibility.DoesNotExist:
@@ -170,8 +180,7 @@ class VisibleProfileView(APIView):
                 status=InfoRequest.STATUS_APPROVED,
             ).exists()
 
-        # TODO: integrate friendship when a friendship model exists. For now,
-        # treat 'friends' as private for non-owners, unless explicitly approved.
+        # TODO: integrate friendship when a friendship model exists.
         is_owner = viewer == target_user
         filtered = dict(data)
 
@@ -189,20 +198,3 @@ class VisibleProfileView(APIView):
             filtered.pop(key, None)
 
         return Response(filtered)
-
-
-# TODO: remove or refactor ->         if action == "deny":
-# TODO: remove or refactor ->             if req.owner != request.user:
-# TODO: remove or refactor ->                 return Response({"detail": "Only the owner can deny"}, status=403)  # noqa: E501
-# TODO: remove or refactor ->             req.status = InfoRequest.STATUS_DENIED
-# TODO: remove or refactor ->             req.resolved_at = now
-# TODO: remove or refactor ->             req.save(update_fields=["status", "resolved_at"])
-# TODO: remove or refactor ->             return Response(InfoRequestSerializer(req).data)
-# TODO: remove or refactor ->
-# TODO: remove or refactor ->         if action == "cancel":
-# TODO: remove or refactor ->             if req.requester != request.user:
-# TODO: remove or refactor ->                 return Response({"detail": "Only the requester can cancel"}, status=403)  # noqa: E501
-# TODO: remove or refactor ->             req.status = InfoRequest.STATUS_CANCELLED
-# TODO: remove or refactor ->             req.resolved_at = now
-# TODO: remove or refactor ->             req.save(update_fields=["status", "resolved_at"])
-# TODO: remove or refactor ->             return Response(InfoRequestSerializer(req).data)
