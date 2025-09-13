@@ -117,6 +117,10 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
+# (Optional defaults; safe if not overridden)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS/CSRF for local dev (adjust per env as needed)
@@ -144,8 +148,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
-# Env-backed threshold for Evaluations summary gating
+# Env-backed thresholds / knobs
 EVALUATIONS_MIN_RATINGS = int(os.getenv("EVALUATIONS_MIN_RATINGS", "10"))
+EVALUATIONS_REPEAT_DAYS = env.int("EVALUATIONS_REPEAT_DAYS", default=7)  # cooldown
 
 # Additional configuration reading from environment variables
 SPOTIFY_CLIENT_ID = env("SPOTIFY_CLIENT_ID", default="")

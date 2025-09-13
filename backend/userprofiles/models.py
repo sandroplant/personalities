@@ -1,5 +1,7 @@
 # userprofiles/models.py
 
+from __future__ import annotations
+
 from django.conf import settings
 from django.db import models
 
@@ -14,7 +16,7 @@ class SpotifyProfile(models.Model):
     email = models.EmailField()
     images = models.JSONField()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.display_name
 
 
@@ -88,8 +90,31 @@ class Profile(models.Model):
     personal_quote = models.CharField(max_length=255, blank=True, null=True)
     social_links = models.TextField(blank=True, null=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.username}'s Profile"
+
+
+class Friendship(models.Model):
+    from_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="friendships_sent",
+    )
+    to_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="friendships_received",
+    )
+    is_confirmed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("from_user", "to_user")
+        verbose_name = "Friendship"
+        verbose_name_plural = "Friendships"
+
+    def __str__(self) -> str:
+        return f"{self.from_user_id} -> {self.to_user_id}"
 
 
 # Ensure privacy models are registered with the app

@@ -30,9 +30,6 @@ class Evaluation(models.Model):
     objectivity_score = models.FloatField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        unique_together = ("evaluator", "subject", "criterion")
-
     def __str__(self):
         return f"{self.subject} rated by {self.evaluator} on {self.criterion}"
 
