@@ -1,13 +1,12 @@
 """
-API views for the questions app.  These views expose endpoints to list
-and create questions, list tags, and submit answers.
+API views for the questions app. Expose endpoints to list/create questions,
+list tags, and submit answers.
 
-The list view supports sorting by “trending” (default) or “recent,”
-aggregates answer counts, detects duplicate questions on creation, and
-normalizes tags when a new question is posted.
+The list view supports sorting by “trending” (default) or “recent,” and always
+annotates yes/no counts and rating stats so the serializer fields are present.
 """
 
-from django.db.models import Count
+from django.db.models import Avg, Count, Q
 from rest_framework import filters, generics, permissions
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import ValidationError
@@ -26,22 +25,7 @@ class TagListView(generics.ListAPIView):
 
 
 class QuestionListCreateView(generics.ListCreateAPIView):
-    """List existing questions or create a new one.
-
-    GET: Returns a paginated list of questions. Supports optional search via
-    query parameter ``search``, filtering by tag id via ``tag``, and
-    sorting by ``sort=recent`` to order by creation date.  Without the
-    sort parameter, questions are ranked by answer count (trending) then
-    by creation date.
-
-    POST: Accepts ``text``, optional ``tag_id``, optional list of
-    ``options`` (max 4 items) and an ``is_anonymous`` flag.  If
-    ``options`` is omitted or empty the frontend should treat the
-    question as a yes/no poll. Duplicate questions (case-insensitive)
-    are rejected. If ``tag_name`` is supplied instead of ``tag_id``,
-    the tag is normalized (lower-case, trimmed) and created if it does
-    not already exist.
-    """
+    """List existing questions or create a new one."""
 
     serializer_class = QuestionSerializer
     authentication_classes = [TokenAuthentication]
@@ -51,55 +35,64 @@ class QuestionListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         """
-        Return questions sorted by trending or recency.
+        Return questions with yes/no counts and rating stats annotated, then sort.
 
-        If the query parameter ``sort=recent`` is provided, the list is
-        ordered by creation date (newest first).  Otherwise, questions
-        are annotated with an ``answer_count`` and ordered by this count
-        (descending) followed by creation date, so more‑answered (trending)
-        questions appear first.  A ``tag`` query parameter restricts the
-        results to a given category.
+        - sort=recent → order by -created_at
+        - default (trending) → order by -answer_count, -created_at
+        - optional filter: ?tag=<id>
         """
-        queryset = Question.objects.all()
+        qs = Question.objects.all()
 
         # Filter by tag if provided
         tag_id = self.request.query_params.get("tag")
         if tag_id:
-            queryset = queryset.filter(tag_id=tag_id)
+            qs = qs.filter(tag_id=tag_id)
+
+        # Always annotate counts/stats used by the serializer
+        qs = qs.annotate(
+            yes_count=Count("answers", filter=Q(answers__selected_option_index=0)),
+            no_count=Count("answers", filter=Q(answers__selected_option_index=1)),
+            average_rating=Avg("answers__rating"),
+            rating_count=Count("answers", filter=Q(answers__rating__isnull=False)),
+            answer_count=Count("answers"),
+        )
 
         # Determine ordering
         sort_param = self.request.query_params.get("sort", "").lower()
         if sort_param == "recent":
-            return queryset.order_by("-created_at")
+            return qs.order_by("-created_at")
 
         # Default: trending sort by answer count then recency
-        return queryset.annotate(answer_count=Count("answers")).order_by(
-            "-answer_count", "-created_at"
-        )
+        return qs.order_by("-answer_count", "-created_at")
 
     def perform_create(self, serializer):
         """Create a new question, normalizing tags and checking for duplicates."""
-        text = serializer.validated_data.get("text", "").strip().lower()
-        # Check for duplicate questions (case-insensitive)
-        if Question.objects.filter(text__iexact=text).exists():
+        text_raw = serializer.validated_data.get("text", "")
+        text_norm = str(text_raw).strip().lower()
+
+        # Duplicate check (case-insensitive)
+        if Question.objects.filter(text__iexact=text_norm).exists():
             raise ValidationError(
                 {
                     "text": "A similar question already exists. Please rephrase your question."
                 }
             )
 
-        # If the request included a raw tag name, normalize it and either
-        # retrieve or create a Tag object. We accept both "tag_name" and
-        # "tag" as possible parameter keys for convenience. Only populate
-        # this if the serializer hasn't already resolved tag_id to a Tag.
+        # Normalize/create tag if tag_name provided and tag not already set
         tag_name = self.request.data.get("tag_name") or self.request.data.get("tag")
         if tag_name and not serializer.validated_data.get("tag"):
             normalized = str(tag_name).strip().lower()
             if normalized:
-                tag_obj, _created = Tag.objects.get_or_create(name=normalized)
+                tag_obj, _ = Tag.objects.get_or_create(name=normalized)
                 serializer.validated_data["tag"] = tag_obj
 
-        return serializer.save()
+        serializer.save()
+
+    def get_serializer_context(self):
+        # Ensure serializer has request for author attachment in create()
+        ctx = super().get_serializer_context()
+        ctx["request"] = self.request
+        return ctx
 
 
 class AnswerCreateView(generics.CreateAPIView):
