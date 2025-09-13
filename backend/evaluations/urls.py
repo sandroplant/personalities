@@ -1,42 +1,40 @@
 from django.urls import path
 
-from .create_views import EvaluationCreateV2View
-from .summary_views import EvaluationSummaryV2View
+# Legacy/primary views (tests reverse these names)
+from .views import EvaluationCreateView, EvaluationTasksView
 
-# Optional legacy views (kept for backward compatibility if present)
+# Optional v2 endpoints (import if present)
 try:
-    from .views import (  # type: ignore
-        EvaluationSummaryView,
-        EvaluationTasksView,
-        EvaluationCreateView,
-    )
-except Exception:
-    EvaluationSummaryView = None  # type: ignore
-    EvaluationTasksView = None  # type: ignore
-    EvaluationCreateView = None  # type: ignore
+    from .summary_views import EvaluationSummaryV2View  # type: ignore
+except Exception:  # pragma: no cover
+    EvaluationSummaryV2View = None  # type: ignore
 
-urlpatterns = []
+try:
+    from .create_views import EvaluationCreateV2View  # type: ignore
+except Exception:  # pragma: no cover
+    EvaluationCreateV2View = None  # type: ignore
 
-# Legacy summary (if available)
-if EvaluationSummaryView is not None:
-    urlpatterns.append(
-        path("summary/", EvaluationSummaryView.as_view(), name="evaluation-summary")
-    )
 
-# Legacy tasks/create (if available)
-if EvaluationTasksView is not None:
-    urlpatterns.append(
-        path("tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks")
-    )
-if EvaluationCreateView is not None:
-    urlpatterns.append(
-        path("create/", EvaluationCreateView.as_view(), name="evaluation-create")
-    )
+# Namespacing ensures reverse("evaluations:evaluation-tasks") also works
+app_name = "evaluations"
 
-# V2 endpoints (always present in this file)
-urlpatterns += [
-    path(
-        "summary-v2/", EvaluationSummaryV2View.as_view(), name="evaluation-summary-v2"
-    ),
-    path("create-v2/", EvaluationCreateV2View.as_view(), name="evaluation-create-v2"),
+urlpatterns = [
+    path("tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
+    path("create/", EvaluationCreateView.as_view(), name="evaluation-create"),
 ]
+
+# Keep v2 endpoints if modules exist
+if EvaluationSummaryV2View is not None:
+    urlpatterns.append(
+        path(
+            "summary-v2/",
+            EvaluationSummaryV2View.as_view(),
+            name="evaluation-summary-v2",
+        )
+    )
+if EvaluationCreateV2View is not None:
+    urlpatterns.append(
+        path(
+            "create-v2/", EvaluationCreateV2View.as_view(), name="evaluation-create-v2"
+        )
+    )

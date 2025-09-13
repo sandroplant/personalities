@@ -12,6 +12,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django_ratelimit.decorators import ratelimit
 from rest_framework import generics, status, viewsets
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import (
     api_view,
     authentication_classes,
@@ -40,9 +41,7 @@ from .utils.spotify_auth_utils import generate_code_challenge, generate_code_ver
 # Helpers
 # ---------------------------------------------------------------------------
 def _get_or_create_profile(user: User) -> Profile:
-    """
-    Ensure a core.Profile exists for the given user.
-    """
+    """Ensure a core.Profile exists for the given user."""
     profile, _ = Profile.objects.get_or_create(
         user=user,
         defaults={"full_name": user.username, "bio": ""},
@@ -50,39 +49,39 @@ def _get_or_create_profile(user: User) -> Profile:
     return profile
 
 
-# A session auth class that skips CSRF checks (for test-only endpoints below)
-from rest_framework.authentication import SessionAuthentication
-
-
 class CsrfExemptSessionAuthentication(SessionAuthentication):
+    """Session auth that skips CSRF checks (useful for test client)."""
+
     def enforce_csrf(self, request):
-        return  # disable CSRF enforcement for this view
+        return  # disable CSRF enforcement
 
 
 # ---------------------------------------------------------------------------
-# Profile API (function-based; tests expect these route names)
+# Profile API (tests expect these names)
 # ---------------------------------------------------------------------------
-@api_view(["PUT"])
-@authentication_classes([CsrfExemptSessionAuthentication, JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def update_user_profile_api(request):
-    user = request.user
-    profile = _get_or_create_profile(user)
-    serializer = ProfileSerializer(profile, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 @api_view(["GET"])
 @authentication_classes([CsrfExemptSessionAuthentication, JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def get_user_profile_api(request):
     user = request.user
     profile = _get_or_create_profile(user)
-    serializer = ProfileSerializer(profile)
+    serializer = ProfileSerializer(profile, context={"request": request})
     return Response(serializer.data)
+
+
+@api_view(["PUT"])
+@authentication_classes([CsrfExemptSessionAuthentication, JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def update_user_profile_api(request):
+    user = request.user
+    profile = _get_or_create_profile(user)
+    serializer = ProfileSerializer(
+        profile, data=request.data, partial=True, context={"request": request}
+    )
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ---------------------------------------------------------------------------
@@ -471,9 +470,7 @@ def sanitize_input(html_input):
 
 
 def health_check(request):
-    """
-    A simple health check endpoint that returns a 200 OK response.
-    """
+    """Simple health check endpoint."""
     return JsonResponse({"status": "ok"})
 
 
@@ -483,7 +480,6 @@ def metrics(request):
         try:
             data = json.loads(request.body)
             logger.info("Received web vitals metric: %s", data)
-            # Optionally, save data to the database here
             return JsonResponse({"status": "success"}, status=201)
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
