@@ -19,6 +19,7 @@ from rest_framework.decorators import (
 )
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Message, Post, Profile, User
@@ -62,7 +63,7 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 # Profile API (function-based; tests expect these route names)
 # ---------------------------------------------------------------------------
 @api_view(["PUT"])
-@authentication_classes([CsrfExemptSessionAuthentication])
+@authentication_classes([CsrfExemptSessionAuthentication, JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def update_user_profile_api(request):
     user = request.user
@@ -75,7 +76,7 @@ def update_user_profile_api(request):
 
 
 @api_view(["GET"])
-@authentication_classes([CsrfExemptSessionAuthentication])
+@authentication_classes([CsrfExemptSessionAuthentication, JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def get_user_profile_api(request):
     user = request.user
