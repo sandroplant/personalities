@@ -18,8 +18,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.simplejwt.authentication import JWTAuthentication
+from rest_framework.simplejwt.tokens import RefreshToken
 
 from .models import Message, Post, Profile, User
 from .serializers import (
@@ -80,9 +80,8 @@ class UpdateUserProfileApi(APIView):
         serializer = ProfileSerializer(
             profile, data=request.data, partial=True, context={"request": request}
         )
-        serializer.is_valid(
-            raise_ok=True
-        )  # DRF 3.15+; for older use is_valid(raise_exception=True)
+        # Use raise_exception=True to validate
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
