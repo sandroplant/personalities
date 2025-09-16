@@ -18,9 +18,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.simplejwt.authentication import JWTAuthentication
-from rest_framework.simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
 
+from .auth import CsrfExemptSessionAuthentication  # <-- import here
 from .models import Message, Post, Profile, User
 from .serializers import (
     LoginSerializer,
@@ -39,7 +40,9 @@ from .utils.spotify_auth_utils import generate_code_challenge, generate_code_ver
 # Helpers
 # ---------------------------------------------------------------------------
 def _get_or_create_profile(user: User) -> Profile:
-    """Ensure a core.Profile exists for the given user."""
+    """
+    Ensure a core.Profile exists for the given user.
+    """
     profile, _ = Profile.objects.get_or_create(
         user=user,
         defaults={"full_name": user.username, "bio": ""},
@@ -48,14 +51,16 @@ def _get_or_create_profile(user: User) -> Profile:
 
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
-    """Session auth that skips CSRF checks (useful for test client)."""
+    """
+    SessionAuthentication that skips CSRF checks.
+    """
 
     def enforce_csrf(self, request):
         return  # disable CSRF enforcement
 
 
 # ---------------------------------------------------------------------------
-# Profile API (tests expect these names) - class-based, CSRF-exempt Session + JWT
+# Profile API (class-based, CSRF-exempt Session + JWT)
 # ---------------------------------------------------------------------------
 @method_decorator(csrf_exempt, name="dispatch")
 class GetUserProfileApi(APIView):
@@ -80,7 +85,6 @@ class UpdateUserProfileApi(APIView):
         serializer = ProfileSerializer(
             profile, data=request.data, partial=True, context={"request": request}
         )
-        # Use raise_exception=True to validate
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -271,7 +275,6 @@ def spotify_callback(request):
         return JsonResponse({"error": "Invalid state parameter"}, status=400)
 
     code_verifier = request.session.get("code_verifier")
-
     if not code_verifier:
         return JsonResponse({"error": "Code verifier missing in session"}, status=400)
 
@@ -284,8 +287,8 @@ def spotify_callback(request):
         "code_verifier": code_verifier,
     }
     auth_header = (
-        settings.SPOTIFY_CLIENT_ID + ":" + settings.SPOTIFY_CLIENT_SECRET
-    ).encode("utf-8")
+        f"{settings.SPOTIFY_CLIENT_ID}:{settings.SPOTIFY_CLIENT_SECRET}".encode("utf-8")
+    )
     auth_header = base64.urlsafe_b64encode(auth_header).decode("utf-8")
 
     headers = {
@@ -294,7 +297,6 @@ def spotify_callback(request):
     }
 
     response = requests.post(token_url, data=data, headers=headers)
-
     if response.status_code != 200:
         return JsonResponse(
             {"error": "Failed to obtain access token"}, status=response.status_code
@@ -303,7 +305,6 @@ def spotify_callback(request):
     token_data = response.json()
     access_token = token_data.get("access_token")
     refresh_token = token_data.get("refresh_token")
-
     if not access_token or not refresh_token:
         return JsonResponse({"error": "Invalid token data"}, status=400)
 
@@ -472,7 +473,9 @@ def sanitize_input(html_input):
 
 
 def health_check(request):
-    """Simple health check endpoint."""
+    """
+    A simple health check endpoint.
+    """
     return JsonResponse({"status": "ok"})
 
 

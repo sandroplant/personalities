@@ -9,9 +9,10 @@ DATABASES = {
     }
 }
 
-# DRF auth for tests: allow Session (works with APIClient/force_login) and JWT
+# DRF defaults for tests: CSRF‑exempt session + JWT; open permissions
 REST_FRAMEWORK = dict(globals().get("REST_FRAMEWORK", {}))
 REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = (
-    "rest_framework.authentication.SessionAuthentication",
+    "core.auth.CsrfExemptSessionAuthentication",
     "rest_framework_simplejwt.authentication.JWTAuthentication",
 )
+REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"] = ("rest_framework.permissions.AllowAny",)
