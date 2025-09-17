@@ -1,33 +1,35 @@
-from rest_framework import generics, status, viewsets
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.decorators import api_view, permission_classes
-from django.http import JsonResponse
-from django.contrib.auth import login, logout, get_user_model
-from django.shortcuts import redirect, render
-from django.conf import settings
-from django_ratelimit.decorators import ratelimit
-from django.views.decorators.csrf import csrf_exempt
-import requests
-import secrets
-import string
-import bleach
 import base64
 import json
+import secrets
+import string
 
-from .models import Profile, Post, Message
+import bleach
+import requests
+from django.conf import settings
+from django.contrib.auth import get_user_model, login, logout
+from django.http import JsonResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.csrf import csrf_exempt
+from django_ratelimit.decorators import ratelimit
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .models import Message, Post, Profile
 from .serializers import (
-    UserSerializer,
-    RegisterSerializer,
     LoginSerializer,
-    ProfileSerializer,
-    PostSerializer,
     MessageSerializer,
+    PostSerializer,
+    ProfileSerializer,
+    RegisterSerializer,
+    UserSerializer,
 )
 from .utils.logger import logger
-from .utils.spotify_auth_utils import generate_code_verifier, generate_code_challenge
 from .utils.openai_service import get_openai_response
+from .utils.spotify_auth_utils import generate_code_challenge, generate_code_verifier
 
 User = get_user_model()
 
@@ -50,6 +52,34 @@ def get_user_profile_api(request):
     user = request.user
     serializer = ProfileSerializer(user.profile)
     return Response(serializer.data)
+
+
+class GetUserProfileApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        serializer = ProfileSerializer(request.user.profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UpdateUserProfileApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        return self._update_profile(request, partial=True)
+
+    def put(self, request, *args, **kwargs):
+        return self._update_profile(request, partial=False)
+
+    def patch(self, request, *args, **kwargs):
+        return self._update_profile(request, partial=True)
+
+    def _update_profile(self, request, partial):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        serializer = ProfileSerializer(profile, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # User Management Views

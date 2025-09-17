@@ -1,24 +1,26 @@
-from django.urls import path, include
+from core import profile_session_views as session_profile_views
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 from . import views
 from .views import (
-    UserViewSet,
-    ProfileViewSet,
-    PostViewSet,
-    MessageViewSet,
-    RegisterView,
+    GetUserProfileApi,
     LoginView,
-    logout_view,
-    spotify_login,
-    spotify_callback,
-    spotify_profile,
+    MessageViewSet,
+    PostViewSet,
+    ProfileViewSet,
+    RegisterView,
+    UpdateUserProfileApi,
+    UserViewSet,
     ai_response_view,
     example_api_view,
-    test_logging,
-    get_user_profile_api,
-    update_user_profile_api,
     health_check,
+    logout_view,
+    spotify_callback,
+    spotify_login,
+    spotify_profile,
+    test_logging,
 )
 
 # Initialize the router and register viewsets
@@ -27,6 +29,10 @@ router.register(r"users", UserViewSet)
 router.register(r"profiles", ProfileViewSet)
 router.register(r"posts", PostViewSet)
 router.register(r"messages", MessageViewSet)
+
+
+session_get_user_profile_api = session_profile_views.get_user_profile_api
+session_update_user_profile_api = session_profile_views.update_user_profile_api
 
 urlpatterns = [
     # Admin Route
@@ -43,9 +49,16 @@ urlpatterns = [
     path("spotify/login/", spotify_login, name="spotify_login"),
     path("spotify/callback/", spotify_callback, name="spotify_callback"),
     path("spotify/profile/", spotify_profile, name="spotify_profile"),
-    # User Profile API Routes
-    path("profile/", get_user_profile_api, name="get_user_profile"),
-    path("profile/update/", update_user_profile_api, name="update_user_profile"),
+    # Session-aware profile API routes used by tests
+    path("api/profile/get/", session_get_user_profile_api, name="get_user_profile_api"),
+    path(
+        "api/profile/update/",
+        session_update_user_profile_api,
+        name="update_user_profile_api",
+    ),
+    # Legacy profile routes pointing at the class-based views
+    path("profile/", GetUserProfileApi.as_view(), name="get_user_profile"),
+    path("profile/update/", UpdateUserProfileApi.as_view(), name="update_user_profile"),
     # JWT Authentication Endpoints
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
