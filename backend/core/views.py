@@ -18,12 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-<<<<<<< Updated upstream
 from .models import Message, Post, Profile
-=======
-from .auth import CsrfExemptSessionAuthentication
-from .models import Message, Post, Profile, User
->>>>>>> Stashed changes
 from .serializers import (
     LoginSerializer,
     MessageSerializer,
@@ -39,7 +34,6 @@ from .utils.spotify_auth_utils import generate_code_challenge, generate_code_ver
 User = get_user_model()
 
 
-<<<<<<< Updated upstream
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_user_profile_api(request):
@@ -58,67 +52,23 @@ def get_user_profile_api(request):
     user = request.user
     serializer = ProfileSerializer(user.profile)
     return Response(serializer.data)
-=======
-def _user_from_session(request):
-    """
-    Best-effort: return a User from session['user_id'] if present, else None.
-    (Most tests use force_authenticate, so request.user is already set.)
-    """
-    uid = request.session.get("user_id")
-    if not uid:
-        return None
-    try:
-        return User.objects.get(pk=int(uid))
-    except (User.DoesNotExist, TypeError, ValueError):
-        return None
->>>>>>> Stashed changes
 
 
 class GetUserProfileApi(APIView):
-<<<<<<< Updated upstream
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         serializer = ProfileSerializer(request.user.profile)
-=======
-    authentication_classes = [
-        CsrfExemptSessionAuthentication,
-        JWTAuthentication,
-    ]
-    # AllowAny; we will resolve the user via DRF auth or session fallback
-    permission_classes = [AllowAny]
-
-    def get(self, request, *args, **kwargs):
-        user = (
-            request.user
-            if getattr(request.user, "is_authenticated", False)
-            else _user_from_session(request)
-        )
-        if not user:
-            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
-        profile = _get_or_create_profile(user)
-        serializer = ProfileSerializer(profile, context={"request": request})
->>>>>>> Stashed changes
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UpdateUserProfileApi(APIView):
-<<<<<<< Updated upstream
     permission_classes = [IsAuthenticated]
-=======
-    authentication_classes = [
-        CsrfExemptSessionAuthentication,
-        JWTAuthentication,
-    ]
-    # AllowAny; we will resolve the user via DRF auth or session fallback
-    permission_classes = [AllowAny]
->>>>>>> Stashed changes
 
     def post(self, request, *args, **kwargs):
         return self._update_profile(request, partial=True)
 
     def put(self, request, *args, **kwargs):
-<<<<<<< Updated upstream
         return self._update_profile(request, partial=False)
 
     def patch(self, request, *args, **kwargs):
@@ -127,26 +77,9 @@ class UpdateUserProfileApi(APIView):
     def _update_profile(self, request, partial):
         profile, _ = Profile.objects.get_or_create(user=request.user)
         serializer = ProfileSerializer(profile, data=request.data, partial=partial)
-=======
-        user = (
-            request.user
-            if getattr(request.user, "is_authenticated", False)
-            else _user_from_session(request)
-        )
-        if not user:
-            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
-        profile = _get_or_create_profile(user)
-        serializer = ProfileSerializer(
-            profile, data=request.data, partial=True, context={"request": request}
-        )
->>>>>>> Stashed changes
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request, *args, **kwargs):
-        # Some callers/tests may POST updates; treat as partial update.
-        return self.put(request, *args, **kwargs)
 
 
 # User Management Views

@@ -1,4 +1,5 @@
 from copy import deepcopy
+import os as _os  # keep imports at top to satisfy flake8 E402
 from . import settings as base  # import the module, not star-import
 
 # Copy all UPPERCASE settings from base into this module's namespace
@@ -24,7 +25,6 @@ PASSWORD_HASHERS = [
 ]
 
 # ---- Local-only test DB override (does not affect CI) ----
-import os as _os
 if _os.environ.get("LOCAL_TESTS") == "1":
     _here = _os.path.dirname(__file__)
     DATABASES = {
