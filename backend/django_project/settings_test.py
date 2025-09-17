@@ -1,13 +1,16 @@
 from copy import deepcopy
 from . import settings as base  # import the module, not star-import
 
-# Bring all UPPERCASE settings from base into this module namespace
+# Copy all UPPERCASE settings from base into this module's namespace
 for _name in dir(base):
     if _name.isupper():
         globals()[_name] = getattr(base, _name)
 
-# Ensure DRF uses SessionAuthentication in tests (prepend it to whatever is configured)
-REST_FRAMEWORK = deepcopy(REST_FRAMEWORK)
+# ---- DRF auth for tests (flake8-friendly) ----
+# Explicitly derive from base to satisfy static analysis (no F821).
+_BASE_REST = getattr(base, "REST_FRAMEWORK", {})
+REST_FRAMEWORK = deepcopy(_BASE_REST)
+
 _default_auth = tuple(REST_FRAMEWORK.get("DEFAULT_AUTHENTICATION_CLASSES", ()))
 if "rest_framework.authentication.SessionAuthentication" not in _default_auth:
     REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = (
