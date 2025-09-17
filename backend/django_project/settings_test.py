@@ -22,3 +22,18 @@ if "rest_framework.authentication.SessionAuthentication" not in _default_auth:
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
+
+# ---- Local-only test DB override (does not affect CI) ----
+import os as _os
+
+if _os.environ.get("LOCAL_TESTS") == "1":
+    # Use a file-based SQLite DB for local tests
+    _here = _os.path.dirname(__file__)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": _os.path.join(_here, "test_db.sqlite3"),
+        }
+    }
+    # Use in-memory email backend locally
+    EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
