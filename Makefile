@@ -1,5 +1,7 @@
-.PHONY: lint test
+.PHONY: lint test test-local
 lint:
-	flake8 backend
+\tflake8 backend
 test:
-	cd backend && python manage.py test
+\tcd backend && DJANGO_SETTINGS_MODULE=django_project.settings_test python manage.py test
+test-local:
+\tcd backend && LOCAL_TESTS=1 DJANGO_SETTINGS_MODULE=django_project.settings_test python manage.py test
