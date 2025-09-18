@@ -1,11 +1,11 @@
 from django.urls import include, path
 
+from custom_auth.views import AuthView
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from . import views
 from .views import GetUserProfileApi, UpdateUserProfileApi
-from custom_auth.views import AuthView
 
 # Initialize the router and register viewsets
 router = DefaultRouter()

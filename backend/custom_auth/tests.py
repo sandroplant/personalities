@@ -1,8 +1,8 @@
+from django.contrib.auth import get_user_model
 from django.urls import reverse
+
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-from django.contrib.auth import get_user_model
 
 from userprofiles.models import Profile
 
@@ -16,12 +16,8 @@ class AuthViewTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("id", response.data)
-        self.assertTrue(
-            get_user_model().objects.filter(username="new_user").exists()
-        )
-        self.assertTrue(
-            Profile.objects.filter(user__username="new_user").exists()
-        )
+        self.assertTrue(get_user_model().objects.filter(username="new_user").exists())
+        self.assertTrue(Profile.objects.filter(user__username="new_user").exists())
 
     def test_duplicate_register_returns_conflict(self):
         user_model = get_user_model()
@@ -37,7 +33,9 @@ class AuthViewTests(APITestCase):
 
     def test_login_returns_jwt_token(self):
         user_model = get_user_model()
-        user_model.objects.create_user(username="login_user", password="secure-pass-123")
+        user_model.objects.create_user(
+            username="login_user", password="secure-pass-123"
+        )
 
         url = reverse("login")
         payload = {"username": "login_user", "password": "secure-pass-123"}
