@@ -199,6 +199,30 @@ def get_user_spotify_profile(request):
 # -----------------------
 
 
+ALLOWED_PROFILE_IMAGE_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+}
+MAX_PROFILE_IMAGE_SIZE_MB = 5
+MAX_PROFILE_IMAGE_SIZE_BYTES = MAX_PROFILE_IMAGE_SIZE_MB * 1024 * 1024
+
+
+def _cloudinary_credentials_configured() -> bool:
+    """Return True when enough Cloudinary configuration is available."""
+
+    if os.getenv("CLOUDINARY_URL"):
+        return True
+
+    required_keys = [
+        "CLOUDINARY_CLOUD_NAME",
+        "CLOUDINARY_API_KEY",
+        "CLOUDINARY_API_SECRET",
+    ]
+    return all(os.getenv(key) for key in required_keys)
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def upload_profile_picture(request):
@@ -209,6 +233,30 @@ def upload_profile_picture(request):
 
     try:
         file = request.FILES["profilePicture"]
+
+        if not _cloudinary_credentials_configured():
+            return JsonResponse(
+                {"error": "Cloudinary credentials are not configured"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        if file.content_type not in ALLOWED_PROFILE_IMAGE_TYPES:
+            return JsonResponse(
+                {"error": "Unsupported file type"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if file.size > MAX_PROFILE_IMAGE_SIZE_BYTES:
+            return JsonResponse(
+                {
+                    "error": (
+                        "File too large. Maximum allowed size is "
+                        f"{MAX_PROFILE_IMAGE_SIZE_MB}MB"
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         result = uploader.upload(file, folder="profile_pictures")
         # Update the user's profile picture URL
         profile, _ = Profile.objects.get_or_create(user=request.user)
