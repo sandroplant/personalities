@@ -1,21 +1,16 @@
+// frontend/src/components/Profile.tsx
 import { Link } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
-<<<<<<< HEAD
-import {
-  Container,
-  Card,
-  ListGroup,
-  Spinner,
-  Alert,
-} from 'react-bootstrap';
-import api from '../services/api';
-import EvaluationSummary from './EvaluationSummary';  // <-- import the new component
-=======
 import { Container, Card, ListGroup, Spinner, Alert } from 'react-bootstrap';
-import api from './services/api';
-import EvaluationSummary from './EvaluationSummary';
->>>>>>> fddbe62 (Privacy + profile requests backend scaffolding; viewer-aware privacy; CI; frontend stubs)
+import api from '../services/api';
+import EvaluationSummary from './EvaluationSummary'; // <-- import the new component
 
+/**
+ * Profile component
+ *
+ * This component fetches the current user's profile from the backend and
+ * displays a summary of all available profile information.
+ */
 const Profile: React.FC = () => {
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -24,41 +19,26 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        try {
-          // Prefer privacy-filtered endpoint if available
-          const response = await api.get('/userprofiles/privacy/visible-profile/');
-          setProfile(response.data);
-          return;
-        } catch (err: any) {
-          // fall through to standard endpoints
-        }
-
-        try {
-          // Fallback 1: userprofiles/profile (if project exposes it)
-          const resp2 = await api.get('/userprofiles/profile/');
-          setProfile(resp2.data);
-          return;
-        } catch (err2: any) {
-          // fall through
-        }
-
-        // Fallback 2: legacy root /profile/ used by your project
-        const resp3 = await api.get('/profile/');
-        setProfile(resp3.data);
-      } catch (err) {
+        const response = await api.get('/userprofiles/profile/');
+        setProfile(response.data);
+      } catch {
         setError('Failed to fetch profile');
       } finally {
         setLoading(false);
       }
     };
+
     fetchProfile();
   }, []);
 
-  // Normalize arrays/CSV strings
+  // Helper to safely join arrays or split comma-separated strings
   const toList = (value: any): string[] => {
     if (!value) return [];
     if (Array.isArray(value)) return value;
-    return String(value).split(',').map((item) => item.trim()).filter(Boolean);
+    return String(value)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
   };
 
   if (loading) {
@@ -79,12 +59,15 @@ const Profile: React.FC = () => {
     );
   }
 
-  if (!profile) return null;
+  if (!profile) {
+    return null;
+  }
 
+  // Destructure fields for readability. If a field isn't present, default to an
+  // empty string or sensible default. Arrays are split into lists for display.
   const {
     full_name,
     bio,
-    // Basic
     age_group,
     gender_identity,
     nationality,
@@ -93,7 +76,6 @@ const Profile: React.FC = () => {
     location_state,
     location_country,
     zodiac_sign,
-    // Appearance
     eye_color,
     height,
     weight,
@@ -102,13 +84,13 @@ const Profile: React.FC = () => {
     hair_style,
     skin_tone,
     tattoos_piercings,
-    // Lifestyle
+    education_level: _education_level, // unused → prefixed
+    profession: _profession, // unused → prefixed
     diet,
     exercise_frequency,
     smoking,
     drinking,
     pets,
-    // Favourites
     hobbies,
     favorite_songs,
     favorite_artists,
@@ -120,22 +102,16 @@ const Profile: React.FC = () => {
     favorite_sport,
     favorite_podcasts,
     favorite_influencers,
-    // Fun & Misc
     fun_fact,
     goals,
     achievements,
     personal_quote,
     social_links,
-    // Personality
     personality_values,
   } = profile;
 
+  // Determine the user ID for evaluation summary; falls back to profile.id if user is nested.
   const userId: number | undefined = profile.user?.id ?? profile.id;
-
-  // Compose location string once
-  const locationJoined = [location_city, location_state, location_country]
-    .filter(Boolean)
-    .join(', ');
 
   return (
     <Container className="mt-5">
@@ -147,30 +123,37 @@ const Profile: React.FC = () => {
         <Card.Header>Basic Information</Card.Header>
         <ListGroup variant="flush">
           {age_group && (
-            <ListGroup.Item children={<span><strong>Age Group:</strong> {age_group}</span>} />
+            <ListGroup.Item>
+              <strong>Age Group:</strong> {age_group}
+            </ListGroup.Item>
           )}
           {gender_identity && (
-            <ListGroup.Item children={<span><strong>Gender:</strong> {gender_identity}</span>} />
+            <ListGroup.Item>
+              <strong>Gender:</strong> {gender_identity}
+            </ListGroup.Item>
           )}
           {nationality && (
-            <ListGroup.Item children={<span><strong>Nationality:</strong> {nationality}</span>} />
+            <ListGroup.Item>
+              <strong>Nationality:</strong> {nationality}
+            </ListGroup.Item>
           )}
           {languages && toList(languages).length > 0 && (
-            <ListGroup.Item
-              children={<span><strong>Languages:</strong> {toList(languages).join(', ')}</span>}
-            />
+            <ListGroup.Item>
+              <strong>Languages:</strong> {toList(languages).join(', ')}
+            </ListGroup.Item>
           )}
           {(location_city || location_state || location_country) && (
-            <ListGroup.Item
-              children={
-                <span>
-                  <strong>Location:</strong> {locationJoined}
-                </span>
-              }
-            />
+            <ListGroup.Item>
+              <strong>Location:</strong>{' '}
+              {[location_city, location_state, location_country]
+                .filter(Boolean)
+                .join(', ')}
+            </ListGroup.Item>
           )}
           {zodiac_sign && (
-            <ListGroup.Item children={<span><strong>Zodiac Sign:</strong> {zodiac_sign}</span>} />
+            <ListGroup.Item>
+              <strong>Zodiac Sign:</strong> {zodiac_sign}
+            </ListGroup.Item>
           )}
         </ListGroup>
       </Card>
@@ -180,28 +163,44 @@ const Profile: React.FC = () => {
         <Card.Header>Appearance</Card.Header>
         <ListGroup variant="flush">
           {eye_color && (
-            <ListGroup.Item children={<span><strong>Eye Colour:</strong> {eye_color}</span>} />
+            <ListGroup.Item>
+              <strong>Eye Colour:</strong> {eye_color}
+            </ListGroup.Item>
           )}
           {height && (
-            <ListGroup.Item children={<span><strong>Height:</strong> {height}</span>} />
+            <ListGroup.Item>
+              <strong>Height:</strong> {height}
+            </ListGroup.Item>
           )}
           {weight && (
-            <ListGroup.Item children={<span><strong>Weight:</strong> {weight}</span>} />
+            <ListGroup.Item>
+              <strong>Weight:</strong> {weight}
+            </ListGroup.Item>
           )}
           {body_type && (
-            <ListGroup.Item children={<span><strong>Body Type:</strong> {body_type}</span>} />
+            <ListGroup.Item>
+              <strong>Body Type:</strong> {body_type}
+            </ListGroup.Item>
           )}
           {hair_color && (
-            <ListGroup.Item children={<span><strong>Hair Colour:</strong> {hair_color}</span>} />
+            <ListGroup.Item>
+              <strong>Hair Colour:</strong> {hair_color}
+            </ListGroup.Item>
           )}
           {hair_style && (
-            <ListGroup.Item children={<span><strong>Hair Style:</strong> {hair_style}</span>} />
+            <ListGroup.Item>
+              <strong>Hair Style:</strong> {hair_style}
+            </ListGroup.Item>
           )}
           {skin_tone && (
-            <ListGroup.Item children={<span><strong>Skin Tone:</strong> {skin_tone}</span>} />
+            <ListGroup.Item>
+              <strong>Skin Tone:</strong> {skin_tone}
+            </ListGroup.Item>
           )}
           {tattoos_piercings && (
-            <ListGroup.Item children={<span><strong>Tattoos/Piercings:</strong> {tattoos_piercings}</span>} />
+            <ListGroup.Item>
+              <strong>Tattoos/Piercings:</strong> {tattoos_piercings}
+            </ListGroup.Item>
           )}
         </ListGroup>
       </Card>
@@ -211,19 +210,29 @@ const Profile: React.FC = () => {
         <Card.Header>Lifestyle & Habits</Card.Header>
         <ListGroup variant="flush">
           {diet && (
-            <ListGroup.Item children={<span><strong>Diet:</strong> {diet}</span>} />
+            <ListGroup.Item>
+              <strong>Diet:</strong> {diet}
+            </ListGroup.Item>
           )}
           {exercise_frequency && (
-            <ListGroup.Item children={<span><strong>Exercise Frequency:</strong> {exercise_frequency}</span>} />
+            <ListGroup.Item>
+              <strong>Exercise Frequency:</strong> {exercise_frequency}
+            </ListGroup.Item>
           )}
           {smoking && (
-            <ListGroup.Item children={<span><strong>Smoking:</strong> {smoking}</span>} />
+            <ListGroup.Item>
+              <strong>Smoking:</strong> {smoking}
+            </ListGroup.Item>
           )}
           {drinking && (
-            <ListGroup.Item children={<span><strong>Drinking:</strong> {drinking}</span>} />
+            <ListGroup.Item>
+              <strong>Drinking:</strong> {drinking}
+            </ListGroup.Item>
           )}
           {pets && (
-            <ListGroup.Item children={<span><strong>Pets:</strong> {pets}</span>} />
+            <ListGroup.Item>
+              <strong>Pets:</strong> {pets}
+            </ListGroup.Item>
           )}
         </ListGroup>
       </Card>
@@ -233,37 +242,69 @@ const Profile: React.FC = () => {
         <Card.Header>Favourites</Card.Header>
         <ListGroup variant="flush">
           {hobbies && toList(hobbies).length > 0 && (
-            <ListGroup.Item children={<span><strong>Hobbies:</strong> {toList(hobbies).join(', ')}</span>} />
+            <ListGroup.Item>
+              <strong>Hobbies:</strong> {toList(hobbies).join(', ')}
+            </ListGroup.Item>
           )}
           {favorite_songs && toList(favorite_songs).length > 0 && (
-            <ListGroup.Item children={<span><strong>Favourite Songs:</strong> {toList(favorite_songs).join(', ')}</span>} />
+            <ListGroup.Item>
+              <strong>Favourite Songs:</strong>{' '}
+              {toList(favorite_songs).join(', ')}
+            </ListGroup.Item>
           )}
           {favorite_artists && toList(favorite_artists).length > 0 && (
-            <ListGroup.Item children={<span><strong>Favourite Artists:</strong> {toList(favorite_artists).join(', ')}</span>} />
+            <ListGroup.Item>
+              <strong>Favourite Artists:</strong>{' '}
+              {toList(favorite_artists).join(', ')}
+            </ListGroup.Item>
           )}
           {favorite_books && toList(favorite_books).length > 0 && (
-            <ListGroup.Item children={<span><strong>Favourite Books:</strong> {toList(favorite_books).join(', ')}</span>} />
+            <ListGroup.Item>
+              <strong>Favourite Books:</strong>{' '}
+              {toList(favorite_books).join(', ')}
+            </ListGroup.Item>
           )}
           {favorite_movies && toList(favorite_movies).length > 0 && (
-            <ListGroup.Item children={<span><strong>Favourite Movies:</strong> {toList(favorite_movies).join(', ')}</span>} />
+            <ListGroup.Item>
+              <strong>Favourite Movies:</strong>{' '}
+              {toList(favorite_movies).join(', ')}
+            </ListGroup.Item>
           )}
           {favorite_tv_shows && toList(favorite_tv_shows).length > 0 && (
-            <ListGroup.Item children={<span><strong>Favourite TV Shows:</strong> {toList(favorite_tv_shows).join(', ')}</span>} />
+            <ListGroup.Item>
+              <strong>Favourite TV Shows:</strong>{' '}
+              {toList(favorite_tv_shows).join(', ')}
+            </ListGroup.Item>
           )}
           {favorite_food && toList(favorite_food).length > 0 && (
-            <ListGroup.Item children={<span><strong>Favourite Food:</strong> {toList(favorite_food).join(', ')}</span>} />
+            <ListGroup.Item>
+              <strong>Favourite Food:</strong>{' '}
+              {toList(favorite_food).join(', ')}
+            </ListGroup.Item>
           )}
-          {favorite_travel_destinations && toList(favorite_travel_destinations).length > 0 && (
-            <ListGroup.Item children={<span><strong>Favourite Travel Destinations:</strong> {toList(favorite_travel_destinations).join(', ')}</span>} />
-          )}
+          {favorite_travel_destinations &&
+            toList(favorite_travel_destinations).length > 0 && (
+              <ListGroup.Item>
+                <strong>Favourite Travel Destinations:</strong>{' '}
+                {toList(favorite_travel_destinations).join(', ')}
+              </ListGroup.Item>
+            )}
           {favorite_sport && (
-            <ListGroup.Item children={<span><strong>Favourite Sport:</strong> {favorite_sport}</span>} />
+            <ListGroup.Item>
+              <strong>Favourite Sport:</strong> {favorite_sport}
+            </ListGroup.Item>
           )}
           {favorite_podcasts && toList(favorite_podcasts).length > 0 && (
-            <ListGroup.Item children={<span><strong>Favourite Podcasts:</strong> {toList(favorite_podcasts).join(', ')}</span>} />
+            <ListGroup.Item>
+              <strong>Favourite Podcasts:</strong>{' '}
+              {toList(favorite_podcasts).join(', ')}
+            </ListGroup.Item>
           )}
           {favorite_influencers && toList(favorite_influencers).length > 0 && (
-            <ListGroup.Item children={<span><strong>Favourite Influencers:</strong> {toList(favorite_influencers).join(', ')}</span>} />
+            <ListGroup.Item>
+              <strong>Favourite Influencers:</strong>{' '}
+              {toList(favorite_influencers).join(', ')}
+            </ListGroup.Item>
           )}
         </ListGroup>
       </Card>
@@ -273,19 +314,29 @@ const Profile: React.FC = () => {
         <Card.Header>Fun & Miscellaneous</Card.Header>
         <ListGroup variant="flush">
           {fun_fact && (
-            <ListGroup.Item children={<span><strong>Fun Fact:</strong> {fun_fact}</span>} />
+            <ListGroup.Item>
+              <strong>Fun Fact:</strong> {fun_fact}
+            </ListGroup.Item>
           )}
           {goals && (
-            <ListGroup.Item children={<span><strong>Goals:</strong> {goals}</span>} />
+            <ListGroup.Item>
+              <strong>Goals:</strong> {goals}
+            </ListGroup.Item>
           )}
           {achievements && (
-            <ListGroup.Item children={<span><strong>Achievements:</strong> {achievements}</span>} />
+            <ListGroup.Item>
+              <strong>Achievements:</strong> {achievements}
+            </ListGroup.Item>
           )}
           {personal_quote && (
-            <ListGroup.Item children={<span><strong>Personal Quote:</strong> {personal_quote}</span>} />
+            <ListGroup.Item>
+              <strong>Personal Quote:</strong> {personal_quote}
+            </ListGroup.Item>
           )}
           {social_links && (
-            <ListGroup.Item children={<span><strong>Social Links:</strong> {social_links}</span>} />
+            <ListGroup.Item>
+              <strong>Social Links:</strong> {social_links}
+            </ListGroup.Item>
           )}
         </ListGroup>
       </Card>
@@ -296,16 +347,9 @@ const Profile: React.FC = () => {
           <Card.Header>Personality Values</Card.Header>
           <ListGroup variant="flush">
             {Object.entries(personality_values).map(([trait, value]) => (
-<<<<<<< HEAD
               <ListGroup.Item key={trait}>
                 <strong>{`${trait}: ${value}`}</strong>
               </ListGroup.Item>
-=======
-              <ListGroup.Item
-                key={trait}
-                children={<span><strong>{trait}:</strong> {String(value)}</span>}
-              />
->>>>>>> fddbe62 (Privacy + profile requests backend scaffolding; viewer-aware privacy; CI; frontend stubs)
             ))}
           </ListGroup>
         </Card>
@@ -321,7 +365,7 @@ const Profile: React.FC = () => {
         </Card>
       )}
 
-      {/* Rate this user */}
+      {/* Action: link to rate this user */}
       {profile.user && (
         <div className="mt-3 text-center">
           <Link to={`/evaluate/${profile.user.id}`} className="btn btn-primary">

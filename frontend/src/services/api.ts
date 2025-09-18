@@ -1,20 +1,16 @@
-import axios from "axios";
+import axios from 'axios';
 
-// Resolve base URL in the browser without assuming a global `process`.
-// Priority:
-// 1) window.__API_URL__ if set by index.html/webpack DefinePlugin
-// 2) same-origin relative paths (dev server proxy or deployed behind same host)
+// Resolve base URL without assuming process.env
 function getBaseUrl(): string {
   try {
-    if (typeof window !== "undefined" && (window as any).__API_URL__) {
+    if (typeof window !== 'undefined' && (window as any).__API_URL__) {
       const v = (window as any).__API_URL__;
-      if (typeof v === "string") return v;
+      if (typeof v === 'string') return v;
     }
-  } catch (_) {
+  } catch {
     // ignore
   }
-  // Use same-origin (webpack devServer proxy handles / to backend in dev)
-  return "";
+  return ''; // same-origin; dev proxy can forward
 }
 
 const api = axios.create({
@@ -26,10 +22,8 @@ const api = axios.create({
 api.defaults.xsrfCookieName = 'csrftoken';
 api.defaults.xsrfHeaderName = 'X-CSRFToken';
 
-// Prime CSRF cookie (safe no-op if already set); ignore failures to avoid blocking render
-try {
-  api.get('/auth/csrf/').catch(() => {});
-} catch (_) {}
+// Prime CSRF cookie best-effort (avoid no-empty & no-unused-vars)
+void api.get('/auth/csrf/').catch(() => undefined);
 
 export default api;
 export { api };
