@@ -17,11 +17,11 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
     subjectId !== undefined
       ? subjectId
       : paramSubjectId
-      ? parseInt(paramSubjectId, 10)
-      : undefined;
+        ? parseInt(paramSubjectId, 10)
+        : undefined;
 
   const [criteria, setCriteria] = useState<Criterion[]>([]);
-  const [selectedCriterion, setSelectedCriterion] = useState<number | "">("");
+  const [selectedCriterion, setSelectedCriterion] = useState<number | ''>('');
   const [score, setScore] = useState<number>(5);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,22 +33,21 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
         const token = localStorage.getItem('token');
         const response = await axios.get(
           `${process.env.REACT_APP_SERVER_URL}/evaluations/criteria/`,
-          {
-            headers: { Authorization: `Token ${token}` },
-          }
+          { headers: { Authorization: `Token ${token}` } }
         );
         setCriteria(response.data);
-      } catch (err) {
+      } catch {
         setError('Failed to load criteria');
       }
     };
-
     fetchCriteria();
   }, []);
 
-  const handleCriterionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCriterionChange = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     const value = event.target.value;
-    setSelectedCriterion(value ? parseInt(value) : "");
+    setSelectedCriterion(value ? parseInt(value) : '');
     setError(null);
   };
 
@@ -61,7 +60,7 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
     setError(null);
     setSuccessMessage(null);
 
-    if (!actualSubjectId || selectedCriterion === "") {
+    if (!actualSubjectId || selectedCriterion === '') {
       setError('Please select a criterion and specify a subject.');
       return;
     }
@@ -71,18 +70,13 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
       const token = localStorage.getItem('token');
       await axios.post(
         `${process.env.REACT_APP_SERVER_URL}/evaluations/evaluations/?subject_id=${actualSubjectId}`,
-        {
-          criterion_id: selectedCriterion,
-          score,
-        },
-        {
-          headers: { Authorization: `Token ${token}` },
-        }
+        { criterion_id: selectedCriterion, score },
+        { headers: { Authorization: `Token ${token}` } }
       );
       setSuccessMessage('Evaluation submitted successfully!');
-      setSelectedCriterion("");
+      setSelectedCriterion('');
       setScore(5);
-    } catch (err) {
+    } catch {
       setError('Failed to submit evaluation');
     } finally {
       setLoading(false);
@@ -93,10 +87,14 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
     <div className="max-w-md mx-auto mt-8 p-4 bg-white rounded shadow">
       <h2 className="text-xl font-bold mb-4">Evaluate Friend</h2>
       {error && <div className="text-red-500 mb-4">{error}</div>}
-      {successMessage && <div className="text-green-500 mb-4">{successMessage}</div>}
+      {successMessage && (
+        <div className="text-green-500 mb-4">{successMessage}</div>
+      )}
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">Select Criterion</label>
+          <label className="block text-sm font-medium mb-2">
+            Select Criterion
+          </label>
           <select
             value={selectedCriterion}
             onChange={handleCriterionChange}

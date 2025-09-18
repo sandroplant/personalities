@@ -1,21 +1,8 @@
+// frontend/src/components/FriendsEvaluations.tsx
 import React, { useEffect, useState } from 'react';
 import { Container, Card, Button, Form, Spinner, Alert } from 'react-bootstrap';
-// Use relative import to access the shared API instance. When this component
-// resides under src/components in the repository, the services directory is
-// one level up.
 import api from '../services/api';
 
-/**
- * FriendsEvaluations component
- *
- * This component drives the friend–evaluation flow. Rather than allowing users
- * to rate friends directly from their profiles, the app presents a series of
- * prompts pulled from the backend (or a local queue) asking the user to rate
- * one friend in a specific criterion. The user can also indicate how well
- * they know the friend on a 1–10 scale; this value is used to weight the
- * contribution of their rating on the friend’s overall score. Users may skip
- * any evaluation. After submitting or skipping, the next prompt appears.
- */
 interface EvaluationTask {
   subjectId: number;
   subjectName: string;
@@ -24,56 +11,93 @@ interface EvaluationTask {
   firstTime: boolean;
 }
 
+type TasksResponse = {
+  tasks: EvaluationTask[];
+  next_offset: number | null;
+};
+
 const FriendsEvaluations: React.FC = () => {
   const [queue, setQueue] = useState<EvaluationTask[]>([]);
   const [current, setCurrent] = useState<EvaluationTask | null>(null);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+
   const [loading, setLoading] = useState<boolean>(true);
+  const [fetchingMore, setFetchingMore] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
   const [familiarity, setFamiliarity] = useState<number>(5);
   const [score, setScore] = useState<number>(5);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Fetch a batch of evaluation tasks from the backend on mount
-useEffect(() => {
-    const fetchTasks = async () => {
+  async function fetchPage(offset: number | null) {
+    const opts = offset !== null ? { params: { offset } } : undefined;
+    const res = await api.get<TasksResponse>('/evaluations/tasks/', opts);
+    const data = res?.data ?? { tasks: [], next_offset: null };
+    return {
+      tasks: (data.tasks ?? []) as EvaluationTask[],
+      nextOffset: (data.next_offset ?? null) as number | null,
+    };
+  }
+
+  // Initial load
+  useEffect(() => {
+    (async () => {
       try {
-        // Fetch a list of evaluation tasks from the backend. Each task
-        // contains a subject (friend) and a criterion to rate. The backend
-        // returns an array of objects with keys: subjectId, subjectName,
-        // criterionId, criterionName, firstTime.
-        const response = await api.get('/evaluations/tasks/');
-        const tasks: EvaluationTask[] = response.data;
+        setLoading(true);
+        setError(null);
+        const { tasks, nextOffset: no } = await fetchPage(null);
         setQueue(tasks);
-        setCurrent(tasks[0] || null);
-      } catch (err) {
-        console.error('Failed to load evaluation tasks', err);
+        setNextOffset(no);
+        setCurrent(tasks[0] ?? null);
+      } catch {
         setError('Failed to load evaluation tasks');
       } finally {
         setLoading(false);
       }
-    };
-    fetchTasks();
+    })();
   }, []);
 
-  // Advance to the next task in the queue
-  const nextTask = () => {
-    setQueue((prev) => {
-      const [, ...rest] = prev;
-      setCurrent(rest[0] || null);
-      return rest;
-    });
-    // Reset form state
-    setFamiliarity(5);
-    setScore(5);
+  // Advance to the next task; if queue is empty but we have nextOffset, fetch more
+  const nextTask = async () => {
+    const [, ...rest] = queue;
+    if (rest.length > 0) {
+      setQueue(rest);
+      setCurrent(rest[0] ?? null);
+      setFamiliarity(5);
+      setScore(5);
+      return;
+    }
+
+    // Need to fetch the next page
+    if (nextOffset !== null && !fetchingMore) {
+      try {
+        setFetchingMore(true);
+        const { tasks, nextOffset: no } = await fetchPage(nextOffset);
+        setQueue(tasks);
+        setNextOffset(no);
+        setCurrent(tasks[0] ?? null);
+      } catch {
+        setError('Failed to load more evaluation tasks');
+        setCurrent(null);
+      } finally {
+        setFetchingMore(false);
+        setFamiliarity(5);
+        setScore(5);
+      }
+    } else {
+      // No more data
+      setQueue([]);
+      setCurrent(null);
+      setFamiliarity(5);
+      setScore(5);
+    }
   };
 
   const handleSubmit = async () => {
     if (!current) return;
     setSubmitting(true);
     try {
-      // Submit evaluation to the backend
-      // Include familiarity weighting when first time evaluating
-      const payload: any = {
+      const payload: Record<string, number> = {
         criterion_id: current.criterionId,
         score,
       };
@@ -82,18 +106,26 @@ useEffect(() => {
       }
       await api.post(
         `/evaluations/evaluations/?subject_id=${current.subjectId}`,
-        payload,
+        payload
       );
-    } catch (err) {
-      console.error('Error submitting evaluation', err);
+    } catch {
+      // best-effort; still advance
     } finally {
       setSubmitting(false);
-      nextTask();
+      void nextTask();
     }
   };
 
   const handleSkip = () => {
-    nextTask();
+    void nextTask();
+  };
+
+  const onFamiliarityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFamiliarity(Number(e.target.value));
+  };
+
+  const onScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setScore(Number(e.target.value));
   };
 
   if (loading) {
@@ -138,12 +170,13 @@ useEffect(() => {
                   min={1}
                   max={10}
                   value={familiarity}
-                  onChange={(e) => setFamiliarity(parseInt(e.target.value))}
+                  onChange={onFamiliarityChange}
                 />
                 <div>Selected: {familiarity}</div>
               </Form.Group>
             </>
           ) : null}
+
           <Card.Title className="mt-3">
             Rate {current.subjectName} on {current.criterionName}
           </Card.Title>
@@ -153,16 +186,25 @@ useEffect(() => {
               min={1}
               max={10}
               value={score}
-              onChange={(e) => setScore(parseInt(e.target.value))}
+              onChange={onScoreChange}
             />
             <div>Selected: {score}</div>
           </Form.Group>
+
           <div className="d-flex justify-content-between">
-            <Button variant="secondary" onClick={handleSkip} disabled={submitting}>
-              Skip
+            <Button
+              variant="secondary"
+              onClick={handleSkip}
+              disabled={submitting || fetchingMore}
+            >
+              {fetchingMore ? 'Loading…' : 'Skip'}
             </Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
-              Submit
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? 'Submitting…' : 'Submit'}
             </Button>
           </div>
         </Card.Body>

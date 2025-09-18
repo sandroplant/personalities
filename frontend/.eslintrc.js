@@ -21,7 +21,7 @@ module.exports = {
     ecmaFeatures: {
       jsx: true, // Enable parsing of JSX
     },
-},
+  },
   plugins: ['react', '@typescript-eslint', 'prettier'],
   rules: {
     'prettier/prettier': 'error', // Enforce Prettier rules as errors

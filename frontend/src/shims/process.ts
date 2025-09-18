@@ -1,6 +1,6 @@
 // Minimal process shim for browsers that lack a process polyfill (e.g., Safari)
 // so code that reads process.env does not throw ReferenceError.
-(function(){
+(function () {
   try {
     const w: any = window as any;
     if (!w.process) {
@@ -8,7 +8,7 @@
     } else if (!w.process.env) {
       w.process.env = {};
     }
-  } catch (_) {
+  } catch {
     // ignore
   }
 })();
