@@ -32,31 +32,45 @@ const FriendsEvaluations: React.FC = () => {
   const [familiarity, setFamiliarity] = useState<number>(5);
   const [score, setScore] = useState<number>(5);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+
+  const fetchTasks = async (offset?: number | null) => {
+    setLoading(true);
+    try {
+      // Fetch a list of evaluation tasks from the backend. Each task
+      // contains a subject (friend) and a criterion to rate. The backend
+      // returns an array of objects with keys: subjectId, subjectName,
+      // criterionId, criterionName, firstTime. The API also returns the
+      // next offset for pagination.
+      const response = await api.get('/evaluations/tasks/', {
+        params: offset ? { offset } : undefined,
+      });
+      const { tasks, next_offset } = response.data;
+      const taskList: EvaluationTask[] = tasks;
+      setQueue(taskList);
+      setCurrent(taskList[0] || null);
+      setNextOffset(next_offset ?? null);
+    } catch (err) {
+      console.error('Failed to load evaluation tasks', err);
+      setError('Failed to load evaluation tasks');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch a batch of evaluation tasks from the backend on mount
-useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        // Fetch a list of evaluation tasks from the backend. Each task
-        // contains a subject (friend) and a criterion to rate. The backend
-        // returns an array of objects with keys: subjectId, subjectName,
-        // criterionId, criterionName, firstTime.
-        const response = await api.get('/evaluations/tasks/');
-        const tasks: EvaluationTask[] = response.data;
-        setQueue(tasks);
-        setCurrent(tasks[0] || null);
-      } catch (err) {
-        console.error('Failed to load evaluation tasks', err);
-        setError('Failed to load evaluation tasks');
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
     fetchTasks();
   }, []);
 
-  // Advance to the next task in the queue
-  const nextTask = () => {
+  const loadMore = async () => {
+    if (nextOffset == null) return;
+    await fetchTasks(nextOffset);
+  };
+
+  // Advance to the next task in the queue and load more if needed
+  const nextTask = async () => {
+    const isLast = queue.length <= 1;
     setQueue((prev) => {
       const [, ...rest] = prev;
       setCurrent(rest[0] || null);
@@ -65,6 +79,9 @@ useEffect(() => {
     // Reset form state
     setFamiliarity(5);
     setScore(5);
+    if (isLast) {
+      await loadMore();
+    }
   };
 
   const handleSubmit = async () => {
@@ -82,18 +99,18 @@ useEffect(() => {
       }
       await api.post(
         `/evaluations/evaluations/?subject_id=${current.subjectId}`,
-        payload,
+        payload
       );
     } catch (err) {
       console.error('Error submitting evaluation', err);
     } finally {
       setSubmitting(false);
-      nextTask();
+      await nextTask();
     }
   };
 
-  const handleSkip = () => {
-    nextTask();
+  const handleSkip = async () => {
+    await nextTask();
   };
 
   if (loading) {
@@ -158,10 +175,18 @@ useEffect(() => {
             <div>Selected: {score}</div>
           </Form.Group>
           <div className="d-flex justify-content-between">
-            <Button variant="secondary" onClick={handleSkip} disabled={submitting}>
+            <Button
+              variant="secondary"
+              onClick={handleSkip}
+              disabled={submitting}
+            >
               Skip
             </Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
               Submit
             </Button>
           </div>

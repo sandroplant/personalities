@@ -50,15 +50,7 @@ const options: Record<string, string[]> = {
   /**
    * Basic information options
    */
-  ageGroup: [
-    'Under 18',
-    '18-24',
-    '25-34',
-    '35-44',
-    '45-54',
-    '55-64',
-    '65+',
-  ],
+  ageGroup: ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'],
   genderIdentity: [
     'Male',
     'Female',
@@ -107,13 +99,7 @@ const options: Record<string, string[]> = {
    * Lifestyle & habits options
    */
   diet: ['Omnivore', 'Vegetarian', 'Vegan', 'Pescatarian', 'Other'],
-  exerciseFrequency: [
-    'Never',
-    'Rarely',
-    'Sometimes',
-    'Often',
-    'Daily',
-  ],
+  exerciseFrequency: ['Never', 'Rarely', 'Sometimes', 'Often', 'Daily'],
   smoking: ['Non-smoker', 'Occasional', 'Regular'],
   drinking: ['Non-drinker', 'Social', 'Regular'],
   pets: ['None', 'Dog', 'Cat', 'Bird', 'Fish', 'Reptile', 'Other'],

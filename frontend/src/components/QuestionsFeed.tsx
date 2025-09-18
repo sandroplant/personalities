@@ -267,7 +267,10 @@ const QuestionsFeed: React.FC = () => {
                       max={10}
                       value={ratings[q.id] || 5}
                       onChange={(e) =>
-                        setRatings({ ...ratings, [q.id]: parseInt(e.target.value) })
+                        setRatings({
+                          ...ratings,
+                          [q.id]: parseInt(e.target.value),
+                        })
                       }
                       className="mb-2"
                     />
@@ -321,7 +324,12 @@ const QuestionsFeed: React.FC = () => {
         </>
       )}
       {/* Ask Question Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} backdrop="static" size="lg">
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        backdrop="static"
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Ask a Question</Modal.Title>
         </Modal.Header>
