@@ -34,9 +34,7 @@ class AuthView(APIView):
         password = request.data.get("password")
 
         if not username or not password:
-            raise ValidationError(
-                {"detail": "Username and password are required."}
-            )
+            raise ValidationError({"detail": "Username and password are required."})
 
         if action == "register":
             return self._register_user(username, password)
@@ -93,9 +91,7 @@ def create_post(request):
     try:
         author = user_model.objects.get(id=author_id)
     except user_model.DoesNotExist:
-        return Response(
-            {"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
 
     try:
         post = Post(title=title, content=content, author=author)
