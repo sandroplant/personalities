@@ -2,14 +2,54 @@
 
 ## Authentication Routes
 
-### 1. `/login`
+### REST API (`/auth/`)
+
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/auth/register/` | `POST` | Registers a new user account. |
+| `/auth/login/` | `POST` | Authenticates a user and returns a JWT. |
+
+Both routes are backed by the same DRF view. The view determines whether to register or log a user in based on the URL pattern and can also accept an explicit `action` field (`"register"` or `"login"`) in the request body when needed.
+
+#### Request Body
+
+```json
+{
+  "username": "demo_user",
+  "password": "example-pass"
+}
+```
+
+#### Responses
+
+- **Register** – `201 Created`
+
+  ```json
+  {
+    "message": "User registered successfully",
+    "id": 12
+  }
+  ```
+
+- **Login** – `200 OK`
+
+  ```json
+  {
+    "message": "User logged in",
+    "token": "<jwt-token>"
+  }
+  ```
+
+### Spotify OAuth (`/spotify/`)
+
+#### `/login`
 
 - **Method**: `GET`
 - **Description**: Initiates the OAuth2 authorization process with Spotify by redirecting the user to the Spotify authorization page.
 - **Query Parameters**: None
 - **Response**: Redirects to the Spotify login and authorization page.
 
-### 2. `/callback`
+#### `/callback`
 
 - **Method**: `GET`
 - **Description**: Handles the callback from Spotify after user authorization and exchanges the provided code for an access token.

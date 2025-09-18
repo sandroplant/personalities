@@ -1,5 +1,6 @@
 from django.urls import include, path
 
+from custom_auth.views import AuthView
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -17,8 +18,8 @@ urlpatterns = [
     # Include the router URLs for the ViewSets
     path("", include(router.urls)),
     # Authentication Routes
-    path("auth/register/", views.RegisterView.as_view(), name="register"),
-    path("auth/login/", views.LoginView.as_view(), name="login"),
+    path("auth/register/", AuthView.as_view(), {"action": "register"}, name="register"),
+    path("auth/login/", AuthView.as_view(), {"action": "login"}, name="login"),
     path("auth/logout/", views.logout_view, name="logout"),
     path("auth/ai-response/", views.ai_response_view, name="ai_response"),
     path("auth/example/", views.example_api_view, name="example_api"),
