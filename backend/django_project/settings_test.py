@@ -1,5 +1,6 @@
-from copy import deepcopy
 import os as _os
+from copy import deepcopy
+
 from . import settings as base
 
 # Copy UPPERCASE settings from base
