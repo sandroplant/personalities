@@ -34,33 +34,30 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt || true
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          pip install black isort flake8 pytest pytest-django
+          pip install black isort flake8
 
       - name: Lint & format
         working-directory: backend
         run: |
           source .venv/bin/activate
+          isort --profile black --check-only .
           black --check .
-          python -m isort --check-only .
           flake8 .
 
       - name: Run Django checks & migrations (SQLite)
         env:
           DJANGO_SETTINGS_MODULE: django_project.settings_test
-          PYTHONPATH: backend
-          DJANGO_USE_SQLITE: "1"
         working-directory: backend
         run: |
           source .venv/bin/activate
           python manage.py makemigrations --check --dry-run
           python manage.py migrate --noinput
           python manage.py check
-          python manage.py recompute_rater_stats
 
-      - name: Pytest
+      - name: Tests (Django)
         env:
           DJANGO_SETTINGS_MODULE: django_project.settings_test
-          PYTHONPATH: backend
+        working-directory: backend
         run: |
-          pytest -q backend/evaluations/tests.py
-          pytest -q backend/userprofiles/tests.py
+          source .venv/bin/activate
+          python manage.py test
