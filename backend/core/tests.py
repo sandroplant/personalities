@@ -1,8 +1,9 @@
 # core/tests.py
 
-from core.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
+
+from core.models import User
 
 
 class ProfileAPITest(TestCase):

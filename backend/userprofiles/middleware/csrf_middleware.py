@@ -1,8 +1,9 @@
 # userprofiles/middleware/csrf_middleware.py
 
-import csrf  # Import the CSRF utility you're using (this can be your own or a package)
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
+
+import csrf  # Import the CSRF utility you're using (this can be your own or a package)
 
 
 class CSRFMiddleware(MiddlewareMixin):

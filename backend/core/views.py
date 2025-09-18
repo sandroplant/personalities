@@ -3,14 +3,15 @@ import json
 import secrets
 import string
 
-import bleach
-import requests
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+
+import bleach
+import requests
 from django_ratelimit.decorators import ratelimit
 from rest_framework import generics, status, viewsets
 from rest_framework.authentication import BaseAuthentication, SessionAuthentication

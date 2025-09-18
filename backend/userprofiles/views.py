@@ -6,14 +6,15 @@ import json
 import os
 from functools import wraps
 
-import spotipy
-from cloudinary import uploader
 from django.contrib.auth import authenticate, get_user_model, login
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
 from django.views import View
+
+import spotipy
+from cloudinary import uploader
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated

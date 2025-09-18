@@ -1,7 +1,8 @@
 import os
 
-import spotipy
 from django.conf import settings
+
+import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
 # Retrieve Spotify credentials from Django settings or environment variables

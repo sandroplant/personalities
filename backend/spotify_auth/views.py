@@ -3,9 +3,10 @@
 import uuid
 from urllib.parse import urlencode
 
-import requests
 from django.conf import settings
 from django.http import HttpResponseRedirect, JsonResponse
+
+import requests
 from rest_framework import status
 from rest_framework.decorators import api_view
 

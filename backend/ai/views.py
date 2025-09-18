@@ -1,9 +1,10 @@
 import os
 
-import openai
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+
+import openai
 from rest_framework import status
 from rest_framework.decorators import api_view
 

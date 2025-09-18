@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 
-from core.models import YourDjangoModel  # Replace with your actual model
 from django.core.management.base import BaseCommand
+
+from core.models import YourDjangoModel  # Replace with your actual model
 
 
 class Command(BaseCommand):

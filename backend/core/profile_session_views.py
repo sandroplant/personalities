@@ -1,6 +1,7 @@
 """Session-aware profile endpoints that operate on Django auth sessions."""
 
 from django.contrib.auth import get_user_model
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny

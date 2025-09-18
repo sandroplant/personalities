@@ -2,11 +2,13 @@
 
 import os
 
-import core.routing  # Replace with your actual app routing
 import django
+from django.core.asgi import get_asgi_application
+
 from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
-from django.core.asgi import get_asgi_application
+
+import core.routing  # Replace with your actual app routing
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_project.settings")
 django.setup()

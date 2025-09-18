@@ -7,6 +7,7 @@ annotates yes/no counts and rating stats so the serializer fields are present.
 """
 
 from django.db.models import Avg, Count, Q
+
 from rest_framework import filters, generics, permissions
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import ValidationError
