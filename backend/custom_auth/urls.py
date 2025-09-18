@@ -1,11 +1,11 @@
 from django.urls import path
 
-from . import views
+from .views import AuthView, create_post
 
 urlpatterns = [
-    path("register/", views.register_user, name="register"),
-    path("login/", views.login_user, name="login"),
-    path("create_post/", views.create_post, name="create_post"),
+    path("register/", AuthView.as_view(), {"action": "register"}, name="register"),
+    path("login/", AuthView.as_view(), {"action": "login"}, name="login"),
+    path("create_post/", create_post, name="create_post"),
     # Add other URLs as needed
 ]
 
