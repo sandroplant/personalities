@@ -1,3 +1,4 @@
+// frontend/src/components/FriendsEvaluations.tsx
 import React, { useEffect, useState } from 'react';
 import { Container, Card, Button, Form, Spinner, Alert } from 'react-bootstrap';
 import api from '../services/api';
@@ -10,61 +11,122 @@ interface EvaluationTask {
   firstTime: boolean;
 }
 
+type TasksResponse = {
+  tasks: EvaluationTask[];
+  next_offset: number | null;
+};
+
 const FriendsEvaluations: React.FC = () => {
-  const [_queue, setQueue] = useState<EvaluationTask[]>([]);
+  const [queue, setQueue] = useState<EvaluationTask[]>([]);
   const [current, setCurrent] = useState<EvaluationTask | null>(null);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+
   const [loading, setLoading] = useState<boolean>(true);
+  const [fetchingMore, setFetchingMore] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
   const [familiarity, setFamiliarity] = useState<number>(5);
   const [score, setScore] = useState<number>(5);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
+  async function fetchPage(offset: number | null) {
+    const opts = offset !== null ? { params: { offset } } : undefined;
+    const res = await api.get<TasksResponse>('/evaluations/tasks/', opts);
+    const data = res?.data ?? { tasks: [], next_offset: null };
+    return {
+      tasks: (data.tasks ?? []) as EvaluationTask[],
+      nextOffset: (data.next_offset ?? null) as number | null,
+    };
+  }
+
+  // Initial load
   useEffect(() => {
-    const fetchTasks = async () => {
+    (async () => {
       try {
-        const response = await api.get('/evaluations/tasks/');
-        const tasks: EvaluationTask[] = response.data;
+        setLoading(true);
+        setError(null);
+        const { tasks, nextOffset: no } = await fetchPage(null);
         setQueue(tasks);
-        setCurrent(tasks[0] || null);
+        setNextOffset(no);
+        setCurrent(tasks[0] ?? null);
       } catch {
-        console.error('Failed to load evaluation tasks');
         setError('Failed to load evaluation tasks');
       } finally {
         setLoading(false);
       }
-    };
-    fetchTasks();
+    })();
   }, []);
 
-  const nextTask = () => {
-    setQueue((prev) => {
-      const [, ...rest] = prev;
-      setCurrent(rest[0] || null);
-      return rest;
-    });
-    setFamiliarity(5);
-    setScore(5);
+  // Advance to the next task; if queue is empty but we have nextOffset, fetch more
+  const nextTask = async () => {
+    const [, ...rest] = queue;
+    if (rest.length > 0) {
+      setQueue(rest);
+      setCurrent(rest[0] ?? null);
+      setFamiliarity(5);
+      setScore(5);
+      return;
+    }
+
+    // Need to fetch the next page
+    if (nextOffset !== null && !fetchingMore) {
+      try {
+        setFetchingMore(true);
+        const { tasks, nextOffset: no } = await fetchPage(nextOffset);
+        setQueue(tasks);
+        setNextOffset(no);
+        setCurrent(tasks[0] ?? null);
+      } catch {
+        setError('Failed to load more evaluation tasks');
+        setCurrent(null);
+      } finally {
+        setFetchingMore(false);
+        setFamiliarity(5);
+        setScore(5);
+      }
+    } else {
+      // No more data
+      setQueue([]);
+      setCurrent(null);
+      setFamiliarity(5);
+      setScore(5);
+    }
   };
 
   const handleSubmit = async () => {
     if (!current) return;
     setSubmitting(true);
     try {
-      const payload: any = { criterion_id: current.criterionId, score };
-      if (current.firstTime) payload.familiarity = familiarity;
+      const payload: Record<string, number> = {
+        criterion_id: current.criterionId,
+        score,
+      };
+      if (current.firstTime) {
+        payload.familiarity = familiarity;
+      }
       await api.post(
         `/evaluations/evaluations/?subject_id=${current.subjectId}`,
         payload
       );
     } catch {
-      console.error('Error submitting evaluation');
+      // best-effort; still advance
     } finally {
       setSubmitting(false);
-      nextTask();
+      void nextTask();
     }
   };
 
-  const handleSkip = () => nextTask();
+  const handleSkip = () => {
+    void nextTask();
+  };
+
+  const onFamiliarityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFamiliarity(Number(e.target.value));
+  };
+
+  const onScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setScore(Number(e.target.value));
+  };
 
   if (loading) {
     return (
@@ -108,7 +170,7 @@ const FriendsEvaluations: React.FC = () => {
                   min={1}
                   max={10}
                   value={familiarity}
-                  onChange={(e) => setFamiliarity(parseInt(e.target.value))}
+                  onChange={onFamiliarityChange}
                 />
                 <div>Selected: {familiarity}</div>
               </Form.Group>
@@ -124,24 +186,25 @@ const FriendsEvaluations: React.FC = () => {
               min={1}
               max={10}
               value={score}
-              onChange={(e) => setScore(parseInt(e.target.value))}
+              onChange={onScoreChange}
             />
             <div>Selected: {score}</div>
           </Form.Group>
+
           <div className="d-flex justify-content-between">
             <Button
               variant="secondary"
               onClick={handleSkip}
-              disabled={submitting}
+              disabled={submitting || fetchingMore}
             >
-              Skip
+              {fetchingMore ? 'Loading…' : 'Skip'}
             </Button>
             <Button
               variant="primary"
               onClick={handleSubmit}
               disabled={submitting}
             >
-              Submit
+              {submitting ? 'Submitting…' : 'Submit'}
             </Button>
           </div>
         </Card.Body>
