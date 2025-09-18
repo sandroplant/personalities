@@ -7,9 +7,11 @@
     "start": "webpack serve --config webpack.config.js --mode development",
     "build": "webpack --config webpack.config.js --mode production",
     "test": "jest --watchAll=false",
-    "lint": "eslint 'src/**/*.{js,jsx,ts,tsx}'",
-    "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx,json,css,scss,md}'",
-    "lint:fix": "eslint 'src/**/*.{js,jsx,ts,tsx}' --fix"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --max-warnings=0 && prettier --check .",
+    "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix && prettier --write .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@svgr/webpack": "^8.1.0",
@@ -51,7 +53,6 @@
     "@types/react": "^18.3.12",
     "@types/react-bootstrap": "^0.32.37",
     "@types/react-dom": "^18.3.1",
-    "@types/react-router-dom": "^5.3.3",
     "@types/testing-library__jest-dom": "^5.14.9",
     "@types/webpack": "^5.28.5",
     "@types/webpack-dev-server": "^4.7.1",
