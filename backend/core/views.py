@@ -41,15 +41,19 @@ from .utils.spotify_auth_utils import generate_code_challenge, generate_code_ver
 
 class LocalTestsAutoUserAuth(BaseAuthentication):
     """
-    LOCAL tests helper: when LOCAL_TESTS=1, authenticate as the single existing
-    user if present; otherwise fall back to a deterministic 'testclient' user.
-    No effect in CI/prod.
+    Test-only helper:
+      - active when LOCAL_TESTS=1 (local) OR DJANGO_SETTINGS_MODULE is settings_test (CI)
+      - authenticates as the single existing test user, else a deterministic fallback.
     """
 
     def authenticate(self, request):
         import os
 
-        if os.environ.get("LOCAL_TESTS") != "1":
+        ds = os.environ.get("DJANGO_SETTINGS_MODULE", "")
+        if not (
+            os.environ.get("LOCAL_TESTS") == "1"
+            or ds.endswith("django_project.settings_test")
+        ):
             return None
 
         # Prefer the only existing user created by tests
