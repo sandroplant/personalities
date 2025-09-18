@@ -7,3 +7,13 @@ profile = "black"
 line_length = 88
 known_first_party = ["backend","core","custom_auth","userprofiles","evaluations","questions"]
 known_third_party = ["django","rest_framework","drf_spectacular","pytest","requests"]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["backend","core","custom_auth","userprofiles","evaluations","questions"]
+known_third_party = ["django","rest_framework","drf_spectacular","pytest","requests"]
