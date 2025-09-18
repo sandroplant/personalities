@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+
 from evaluations.models import Criterion
 
 DEFAULT_CRITERIA = ["Honesty", "Humor", "Intelligence", "Kindness", "Reliability"]

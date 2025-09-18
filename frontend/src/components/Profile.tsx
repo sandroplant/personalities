@@ -1,3 +1,4 @@
+// frontend/src/components/Profile.tsx
 import { Link } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import { Container, Card, ListGroup, Spinner, Alert } from 'react-bootstrap';
@@ -8,11 +9,7 @@ import EvaluationSummary from './EvaluationSummary'; // <-- import the new compo
  * Profile component
  *
  * This component fetches the current user's profile from the backend and
- * displays a summary of all available profile information. The data is
- * grouped into logical sections such as basic info, appearance, lifestyle,
- * favourites, personality values and miscellaneous details. During
- * loading, a spinner is shown, and any errors encountered while
- * retrieving the profile are displayed as an alert.
+ * displays a summary of all available profile information.
  */
 const Profile: React.FC = () => {
   const [profile, setProfile] = useState<any | null>(null);
@@ -34,7 +31,7 @@ const Profile: React.FC = () => {
     fetchProfile();
   }, []);
 
-  // Helper to safely join arrays or split comma‑separated strings
+  // Helper to safely join arrays or split comma-separated strings
   const toList = (value: any): string[] => {
     if (!value) return [];
     if (Array.isArray(value)) return value;
@@ -87,6 +84,8 @@ const Profile: React.FC = () => {
     hair_style,
     skin_tone,
     tattoos_piercings,
+    education_level: _education_level, // unused → prefixed
+    profession: _profession, // unused → prefixed
     diet,
     exercise_frequency,
     smoking,

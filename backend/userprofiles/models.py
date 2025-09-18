@@ -1,5 +1,7 @@
 # userprofiles/models.py
 
+from __future__ import annotations
+
 from django.conf import settings
 from django.db import models
 
@@ -8,13 +10,13 @@ class SpotifyProfile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="userprofile_spotify_profile",  # Updated to avoid conflict
+        related_name="userprofile_spotify_profile",
     )
     display_name = models.CharField(max_length=100)
     email = models.EmailField()
-    images = models.JSONField()  # Store user images from Spotify
+    images = models.JSONField()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.display_name
 
 
@@ -78,8 +80,7 @@ class Profile(models.Model):
     favorite_podcasts = models.CharField(max_length=200, blank=True, null=True)
     favorite_influencers = models.CharField(max_length=200, blank=True, null=True)
 
-    # Personality & values stored as JSON:
-    # {value_name: {"self": int, "friends": bool}}
+    # Personality & values
     personality_values = models.JSONField(blank=True, null=True)
 
     # Fun & miscellaneous
@@ -89,7 +90,7 @@ class Profile(models.Model):
     personal_quote = models.CharField(max_length=255, blank=True, null=True)
     social_links = models.TextField(blank=True, null=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.username}'s Profile"
 
 
@@ -109,6 +110,15 @@ class Friendship(models.Model):
 
     class Meta:
         unique_together = ("from_user", "to_user")
+        verbose_name = "Friendship"
+        verbose_name_plural = "Friendships"
 
-    def __str__(self):
-        return f"Friendship from {self.from_user} to {self.to_user}"
+    def __str__(self) -> str:
+        return f"{self.from_user_id} -> {self.to_user_id}"
+
+
+# Ensure privacy models are registered with the app
+try:
+    from .privacy_models import InfoRequest, ProfileVisibility  # noqa: F401
+except Exception:
+    pass

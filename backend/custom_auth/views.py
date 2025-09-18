@@ -1,16 +1,15 @@
-import jwt
-
-from django.http import JsonResponse
-from django.contrib.auth.models import User
-from django.contrib.auth.hashers import make_password, check_password
-from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
-from rest_framework.decorators import api_view
+import jwt
+from posts.models import Post
 from rest_framework import status
+from rest_framework.decorators import api_view
 
 from userprofiles.models import Profile  # Updated import
-from posts.models import Post
 
 
 # Register a new user

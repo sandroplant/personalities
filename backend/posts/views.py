@@ -1,9 +1,11 @@
 from django.http import JsonResponse
-from rest_framework.decorators import api_view
-from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
-from .models import Post  # Import your Post model
+
+from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+from .models import Post  # Import your Post model
 from .serializers import PostSerializer  # Create a serializer for Post
 
 
@@ -38,9 +40,9 @@ def get_posts(request):
         posts = Post.objects.all()
         serializer = PostSerializer(posts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    except Exception as e:
+    except Exception:
         return JsonResponse(
-            {"error": str(e)},
+            {"error": "Error fetching posts"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
@@ -56,9 +58,9 @@ def get_post_by_id(request, id):
         return JsonResponse(
             {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
         )
-    except Exception as e:
+    except Exception:
         return JsonResponse(
-            {"error": str(e)},
+            {"error": "Error fetching post"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
@@ -74,8 +76,8 @@ def delete_post(request, id):
         return JsonResponse(
             {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
         )
-    except Exception as e:
+    except Exception:
         return JsonResponse(
-            {"error": str(e)},
+            {"error": "Error deleting post"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

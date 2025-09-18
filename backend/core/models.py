@@ -4,10 +4,17 @@ from django.db import models
 
 # Custom User Model
 class User(AbstractUser):
-    email = models.EmailField(unique=True)  # Ensuring email is unique
+    email = models.EmailField(unique=True)  # ensure unique email
+    # Fields expected by tests:
+    spotify_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    display_name = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        app_label = "core"
 
     def __str__(self):
-        return self.username
+        # Prefer display_name when set
+        return self.display_name or self.username
 
 
 # Profile Model
@@ -25,6 +32,9 @@ class Profile(models.Model):
     profession = models.CharField(max_length=100, blank=True)
     education = models.CharField(max_length=100, blank=True)
     privacy_settings = models.JSONField(default=dict)
+
+    class Meta:
+        app_label = "core"
 
     def __str__(self):
         return f"{self.full_name}'s Profile"
@@ -44,6 +54,9 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        app_label = "core"
+
     def __str__(self):
         return f"Message from {self.sender.username} to {self.recipient.username}"
 
@@ -61,16 +74,22 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        app_label = "core"
+
     def __str__(self):
         return self.title
 
 
-# Comment Model for better scalability
+# Comment Model
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
     content = models.TextField(max_length=1000)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        app_label = "core"
 
     def __str__(self):
         return f"Comment by {self.author.username} on {self.post.title}"

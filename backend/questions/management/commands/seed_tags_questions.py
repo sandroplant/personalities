@@ -1,6 +1,7 @@
-from django.core.management.base import BaseCommand
-from questions.models import Tag, Question
 from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+
+from questions.models import Question, Tag
 
 
 class Command(BaseCommand):

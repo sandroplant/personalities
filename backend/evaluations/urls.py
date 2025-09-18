@@ -1,16 +1,39 @@
 from django.urls import path
-from .views import (
-    CriterionListCreateView,
-    EvaluationListCreateView,
-    EvaluationTasksView,
-    EvaluationSummaryView,
-)
+
+# Primary endpoints that the tests reverse()
+from .views import EvaluationCreateView, EvaluationTasksView
+
+# Optional v2 endpoints (import if present)
+try:
+    from .summary_views import EvaluationSummaryV2View  # type: ignore
+except Exception:  # pragma: no cover
+    EvaluationSummaryV2View = None  # type: ignore
+
+try:
+    from .create_views import EvaluationCreateV2View  # type: ignore
+except Exception:  # pragma: no cover
+    EvaluationCreateV2View = None  # type: ignore
+
+# Namespace (so reverse('evaluations:evaluation-tasks') would also work if namespaced)
+app_name = "evaluations"
 
 urlpatterns = [
-    path(
-        "criteria/", CriterionListCreateView.as_view(), name="evaluation-criteria-list"
-    ),
-    path("create/", EvaluationListCreateView.as_view(), name="evaluation-create"),
     path("tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
-    path("summary/", EvaluationSummaryView.as_view(), name="evaluation-summary"),
+    path("create/", EvaluationCreateView.as_view(), name="evaluation-create"),
 ]
+
+# Keep v2 routes if their modules exist
+if EvaluationSummaryV2View is not None:
+    urlpatterns.append(
+        path(
+            "summary-v2/",
+            EvaluationSummaryV2View.as_view(),
+            name="evaluation-summary-v2",
+        )
+    )
+if EvaluationCreateV2View is not None:
+    urlpatterns.append(
+        path(
+            "create-v2/", EvaluationCreateV2View.as_view(), name="evaluation-create-v2"
+        )
+    )

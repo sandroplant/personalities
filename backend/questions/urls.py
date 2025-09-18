@@ -7,8 +7,7 @@ submitting answers.  All endpoints require authentication via token.
 
 from django.urls import path
 
-from .views import TagListView, QuestionListCreateView, AnswerCreateView
-
+from .views import AnswerCreateView, QuestionListCreateView, TagListView
 
 urlpatterns = [
     path("tags/", TagListView.as_view(), name="tag-list"),

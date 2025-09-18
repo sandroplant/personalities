@@ -1,16 +1,13 @@
-// frontend/src/index.tsx
-
 import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-// Lazy load the App component
+// Lazy load the App component (expects a default export)
 const App = lazy(() => import('./App'));
 
 const container = document.getElementById('root');
-
 if (!container) {
   throw new Error('Failed to find the root element');
 }
@@ -27,3 +24,8 @@ root.render(
 
 // Log results to the console or send to an analytics endpoint
 reportWebVitals(console.log);
+
+// Minimal process shim without require() (avoids ESLint no-require + no-empty)
+if (typeof window !== 'undefined') {
+  void import('./shims/process').catch(() => undefined);
+}

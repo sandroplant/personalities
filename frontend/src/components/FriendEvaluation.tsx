@@ -33,16 +33,13 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
         const token = localStorage.getItem('token');
         const response = await axios.get(
           `${process.env.REACT_APP_SERVER_URL}/evaluations/criteria/`,
-          {
-            headers: { Authorization: `Token ${token}` },
-          }
+          { headers: { Authorization: `Token ${token}` } }
         );
         setCriteria(response.data);
       } catch {
         setError('Failed to load criteria');
       }
     };
-
     fetchCriteria();
   }, []);
 
@@ -73,13 +70,8 @@ const FriendEvaluation: React.FC<FriendEvaluationProps> = ({ subjectId }) => {
       const token = localStorage.getItem('token');
       await axios.post(
         `${process.env.REACT_APP_SERVER_URL}/evaluations/evaluations/?subject_id=${actualSubjectId}`,
-        {
-          criterion_id: selectedCriterion,
-          score,
-        },
-        {
-          headers: { Authorization: `Token ${token}` },
-        }
+        { criterion_id: selectedCriterion, score },
+        { headers: { Authorization: `Token ${token}` } }
       );
       setSuccessMessage('Evaluation submitted successfully!');
       setSelectedCriterion('');
