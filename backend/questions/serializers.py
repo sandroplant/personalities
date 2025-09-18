@@ -1,11 +1,11 @@
 """
-Serializers for the questions app.  These translate Question and Answer
+Serializers for the questions app. These translate Question and Answer
 instances to and from JSON for API consumption.
 """
 
 from rest_framework import serializers
 
-from .models import Tag, Question, Answer
+from .models import Answer, Question, Tag
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -25,6 +25,8 @@ class QuestionSerializer(serializers.ModelSerializer):
     )
     question_type = serializers.ChoiceField(choices=Question.QuestionType.choices)
     options = serializers.JSONField(required=False)
+
+    # These are provided by queryset annotations in the list view.
     yes_count = serializers.IntegerField(read_only=True)
     no_count = serializers.IntegerField(read_only=True)
     average_rating = serializers.FloatField(read_only=True)
@@ -59,14 +61,10 @@ class QuestionSerializer(serializers.ModelSerializer):
         """
         Ensure no more than four answer options are provided and strip empty strings.
 
-        If the incoming value is falsy, return an empty list (for yes/no polls).
-        Otherwise, ensure the number of entries does not exceed four and trim
-        whitespace from each option. Empty or whitespace-only entries are removed.
+        If the incoming value is falsy, return an empty list (for yes/no or rating polls).
         """
-        # Allow null/empty to signify a yes/no or rating poll
         if not value:
             return []
-        # Enforce maximum of 4 options overall
         if len(value) > 4:
             raise serializers.ValidationError("A maximum of 4 options is allowed.")
         cleaned = []
@@ -83,12 +81,14 @@ class QuestionSerializer(serializers.ModelSerializer):
         if qtype == Question.QuestionType.MULTIPLE_CHOICE:
             if len(options) < 2:
                 raise serializers.ValidationError(
-                    {"options": "Multiple choice questions require 2-4 options."}
+                    {"options": "Multiple choice questions require 2–4 options."}
                 )
         else:
             if options:
                 raise serializers.ValidationError(
-                    {"options": "Options are only allowed for multiple choice questions."}
+                    {
+                        "options": "Options are only allowed for multiple choice questions."
+                    }
                 )
         return attrs
 

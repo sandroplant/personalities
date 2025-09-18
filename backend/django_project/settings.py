@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -22,6 +23,7 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
 # Application definition
 INSTALLED_APPS = [
+    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -29,32 +31,33 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.sites",
     "django.contrib.staticfiles",
+    # Third-party
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "drf_spectacular",
+    "corsheaders",
+    "social_django",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
     # Your apps
+    "core",
+    "evaluations.apps.EvaluationsConfig",  # ensures ready() registers RaterStats
     "userprofiles",
     "spotify_auth",
     "custom_auth",
     "messaging",
-    "evaluations",
     "posts",
     "questions",
-    # 3rd-party
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "rest_framework",
-    "corsheaders",
-    "social_django",
-    "rest_framework_simplejwt",
-    "core",
 ]
 
-SITE_ID = 1  # required for django‑allauth
+SITE_ID = 1  # required for django-allauth
 
 # Use custom user model defined in core app
 AUTH_USER_MODEL = "core.User"
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # keep first
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -88,9 +91,7 @@ WSGI_APPLICATION = "django_project.wsgi.application"
 
 # Database configuration
 DATABASES = {
-    "default": env.db(
-        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
-    )
+    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
 
 # Password validation
@@ -102,17 +103,10 @@ AUTH_PASSWORD_VALIDATORS = [
         ),
     },
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "MinimumLengthValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "MinimumLengthValidator"),
     },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 LANGUAGE_CODE = "en-us"
@@ -123,15 +117,40 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
+# (Optional defaults; safe if not overridden)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# CORS/CSRF for local dev (adjust per env as needed)
 CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Personalities API",
+    "DESCRIPTION": "API schema for the Personalities app",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+
+# Env-backed thresholds / knobs
+EVALUATIONS_MIN_RATINGS = int(os.getenv("EVALUATIONS_MIN_RATINGS", "10"))
+EVALUATIONS_REPEAT_DAYS = env.int("EVALUATIONS_REPEAT_DAYS", default=7)  # cooldown
 
 # Additional configuration reading from environment variables
 SPOTIFY_CLIENT_ID = env("SPOTIFY_CLIENT_ID", default="")

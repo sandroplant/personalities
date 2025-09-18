@@ -2,7 +2,8 @@
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Profile, Message, Post, Comment
+
+from .models import Comment, Message, Post, Profile, User
 
 
 class UserAdmin(BaseUserAdmin):

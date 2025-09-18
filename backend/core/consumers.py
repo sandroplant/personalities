@@ -1,9 +1,10 @@
 # core/consumers.py
 
-from channels.generic.websocket import AsyncWebsocketConsumer
 import json
-import bleach
 import logging
+
+import bleach
+from channels.generic.websocket import AsyncWebsocketConsumer
 
 logger = logging.getLogger(__name__)
 

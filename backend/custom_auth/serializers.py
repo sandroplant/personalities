@@ -1,8 +1,9 @@
 # custom_auth/serializers.py
 
-from rest_framework import serializers
 from django.contrib.auth.models import User
+
 from posts.models import Post
+from rest_framework import serializers
 
 
 class UserSerializer(serializers.ModelSerializer):
