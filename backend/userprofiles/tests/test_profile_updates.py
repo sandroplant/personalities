@@ -1,8 +1,9 @@
+import uuid
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
 import pytest
-import uuid
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 
 from userprofiles.models import Friendship, Profile
