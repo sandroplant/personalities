@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .privacy import build_privacy_filtered_profile
+from .privacy import DEFAULT_VISIBILITY, ViewerRole, build_privacy_filtered_profile, get_viewer_role
 from .privacy_models import InfoRequest, ProfileVisibility
 from .privacy_serializers import InfoRequestSerializer, ProfileVisibilitySerializer
 from .serializers import PROFILE_FIELD_NAMES, ProfileSerializer  # type: ignore
@@ -182,15 +182,17 @@ class VisibleProfileView(APIView):
         # Always expose the nested user block.
         sanitized_visibility.setdefault("user", "public")
 
+        viewer = request.user
+        viewer_role = get_viewer_role(viewer, target_user.id)
+
         filtered = build_privacy_filtered_profile(
             raw_profile_data=raw_data,
             visibility_map=sanitized_visibility,
-            viewer=request.user,
+            viewer=viewer,
             owner_id=target_user.id,
         )
 
-        viewer = request.user
-        if viewer != target_user:
+        if viewer_role != ViewerRole.SELF:
             approved_sections = set(
                 InfoRequest.objects.filter(
                     owner=target_user,
@@ -199,7 +201,8 @@ class VisibleProfileView(APIView):
                 ).values_list("section_key", flat=True)
             )
             for key in approved_sections:
-                if key in raw_data:
+                level = sanitized_visibility.get(key, DEFAULT_VISIBILITY)
+                if level == "private" and key in raw_data:
                     filtered[key] = raw_data[key]
 
         return Response(filtered)
