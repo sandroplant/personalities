@@ -23,16 +23,9 @@ def _build_consensus_map(pairs: Iterable[Pair]) -> Dict[Pair, float]:
     if not query:
         return {}
 
-    rows = (
-        Evaluation.objects.filter(query)
-        .values("subject_id", "criterion_id")
-        .annotate(avg=Avg("score"))
-    )
+    rows = Evaluation.objects.filter(query).values("subject_id", "criterion_id").annotate(avg=Avg("score"))
 
-    return {
-        (int(row["subject_id"]), int(row["criterion_id"])): float(row["avg"])
-        for row in rows
-    }
+    return {(int(row["subject_id"]), int(row["criterion_id"])): float(row["avg"]) for row in rows}
 
 
 def _compute_weights_for_rater(rater_id: int) -> None:
@@ -95,9 +88,7 @@ def update_rater_weights(sender, instance: Evaluation, **kwargs) -> None:
         return
 
     affected_rater_ids = (
-        Evaluation.objects.filter(
-            subject_id=instance.subject_id, criterion_id=instance.criterion_id
-        )
+        Evaluation.objects.filter(subject_id=instance.subject_id, criterion_id=instance.criterion_id)
         .values_list("evaluator_id", flat=True)
         .distinct()
     )
