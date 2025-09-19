@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.urls import reverse
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from rest_framework.test import APIClient
 
 from userprofiles.models import Profile
@@ -27,7 +27,7 @@ class UploadProfilePictureTests(TestCase):
         CLOUDINARY_API_SECRET="secret",
     )
     @patch(
-        "userprofiles.services.cloudinary_utils.upload_profile_image",
+        "userprofiles.views.upload_profile_image",
         return_value={"secure_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg"},
     )
     def test_upload_profile_picture_success(self, mock_upload):
@@ -36,8 +36,6 @@ class UploadProfilePictureTests(TestCase):
             b"\xff\xd8\xff",  # minimal jpeg header bytes
             content_type="image/jpeg",
         )
-
-        # accept legacy "profilePicture" or new "file"
         response = self.client.post(self.url, {"profilePicture": image}, format="multipart")
 
         self.assertEqual(response.status_code, 200)
@@ -53,14 +51,13 @@ class UploadProfilePictureTests(TestCase):
             "https://res.cloudinary.com/demo/image/upload/sample.jpg",
         )
 
-    @patch("userprofiles.services.cloudinary_utils.upload_profile_image")
+    @patch("userprofiles.views.upload_profile_image")
     def test_upload_profile_picture_invalid_type(self, mock_upload):
         file_obj = SimpleUploadedFile(
             "document.txt",
             b"not an image",
             content_type="text/plain",
         )
-
         response = self.client.post(self.url, {"profilePicture": file_obj}, format="multipart")
 
         self.assertEqual(response.status_code, 400)
@@ -72,14 +69,13 @@ class UploadProfilePictureTests(TestCase):
         CLOUDINARY_API_KEY="",
         CLOUDINARY_API_SECRET="",
     )
-    @patch("userprofiles.services.cloudinary_utils.upload_profile_image")
+    @patch("userprofiles.views.upload_profile_image")
     def test_upload_profile_picture_missing_credentials(self, mock_upload):
         image = SimpleUploadedFile(
             "avatar.png",
             b"\x89PNG\r\n\x1a\n",  # minimal png header bytes
             content_type="image/png",
         )
-
         response = self.client.post(self.url, {"profilePicture": image}, format="multipart")
 
         self.assertEqual(response.status_code, 500)
