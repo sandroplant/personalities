@@ -215,11 +215,7 @@ class EvaluationCreateView(APIView):
         # Evaluate outbound gating for the subject being rated.
         min_outbound = int(getattr(settings, "EVALUATIONS_MIN_OUTBOUND", 10))
         outbound_count = Evaluation.objects.filter(evaluator_id=subject_id).count()
-        status_value = (
-            EvaluationMeta.STATUS_ACTIVE
-            if outbound_count >= min_outbound
-            else EvaluationMeta.STATUS_PENDING
-        )
+        status_value = EvaluationMeta.STATUS_ACTIVE if outbound_count >= min_outbound else EvaluationMeta.STATUS_PENDING
 
         meta, created = EvaluationMeta.objects.get_or_create(
             evaluation=evaluation,

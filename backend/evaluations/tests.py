@@ -264,9 +264,7 @@ class EvaluationMetaGatingTests(APITestCase):
         self.assertEqual(meta.status, EvaluationMeta.STATUS_PENDING)
 
         # Allow another evaluation past the cooldown window.
-        Evaluation.objects.filter(pk=evaluation.pk).update(
-            created_at=timezone.now() - timedelta(days=REPEAT_DAYS + 1)
-        )
+        Evaluation.objects.filter(pk=evaluation.pk).update(created_at=timezone.now() - timedelta(days=REPEAT_DAYS + 1))
 
         # Subject submits two outbound evaluations to satisfy the threshold.
         Evaluation.objects.create(

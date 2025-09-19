@@ -81,6 +81,8 @@ def _compute_weights_for_rater(rater_id: int) -> None:
         objectivity_score=objectivity,
         pending=False,
     )
+
+
 def _handle_weight_refresh(instance: Evaluation) -> None:
     """Shared helper to refresh rater weights for a saved evaluation."""
 
