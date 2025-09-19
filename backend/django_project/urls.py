@@ -14,7 +14,6 @@ from userprofiles.views import upload_profile_picture
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
     # Main application and other app routes
     path("", include("core.urls")),
     path("ai/", include("ai.urls")),
@@ -23,19 +22,17 @@ urlpatterns = [
     path("spotify/", include("spotify_auth.urls")),
     path("uploads/", include("uploads.urls")),
     path("questions/", include("questions.urls")),
-
     # Evaluations app (includes tasks/create endpoints)
     path("evaluations/", include("evaluations.urls")),
     path("evaluations/tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
-    path("evaluations/create/", EvaluationCreateView.as_view(), name="evaluation-create"),
-
+    path(
+        "evaluations/create/", EvaluationCreateView.as_view(), name="evaluation-create"
+    ),
     path("auth/", include("custom_auth.urls")),
     path("posts/", include("posts.urls")),
-
     # API routes (if core also exposes API)
     path("api/", include("core.urls")),
     path("api/profile/picture/", upload_profile_picture, name="upload_profile_picture"),
-
     # Schema and Documentation URLs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
@@ -59,6 +56,7 @@ except Exception:
 # Optional: CSRF endpoint for SPA clients (import only if available)
 try:
     from core.csrf_views import csrf as csrf_view  # type: ignore
+
     try:
         urlpatterns.insert(0, path("auth/csrf/", csrf_view, name="csrf"))
     except Exception:

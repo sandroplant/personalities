@@ -1,7 +1,8 @@
 # auth/serializers.py
 
 from rest_framework import serializers
-from auth.models import User, Post
+
+from auth.models import Post, User
 
 
 class UserSerializer(serializers.ModelSerializer):
