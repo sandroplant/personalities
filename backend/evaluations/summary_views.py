@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from django.conf import settings
-from django.db.models import Avg, Count, ExpressionWrapper, F, FloatField, Sum, Value
+from django.db.models import Count, ExpressionWrapper, F, FloatField, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -28,7 +28,6 @@ class EvaluationSummaryV2View(APIView):
     def get(self, request):
         # Infer field names used by Evaluation
         subject_field = "subject"
-        rater_field = "evaluator"
         criterion_field = "criterion"
         score_field = "score"
 
