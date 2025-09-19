@@ -59,8 +59,36 @@ const QuestionsFeed: React.FC = () => {
   const [customTag, setCustomTag] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [options, setOptions] = useState<string[]>(['', '', '', '']);
+  const [questionType, setQuestionType] = useState<
+    'yesno' | 'multiple_choice' | 'rating'
+  >('yesno');
   const [submitting, setSubmitting] = useState(false);
   const [ratings, setRatings] = useState<Record<number, number>>({});
+
+  useEffect(() => {
+    if (questionType !== 'multiple_choice') {
+      setOptions((prev) => {
+        if (prev.every((opt) => !opt.trim())) {
+          return prev;
+        }
+        return ['', '', '', ''];
+      });
+    }
+  }, [questionType]);
+
+  const resetModalState = () => {
+    setQuestionText('');
+    setModalTagId('');
+    setCustomTag('');
+    setIsAnonymous(false);
+    setOptions(['', '', '', '']);
+    setQuestionType('yesno');
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetModalState();
+  };
 
   /**
    * Fetch tags and questions on mount. Also re-fetch when the selected
@@ -139,9 +167,8 @@ const QuestionsFeed: React.FC = () => {
 
   /**
    * Handle submission of a new question from the modal. Validates
-   * required fields and sends a POST request. If options are blank
-   * or less than two items, the poll is treated as yes/no. Clears state
-   * after successful submission.
+   * required fields and sends a POST request matching the selected
+   * question type. Clears state after successful submission.
    */
   const handleQuestionSubmit = async () => {
     if (!questionText.trim()) {
@@ -154,7 +181,7 @@ const QuestionsFeed: React.FC = () => {
       const payload: any = {
         text: questionText.trim(),
         is_anonymous: isAnonymous,
-        question_type: filteredOptions.length > 0 ? 'multiple_choice' : 'yesno',
+        question_type: questionType,
       };
       // Prioritize custom tag over selected tag
       if (customTag.trim()) {
@@ -162,8 +189,14 @@ const QuestionsFeed: React.FC = () => {
       } else if (modalTagId) {
         payload.tag_id = modalTagId;
       }
-      if (filteredOptions.length > 0) {
+      if (questionType === 'multiple_choice') {
+        if (filteredOptions.length < 2) {
+          alert('Please provide at least two options for multiple choice questions.');
+          return;
+        }
         payload.options = filteredOptions;
+      } else if (questionType === 'rating') {
+        payload.options = [];
       }
       await api.post('/questions/questions/', payload);
       // Refresh list
@@ -174,12 +207,7 @@ const QuestionsFeed: React.FC = () => {
       const response = await api.get('/questions/questions/', { params });
       setQuestions(response.data.results || response.data);
       // Reset modal state
-      setQuestionText('');
-      setModalTagId('');
-      setCustomTag('');
-      setIsAnonymous(false);
-      setOptions(['', '', '', '']);
-      setShowModal(false);
+      handleCloseModal();
     } catch (err) {
       console.error('Error creating question', err);
       alert('There was an error submitting your question. Please try again.');
@@ -273,6 +301,7 @@ const QuestionsFeed: React.FC = () => {
                         })
                       }
                       className="mb-2"
+                      aria-label="Rating slider"
                     />
                     <div className="mb-2">Rating: {ratings[q.id] || 5}</div>
                     {typeof q.average_rating === 'number' && (
@@ -326,7 +355,7 @@ const QuestionsFeed: React.FC = () => {
       {/* Ask Question Modal */}
       <Modal
         show={showModal}
-        onHide={() => setShowModal(false)}
+        onHide={handleCloseModal}
         backdrop="static"
         size="lg"
       >
@@ -375,6 +404,23 @@ const QuestionsFeed: React.FC = () => {
                 Leave this blank to use the selected tag above.
               </Form.Text>
             </Form.Group>
+            <Form.Group controlId="questionType" className="mb-3">
+              <Form.Label>Question Type</Form.Label>
+              <Form.Select
+                value={questionType}
+                onChange={(e) => {
+                  const value = e.target.value as
+                    | 'yesno'
+                    | 'multiple_choice'
+                    | 'rating';
+                  setQuestionType(value);
+                }}
+              >
+                <option value="yesno">Yes / No</option>
+                <option value="multiple_choice">Multiple Choice</option>
+                <option value="rating">Rating</option>
+              </Form.Select>
+            </Form.Group>
             <Form.Group controlId="anonymousCheck" className="mb-3">
               <Form.Check
                 type="checkbox"
@@ -383,27 +429,31 @@ const QuestionsFeed: React.FC = () => {
                 onChange={(e) => setIsAnonymous(e.target.checked)}
               />
             </Form.Group>
-            <Form.Label>Answer Options (optional, up to 4)</Form.Label>
-            {options.map((opt, idx) => (
-              <Form.Control
-                key={idx}
-                type="text"
-                className="mb-2"
-                placeholder={`Option ${idx + 1}`}
-                value={opt}
-                onChange={(e) => {
-                  const newOptions = [...options];
-                  newOptions[idx] = e.target.value;
-                  setOptions(newOptions);
-                }}
-              />
-            ))}
+            {questionType === 'multiple_choice' && (
+              <>
+                <Form.Label>Answer Options (minimum 2, up to 4)</Form.Label>
+                {options.map((opt, idx) => (
+                  <Form.Control
+                    key={idx}
+                    type="text"
+                    className="mb-2"
+                    placeholder={`Option ${idx + 1}`}
+                    value={opt}
+                    onChange={(e) => {
+                      const newOptions = [...options];
+                      newOptions[idx] = e.target.value;
+                      setOptions(newOptions);
+                    }}
+                  />
+                ))}
+              </>
+            )}
           </Form>
         </Modal.Body>
         <Modal.Footer>
           <Button
             variant="secondary"
-            onClick={() => setShowModal(false)}
+            onClick={handleCloseModal}
             disabled={submitting}
           >
             Cancel
