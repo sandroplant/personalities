@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, Iterable, Tuple
 
 from django.db.models import Avg, Q
-from django.db.models.signals import post_save
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from .models import Evaluation
@@ -93,6 +93,28 @@ def update_rater_weights(sender, instance: Evaluation, **kwargs) -> None:
         .distinct()
     )
 
+    for rater_id in affected_rater_ids:
+        if rater_id is None:
+            continue
+        _compute_weights_for_rater(int(rater_id))
+
+
+@receiver(post_delete, sender=Evaluation)
+def update_rater_weights_on_delete(sender, instance: Evaluation, **kwargs) -> None:
+    """When an evaluation is deleted, recompute weights for relevant raters."""
+    if instance.subject_id is None or instance.criterion_id is None:
+        return
+
+    # Recompute for the rater of the deleted row (if any)
+    if instance.evaluator_id is not None:
+        _compute_weights_for_rater(int(instance.evaluator_id))
+
+    # Also recompute for any other raters who have remaining evals on this subject/criterion
+    affected_rater_ids = (
+        Evaluation.objects.filter(subject_id=instance.subject_id, criterion_id=instance.criterion_id)
+        .values_list("evaluator_id", flat=True)
+        .distinct()
+    )
     for rater_id in affected_rater_ids:
         if rater_id is None:
             continue
