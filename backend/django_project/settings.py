@@ -158,6 +158,11 @@ SPOTIFY_CLIENT_SECRET = env("SPOTIFY_CLIENT_SECRET", default="")
 SPOTIFY_REDIRECT_URI = env("SPOTIFY_REDIRECT_URI", default="")
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 
+# Cloudinary (used by profile picture uploads)
+CLOUDINARY_CLOUD_NAME = env("CLOUDINARY_CLOUD_NAME", default="")
+CLOUDINARY_API_KEY = env("CLOUDINARY_API_KEY", default="")
+CLOUDINARY_API_SECRET = env("CLOUDINARY_API_SECRET", default="")
+
 # Redis configuration
 REDIS_HOST = env("REDIS_HOST", default="redis")
 REDIS_PORT = env("REDIS_PORT", default="6379")

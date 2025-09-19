@@ -42,7 +42,7 @@ jobs:
           source .venv/bin/activate
           isort --profile black --check-only .
           black --check .
-          flake8 .
+          flake8 --config $GITHUB_WORKSPACE/.flake8 .
 
       - name: Run Django checks & migrations (SQLite)
         env:

@@ -10,6 +10,7 @@ from drf_spectacular.views import (
 )
 
 from evaluations.views import EvaluationCreateView, EvaluationTasksView
+from userprofiles.views import upload_profile_picture
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -23,10 +24,15 @@ urlpatterns = [
     path("questions/", include("questions.urls")),
     # Evaluations app (includes tasks/create endpoints)
     path("evaluations/", include("evaluations.urls")),
+    path("evaluations/tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
+    path(
+        "evaluations/create/", EvaluationCreateView.as_view(), name="evaluation-create"
+    ),
     path("auth/", include("custom_auth.urls")),
     path("posts/", include("posts.urls")),
     # API routes (if core also exposes API)
     path("api/", include("core.urls")),
+    path("api/profile/picture/", upload_profile_picture, name="upload_profile_picture"),
     # Schema and Documentation URLs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
@@ -38,10 +44,6 @@ urlpatterns = [
         "api/schema/redoc/",
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
-    ),
-    path("evaluations/tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
-    path(
-        "evaluations/create/", EvaluationCreateView.as_view(), name="evaluation-create"
     ),
 ]
 

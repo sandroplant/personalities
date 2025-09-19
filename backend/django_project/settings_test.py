@@ -24,7 +24,6 @@ PASSWORD_HASHERS = [
 ]
 
 # ---- Use SQLite automatically under test settings (local & CI) ----
-# This prevents accidental Postgres connections to host "db"
 _here = _os.path.dirname(__file__)
 DATABASES = {
     "default": {

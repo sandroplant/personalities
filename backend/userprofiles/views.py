@@ -14,12 +14,18 @@ from django.utils.decorators import method_decorator
 from django.views import View
 
 import spotipy
-from cloudinary import uploader
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from spotipy.oauth2 import SpotifyOAuth
+
+from userprofiles.services.cloudinary_utils import (
+    CloudinaryConfigError,
+    ensure_config,
+    has_valid_image_type,
+    upload_profile_image,
+)
 
 from .models import Profile, SpotifyProfile
 from .serializers import ProfileSerializer
@@ -198,28 +204,70 @@ def get_user_spotify_profile(request):
 # Media Upload (Cloudinary)
 # -----------------------
 
+# Max upload size 5MB
+MAX_PROFILE_IMAGE_SIZE_MB = 5
+MAX_PROFILE_IMAGE_SIZE_BYTES = MAX_PROFILE_IMAGE_SIZE_MB * 1024 * 1024
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def upload_profile_picture(request):
-    if "profilePicture" not in request.FILES:
+    """
+    Accepts multipart form with file key `file` (preferred) or `profilePicture` (back-compat).
+    Validates type/size, ensures Cloudinary configuration, uploads via wrapper, saves URL to Profile.
+    """
+    # Accept both keys: 'file' (new) and 'profilePicture' (legacy)
+    file = request.FILES.get("file") or request.FILES.get("profilePicture")
+    if not file:
         return JsonResponse(
             {"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST
         )
 
+    # Type validation using wrapper helper (file extension + content-type)
+    if not has_valid_image_type(file.name, getattr(file, "content_type", None)):
+        return JsonResponse(
+            {"error": "Invalid file type"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Size validation
+    if file.size > MAX_PROFILE_IMAGE_SIZE_BYTES:
+        return JsonResponse(
+            {
+                "error": (
+                    "File too large. Maximum allowed size is "
+                    f"{MAX_PROFILE_IMAGE_SIZE_MB}MB"
+                )
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Ensure Cloudinary is configured and perform upload via wrapper
     try:
-        file = request.FILES["profilePicture"]
-        result = uploader.upload(file, folder="profile_pictures")
-        # Update the user's profile picture URL
-        profile, _ = Profile.objects.get_or_create(user=request.user)
-        profile.profile_picture = result["secure_url"]
-        profile.save()
-        return JsonResponse({"url": result["secure_url"]}, status=status.HTTP_200_OK)
+        ensure_config()
+        result = upload_profile_image(file, public_id=f"user_{request.user.id}")
+    except CloudinaryConfigError:
+        return JsonResponse(
+            {"error": "Cloudinary not configured"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
     except Exception:
         return JsonResponse(
             {"error": "Failed to upload profile picture"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+    secure_url = result.get("secure_url")
+    if not secure_url:
+        return JsonResponse(
+            {"error": "Upload failed"}, status=status.HTTP_502_BAD_GATEWAY
+        )
+
+    # Save to profile
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    profile.profile_picture = secure_url
+    profile.save()
+
+    return JsonResponse({"url": secure_url}, status=status.HTTP_200_OK)
 
 
 # -----------------------

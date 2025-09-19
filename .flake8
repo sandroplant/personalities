@@ -1,19 +1,28 @@
 [flake8]
 max-line-length = 120
+extend-ignore = E203, W503
+
 exclude =
     .git,
     __pycache__,
+    .mypy_cache,
+    .pytest_cache,
     .venv,
+    */.venv/*,
+    backend/.venv,
+    backend/.venv/*,
     venv,
-    **/.venv/**,
-    **/venv/**,
-    dist,
+    env,
+    node_modules,
+    frontend/node_modules,
+    frontend/node_modules/*,
     build,
-    db-data,
-    backend/**/migrations/**,
-    **/site-packages/**,
-    **/_vendor/**,
-    frontend/**,
-    frontend/node_modules/**,
-    node_modules/**
-ignore = E203,W503
+    dist,
+    repo,
+    repo/*,
+    userprofiles,
+    userprofiles/*,
+    tools,
+    tools/*,
+    backend/**/migrations/*,
+    **/migrations/*
