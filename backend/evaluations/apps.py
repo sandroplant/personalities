@@ -15,3 +15,7 @@ class EvaluationsConfig(AppConfig):
             from . import meta_models  # noqa: F401
         except Exception:
             pass
+        try:
+            from . import signals  # noqa: F401
+        except Exception:
+            pass

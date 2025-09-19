@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -98,3 +99,64 @@ class EvaluationTasksViewTests(APITestCase):
             ).count(),
             2,
         )
+
+
+class EvaluationWeightsTests(APITestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.rater = User.objects.create_user(username="primary", email="r1@example.com", password="pw")
+        self.peer = User.objects.create_user(username="peer", email="r2@example.com", password="pw")
+        self.subject = User.objects.create_user(username="subject", email="subj@example.com", password="pw")
+        self.criterion = Criterion.objects.create(name="Honesty")
+
+    def test_weights_recomputed_for_all_raters(self):
+        eval_peer = Evaluation.objects.create(
+            evaluator=self.peer,
+            subject=self.subject,
+            criterion=self.criterion,
+            score=5,
+        )
+        eval_peer.refresh_from_db()
+        self.assertAlmostEqual(eval_peer.reliability_weight, 1.0)
+        self.assertAlmostEqual(eval_peer.extreme_rate_weight, 0.5)
+
+        eval_primary = Evaluation.objects.create(
+            evaluator=self.rater,
+            subject=self.subject,
+            criterion=self.criterion,
+            score=3,
+        )
+        eval_primary.refresh_from_db()
+
+        self.assertAlmostEqual(eval_primary.reliability_weight, 0.5)
+        self.assertAlmostEqual(eval_primary.extreme_rate_weight, 1.0)
+
+        eval_peer.refresh_from_db()
+        self.assertAlmostEqual(eval_peer.reliability_weight, 0.5)
+        self.assertAlmostEqual(eval_peer.extreme_rate_weight, 0.5)
+
+    @override_settings(EVALUATIONS_MIN_RATINGS=1)
+    def test_summary_v2_uses_evaluation_weights(self):
+        Evaluation.objects.create(
+            evaluator=self.rater,
+            subject=self.subject,
+            criterion=self.criterion,
+            score=4,
+        )
+        Evaluation.objects.create(
+            evaluator=self.peer,
+            subject=self.subject,
+            criterion=self.criterion,
+            score=2,
+        )
+
+        Evaluation.objects.filter(score=4).update(reliability_weight=1.0, extreme_rate_weight=1.0)
+        Evaluation.objects.filter(score=2).update(reliability_weight=0.5, extreme_rate_weight=0.5)
+
+        response = self.client.get(reverse("evaluations:evaluation-summary-v2"))
+        self.assertEqual(response.status_code, 200)
+
+        payload = response.data["results"]
+        self.assertEqual(len(payload), 1)
+        self.assertAlmostEqual(payload[0]["weighted_average"], 3.6)
+        self.assertEqual(payload[0]["raw_count"], 2)
