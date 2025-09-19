@@ -12,11 +12,12 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
 from django.views import View
+
+import spotipy
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
 from userprofiles.services.cloudinary_utils import (
