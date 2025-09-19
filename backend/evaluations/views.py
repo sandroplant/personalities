@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import math
 import os as _os
 import random
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Avg, Max
 from django.utils import timezone
@@ -15,8 +17,11 @@ from rest_framework.views import APIView
 
 from userprofiles.models import Friendship
 
+from .meta_models import EvaluationMeta
 from .models import Criterion, Evaluation
+from .rater_models import RaterStats
 from .serializers import CriterionSerializer, EvaluationSerializer
+from .signals import evaluation_submitted
 
 # Backwards-compat constant for tests
 try:  # noqa: SIM105
@@ -153,6 +158,78 @@ class EvaluationCreateView(APIView):
             create_kwargs["familiarity"] = familiarity
 
         evaluation = Evaluation.objects.create(**create_kwargs)
+
+        # Notify downstream listeners so reliability/objectivity are recalculated.
+        evaluation_submitted.send(sender=Evaluation, evaluation=evaluation)
+
+        # Recompute normalization statistics for this evaluator.
+        rater_evaluations = list(Evaluation.objects.filter(evaluator=user))
+        scores = [float(ev.score) for ev in rater_evaluations]
+        count = len(scores)
+
+        if count:
+            mean_score = sum(scores) / count
+            if count > 1:
+                variance = sum((s - mean_score) ** 2 for s in scores) / count
+                std_score = math.sqrt(variance)
+            else:
+                std_score = 0.0
+        else:  # pragma: no cover - defensive guard
+            mean_score = 0.0
+            std_score = 0.0
+
+        normalized_denominator = std_score if std_score > 0 else None
+        for ev in rater_evaluations:
+            ev.rater_mean = mean_score
+            ev.rater_stddev = std_score
+            if normalized_denominator:
+                ev.normalized_score = (float(ev.score) - mean_score) / normalized_denominator
+            else:
+                ev.normalized_score = 0.0
+
+        if rater_evaluations:
+            Evaluation.objects.bulk_update(
+                rater_evaluations,
+                ["rater_mean", "rater_stddev", "normalized_score"],
+            )
+
+        # Persist/update rater statistics.
+        if rater_evaluations:
+            stats, _ = RaterStats.objects.get_or_create(user=user)
+            extreme_count = sum(1 for s in scores if s <= 1.0 or s >= 5.0)
+            stats.ratings_count = count
+            stats.mean_score = mean_score
+            stats.std_score = std_score
+            stats.extreme_rate = (extreme_count / count) if count else 0.0
+
+            reliability_agg = (
+                Evaluation.objects.filter(evaluator=user)
+                .exclude(reliability_weight__isnull=True)
+                .aggregate(avg_rel=Avg("reliability_weight"))
+            )
+            avg_rel = reliability_agg.get("avg_rel")
+            if avg_rel is not None:
+                stats.reliability = float(avg_rel)
+            stats.save()
+
+        # Evaluate outbound gating for the subject being rated.
+        min_outbound = int(getattr(settings, "EVALUATIONS_MIN_OUTBOUND", 10))
+        outbound_count = Evaluation.objects.filter(evaluator_id=subject_id).count()
+        status_value = EvaluationMeta.STATUS_ACTIVE if outbound_count >= min_outbound else EvaluationMeta.STATUS_PENDING
+
+        meta, created = EvaluationMeta.objects.get_or_create(
+            evaluation=evaluation,
+            defaults={"status": status_value},
+        )
+        if not created and meta.status != status_value:
+            meta.status = status_value
+            meta.save(update_fields=["status"])
+
+        if status_value == EvaluationMeta.STATUS_ACTIVE:
+            EvaluationMeta.objects.filter(
+                evaluation__subject_id=subject_id,
+                status=EvaluationMeta.STATUS_PENDING,
+            ).update(status=EvaluationMeta.STATUS_ACTIVE)
 
         return Response({"id": evaluation.id}, status=status.HTTP_201_CREATED)
 

@@ -9,6 +9,7 @@ from django.views.decorators.cache import cache_page
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .meta_models import EvaluationMeta
 from .models import Criterion, Evaluation  # noqa: F401 (used via F-expressions)
 
 
@@ -34,7 +35,7 @@ class EvaluationSummaryV2View(APIView):
         min_ratings = int(getattr(settings, "EVALUATIONS_MIN_RATINGS", 10))
 
         # Base queryset
-        qs = Evaluation.objects.all()
+        qs = Evaluation.objects.filter(evaluationmeta__status=EvaluationMeta.STATUS_ACTIVE)
 
         # Weights (gracefully degrade if no RaterStats)
         fam_weight = Value(1.0)
@@ -43,6 +44,10 @@ class EvaluationSummaryV2View(APIView):
 
         final_weight_expr = ExpressionWrapper(fam_weight * rel_weight * ext_weight, output_field=FloatField())
         weighted_score_expr = ExpressionWrapper(F(score_field) * final_weight_expr, output_field=FloatField())
+        normalized_weighted_expr = ExpressionWrapper(
+            Coalesce(F("normalized_score"), Value(0.0)) * final_weight_expr,
+            output_field=FloatField(),
+        )
 
         # Aggregate by subject + criterion
         agg = (
@@ -50,6 +55,7 @@ class EvaluationSummaryV2View(APIView):
             .annotate(
                 raw_count=Count("id"),  # ← real count of rows
                 weighted_sum=Sum(weighted_score_expr),
+                normalized_weighted_sum=Sum(normalized_weighted_expr),
                 weight_sum=Sum(final_weight_expr),
             )
             .order_by()
@@ -64,15 +70,18 @@ class EvaluationSummaryV2View(APIView):
             subj_id = row[f"{subject_field}_id"]
             crit_id = row[f"{criterion_field}_id"]
             weighted_sum = float(row.get("weighted_sum") or 0.0)
+            normalized_weighted_sum = float(row.get("normalized_weighted_sum") or 0.0)
             weight_sum = float(row.get("weight_sum") or 0.0)
 
             weighted_avg = weighted_sum / weight_sum if weight_sum else 0.0
+            normalized_avg = normalized_weighted_sum / weight_sum if weight_sum else 0.0
 
             result.append(
                 {
                     "subject_id": subj_id,
                     "criterion_id": crit_id,
                     "weighted_average": round(weighted_avg, 3),
+                    "normalized_average": round(normalized_avg, 3),
                     "raw_count": int(row.get("raw_count") or 0),
                 }
             )
