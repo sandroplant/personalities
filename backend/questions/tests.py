@@ -8,12 +8,8 @@ from rest_framework.test import APITestCase
 class QuestionAnswerCountTests(APITestCase):
     def setUp(self):
         User = get_user_model()
-        self.user1 = User.objects.create_user(
-            "u1", email="u1@example.com", password="pass1234"
-        )
-        self.user2 = User.objects.create_user(
-            "u2", email="u2@example.com", password="pass1234"
-        )
+        self.user1 = User.objects.create_user("u1", email="u1@example.com", password="pass1234")
+        self.user2 = User.objects.create_user("u2", email="u2@example.com", password="pass1234")
 
     def _auth(self, user):
         self.client.force_authenticate(user=user)

@@ -26,9 +26,7 @@ class UploadProfilePictureTests(TestCase):
     )
     @patch(
         "userprofiles.views.upload_profile_image",
-        return_value={
-            "secure_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
-        },
+        return_value={"secure_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg"},
     )
     def test_upload_profile_picture_success(self, mock_upload):
         image = SimpleUploadedFile(
@@ -36,9 +34,7 @@ class UploadProfilePictureTests(TestCase):
             b"\xff\xd8\xff",  # minimal jpeg header bytes
             content_type="image/jpeg",
         )
-        response = self.client.post(
-            self.url, {"profilePicture": image}, format="multipart"
-        )
+        response = self.client.post(self.url, {"profilePicture": image}, format="multipart")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -60,9 +56,7 @@ class UploadProfilePictureTests(TestCase):
             b"not an image",
             content_type="text/plain",
         )
-        response = self.client.post(
-            self.url, {"profilePicture": file_obj}, format="multipart"
-        )
+        response = self.client.post(self.url, {"profilePicture": file_obj}, format="multipart")
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["error"], "Invalid file type")
@@ -80,9 +74,7 @@ class UploadProfilePictureTests(TestCase):
             b"\x89PNG\r\n\x1a\n",  # minimal png header bytes
             content_type="image/png",
         )
-        response = self.client.post(
-            self.url, {"profilePicture": image}, format="multipart"
-        )
+        response = self.client.post(self.url, {"profilePicture": image}, format="multipart")
 
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.json()["error"], "Cloudinary not configured")

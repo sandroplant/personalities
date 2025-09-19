@@ -14,7 +14,5 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(self.style.SUCCESS(f"Created criterion: {name}"))
             else:
-                self.stdout.write(
-                    self.style.WARNING(f"Criterion already exists: {name}")
-                )
+                self.stdout.write(self.style.WARNING(f"Criterion already exists: {name}"))
         self.stdout.write(self.style.SUCCESS("Seeding complete."))

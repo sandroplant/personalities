@@ -61,12 +61,10 @@ class EvaluationTasksView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def _confirmed_friend_ids(self, user_id: int) -> set[int]:
-        sent = Friendship.objects.filter(
-            from_user_id=user_id, is_confirmed=True
-        ).values_list("to_user_id", flat=True)
-        received = Friendship.objects.filter(
-            to_user_id=user_id, is_confirmed=True
-        ).values_list("from_user_id", flat=True)
+        sent = Friendship.objects.filter(from_user_id=user_id, is_confirmed=True).values_list("to_user_id", flat=True)
+        received = Friendship.objects.filter(to_user_id=user_id, is_confirmed=True).values_list(
+            "from_user_id", flat=True
+        )
         return set(sent).union(set(received))
 
     def get(self, request):
@@ -88,9 +86,7 @@ class EvaluationTasksView(APIView):
         tasks = []
         for subject in subjects:
             for criterion in criteria:
-                qs = Evaluation.objects.filter(
-                    evaluator=user, subject=subject, criterion=criterion
-                )
+                qs = Evaluation.objects.filter(evaluator=user, subject=subject, criterion=criterion)
                 last_ts = qs.aggregate(last=Max("created_at"))["last"]
                 include = last_ts is None or last_ts <= cutoff
                 if include:
@@ -120,9 +116,7 @@ class EvaluationCreateView(APIView):
 
     def post(self, request):
         user = request.user
-        subject_id = request.query_params.get("subject_id") or request.data.get(
-            "subject_id"
-        )
+        subject_id = request.query_params.get("subject_id") or request.data.get("subject_id")
         criterion_id = request.data.get("criterion_id")
         score = request.data.get("score")
         familiarity = request.data.get("familiarity")

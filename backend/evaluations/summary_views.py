@@ -52,9 +52,7 @@ class EvaluationSummaryV2View(APIView):
         ext_weight = Value(1.0)
         try:
             # If RaterStats exists and is related at evaluator.rater_stats
-            rel_weight = Coalesce(
-                F(f"{rater_field}__rater_stats__reliability"), Value(1.0)
-            )
+            rel_weight = Coalesce(F(f"{rater_field}__rater_stats__reliability"), Value(1.0))
             # piecewise: heavy downweight if extreme_rate > 0.25
             ext_weight = Case(
                 When(
@@ -68,12 +66,8 @@ class EvaluationSummaryV2View(APIView):
             # No rater stats available in this environment; keep defaults
             pass
 
-        final_weight_expr = ExpressionWrapper(
-            fam_weight * rel_weight * ext_weight, output_field=FloatField()
-        )
-        weighted_score_expr = ExpressionWrapper(
-            F(score_field) * final_weight_expr, output_field=FloatField()
-        )
+        final_weight_expr = ExpressionWrapper(fam_weight * rel_weight * ext_weight, output_field=FloatField())
+        weighted_score_expr = ExpressionWrapper(F(score_field) * final_weight_expr, output_field=FloatField())
 
         # Aggregate by subject + criterion
         agg = (

@@ -9,9 +9,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 
 # Fetch the key from settings or fall back to OS environment
-openai_api_key = getattr(settings, "OPENAI_API_KEY", None) or os.getenv(
-    "OPENAI_API_KEY"
-)
+openai_api_key = getattr(settings, "OPENAI_API_KEY", None) or os.getenv("OPENAI_API_KEY")
 if openai_api_key:
     openai.api_key = openai_api_key
 

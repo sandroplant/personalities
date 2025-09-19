@@ -19,16 +19,12 @@ except Exception:
     def _pick_fk_field(model, preferred_names):
         # Exact name match first
         for f in model._meta.get_fields():
-            if getattr(f, "is_relation", False) and not getattr(
-                f, "many_to_many", False
-            ):
+            if getattr(f, "is_relation", False) and not getattr(f, "many_to_many", False):
                 if f.name in preferred_names:
                     return f.name
         # Then partial match
         for f in model._meta.get_fields():
-            if getattr(f, "is_relation", False) and not getattr(
-                f, "many_to_many", False
-            ):
+            if getattr(f, "is_relation", False) and not getattr(f, "many_to_many", False):
                 for p in preferred_names:
                     if p in f.name:
                         return f.name
@@ -46,18 +42,12 @@ except Exception:
         }
         # Exact name match first
         for f in model._meta.get_fields():
-            if (
-                hasattr(f, "get_internal_type")
-                and f.get_internal_type() in numeric_types
-            ):
+            if hasattr(f, "get_internal_type") and f.get_internal_type() in numeric_types:
                 if f.name in preferred_names:
                     return f.name
         # Then partial match
         for f in model._meta.get_fields():
-            if (
-                hasattr(f, "get_internal_type")
-                and f.get_internal_type() in numeric_types
-            ):
+            if hasattr(f, "get_internal_type") and f.get_internal_type() in numeric_types:
                 for p in preferred_names:
                     if p in f.name:
                         return f.name
@@ -87,38 +77,24 @@ class EvaluationCreateV2View(APIView):
         try:
             subject_id = int(request.query_params.get("subject_id", ""))
         except Exception:
-            return Response(
-                {"detail": "subject_id query param is required"}, status=400
-            )
+            return Response({"detail": "subject_id query param is required"}, status=400)
 
         # required in body
         criterion_id = request.data.get("criterion_id")
         score_val = request.data.get("score")
         familiarity_val = request.data.get("familiarity")  # optional
         if not criterion_id or score_val is None:
-            return Response(
-                {"detail": "criterion_id and score are required"}, status=400
-            )
+            return Response({"detail": "criterion_id and score are required"}, status=400)
 
         # Dynamically resolve field names on Evaluation
-        subject_field = _pick_fk_field(
-            Evaluation, ["subject", "target", "rated_user", "profile", "user"]
-        )
-        rater_field = _pick_fk_field(
-            Evaluation, ["rater", "evaluator", "author", "user"]
-        )
+        subject_field = _pick_fk_field(Evaluation, ["subject", "target", "rated_user", "profile", "user"])
+        rater_field = _pick_fk_field(Evaluation, ["rater", "evaluator", "author", "user"])
         criterion_field = _pick_fk_field(Evaluation, ["criterion", "criteria"])
-        score_field = _pick_numeric_field(
-            Evaluation, ["score", "rating", "value", "val", "points"]
-        )
-        familiarity_field = _pick_numeric_field(
-            Evaluation, ["familiarity", "weight", "confidence"]
-        )  # optional
+        score_field = _pick_numeric_field(Evaluation, ["score", "rating", "value", "val", "points"])
+        familiarity_field = _pick_numeric_field(Evaluation, ["familiarity", "weight", "confidence"])  # optional
 
         if not (subject_field and rater_field and criterion_field and score_field):
-            return Response(
-                {"detail": "Evaluation model fields could not be inferred."}, status=500
-            )
+            return Response({"detail": "Evaluation model fields could not be inferred."}, status=500)
 
         # Validate criterion exists
         try:
@@ -139,20 +115,14 @@ class EvaluationCreateV2View(APIView):
         ev = Evaluation.objects.create(**payload)
 
         # Participation gating for SUBJECT (rated user): count their outbound ratings
-        outbound_count = Evaluation.objects.filter(
-            **{f"{rater_field}_id": subject_id}
-        ).count()
+        outbound_count = Evaluation.objects.filter(**{f"{rater_field}_id": subject_id}).count()
 
         try:
             min_outbound = int(os.environ.get("DJANGO_EVAL_MIN_OUTBOUND", "10"))
         except ValueError:
             min_outbound = 10
 
-        status_value = (
-            EvaluationMeta.STATUS_ACTIVE
-            if outbound_count >= min_outbound
-            else EvaluationMeta.STATUS_PENDING
-        )
+        status_value = EvaluationMeta.STATUS_ACTIVE if outbound_count >= min_outbound else EvaluationMeta.STATUS_PENDING
         EvaluationMeta.objects.create(evaluation=ev, status=status_value)
 
         return Response({"id": ev.pk, "status": status_value}, status=201)

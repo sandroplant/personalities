@@ -19,24 +19,18 @@ from .validators import (  # Custom validators for file upload
 @api_view(["POST"])
 def upload_file(request):
     if "file" not in request.FILES:
-        return JsonResponse(
-            {"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
 
     file = request.FILES["file"]
 
     # Validate file size and extension
     file_size_error = validate_file_size(file.size)
     if file_size_error:
-        return JsonResponse(
-            {"error": file_size_error}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": file_size_error}, status=status.HTTP_400_BAD_REQUEST)
 
     file_extension_error = validate_file_extension(file.name)
     if file_extension_error:
-        return JsonResponse(
-            {"error": file_extension_error}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": file_extension_error}, status=status.HTTP_400_BAD_REQUEST)
 
     # Save the file
     fs = FileSystemStorage()

@@ -12,9 +12,5 @@ class Command(BaseCommand):
             self.stdout.write("EvaluationMeta model not found; nothing to do.")
             return
 
-        updated = EvaluationMeta.objects.exclude(status="ACTIVE").update(
-            status="ACTIVE"
-        )
-        self.stdout.write(
-            self.style.SUCCESS(f"Promoted {updated} evaluations to ACTIVE.")
-        )
+        updated = EvaluationMeta.objects.exclude(status="ACTIVE").update(status="ACTIVE")
+        self.stdout.write(self.style.SUCCESS(f"Promoted {updated} evaluations to ACTIVE."))

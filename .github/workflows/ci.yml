@@ -34,15 +34,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt || true
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          pip install black isort flake8
+          pip install pre-commit
 
       - name: Lint & format
         working-directory: backend
         run: |
           source .venv/bin/activate
-          isort --profile black --check-only .
-          black --check .
-          flake8 --config $GITHUB_WORKSPACE/.flake8 .
+          pre-commit run --all-files --show-diff-on-failure
 
       - name: Run Django checks & migrations (SQLite)
         env:

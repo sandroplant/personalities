@@ -12,12 +12,8 @@ class Criterion(models.Model):
 
 
 class Evaluation(models.Model):
-    evaluator = models.ForeignKey(
-        User, related_name="given_evaluations", on_delete=models.CASCADE
-    )
-    subject = models.ForeignKey(
-        User, related_name="received_evaluations", on_delete=models.CASCADE
-    )
+    evaluator = models.ForeignKey(User, related_name="given_evaluations", on_delete=models.CASCADE)
+    subject = models.ForeignKey(User, related_name="received_evaluations", on_delete=models.CASCADE)
     criterion = models.ForeignKey(Criterion, on_delete=models.CASCADE)
     score = models.PositiveSmallIntegerField()
     familiarity = models.PositiveSmallIntegerField(null=True, blank=True)

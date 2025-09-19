@@ -6,15 +6,9 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
 # Retrieve Spotify credentials from Django settings or environment variables
-SPOTIFY_CLIENT_ID = getattr(settings, "SPOTIFY_CLIENT_ID", None) or os.getenv(
-    "SPOTIFY_CLIENT_ID"
-)
-SPOTIFY_CLIENT_SECRET = getattr(settings, "SPOTIFY_CLIENT_SECRET", None) or os.getenv(
-    "SPOTIFY_CLIENT_SECRET"
-)
-SPOTIFY_REDIRECT_URI = getattr(settings, "SPOTIFY_REDIRECT_URI", None) or os.getenv(
-    "SPOTIFY_REDIRECT_URI"
-)
+SPOTIFY_CLIENT_ID = getattr(settings, "SPOTIFY_CLIENT_ID", None) or os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = getattr(settings, "SPOTIFY_CLIENT_SECRET", None) or os.getenv("SPOTIFY_CLIENT_SECRET")
+SPOTIFY_REDIRECT_URI = getattr(settings, "SPOTIFY_REDIRECT_URI", None) or os.getenv("SPOTIFY_REDIRECT_URI")
 
 
 def get_spotify_client(request):

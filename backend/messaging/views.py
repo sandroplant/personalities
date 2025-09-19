@@ -20,9 +20,7 @@ def ensure_authenticated(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return JsonResponse(
-                {"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
+            return JsonResponse({"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         return view_func(request, *args, **kwargs)
 
     return _wrapped_view
@@ -55,28 +53,21 @@ class MessagingView(View):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
-            return JsonResponse(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @method_decorator(ensure_authenticated)
     @api_view(["GET"])
     def get_conversation(self, request, userId1, userId2):
         try:
             messages = Message.objects.filter(
-                (Q(sender=userId1) & Q(recipient=userId2))
-                | (Q(sender=userId2) & Q(recipient=userId1))
+                (Q(sender=userId1) & Q(recipient=userId2)) | (Q(sender=userId2) & Q(recipient=userId1))
             ).order_by("timestamp")
 
             # Serialize the messages (you might want to create a serializer for this)
-            messages_data = [
-                message.serialize() for message in messages
-            ]  # Assuming you have a serialize method
+            messages_data = [message.serialize() for message in messages]  # Assuming you have a serialize method
             return JsonResponse(messages_data, safe=False, status=status.HTTP_200_OK)
         except Exception as e:
-            return JsonResponse(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @method_decorator(ensure_authenticated)
     @api_view(["POST"])

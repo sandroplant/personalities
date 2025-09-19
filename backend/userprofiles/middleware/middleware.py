@@ -34,21 +34,13 @@ def authenticate_user(view_func):
             return view_func(request, *args, **kwargs)
 
         except jwt.ExpiredSignatureError:
-            return JsonResponse(
-                {"error": "Token has expired."}, status=status.HTTP_401_UNAUTHORIZED
-            )
+            return JsonResponse({"error": "Token has expired."}, status=status.HTTP_401_UNAUTHORIZED)
         except jwt.InvalidTokenError:
-            return JsonResponse(
-                {"error": "Invalid token."}, status=status.HTTP_401_UNAUTHORIZED
-            )
+            return JsonResponse({"error": "Invalid token."}, status=status.HTTP_401_UNAUTHORIZED)
         except User.DoesNotExist:
-            return JsonResponse(
-                {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            return JsonResponse({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return JsonResponse(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return _wrapped_view
 

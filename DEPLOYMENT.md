@@ -32,4 +32,3 @@ Production Checklist
 Notes
 - The docker backend uses scripts/entrypoint.sh to run migrations and collect static at boot.
 - To seed data at boot, set SEED_DATA=1 in the backend service environment.
-

@@ -51,18 +51,13 @@ class LocalTestsAutoUserAuth(BaseAuthentication):
         import os
 
         ds = os.environ.get("DJANGO_SETTINGS_MODULE", "")
-        if not (
-            os.environ.get("LOCAL_TESTS") == "1"
-            or ds.endswith("django_project.settings_test")
-        ):
+        if not (os.environ.get("LOCAL_TESTS") == "1" or ds.endswith("django_project.settings_test")):
             return None
 
         # Prefer the only existing user created by tests
         if User.objects.count() == 1:
             user = User.objects.first()
-            if hasattr(user, "display_name") and not getattr(
-                user, "display_name", None
-            ):
+            if hasattr(user, "display_name") and not getattr(user, "display_name", None):
                 user.display_name = "Test User"
                 try:
                     user.save(update_fields=["display_name"])
@@ -158,9 +153,7 @@ class UpdateUserProfileApi(APIView):
         profile = _get_or_create_profile(user)
 
         # 1) Update the Profile
-        serializer = ProfileSerializer(
-            profile, data=request.data, partial=partial, context={"request": request}
-        )
+        serializer = ProfileSerializer(profile, data=request.data, partial=partial, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -168,11 +161,7 @@ class UpdateUserProfileApi(APIView):
         changed_fields = []
 
         new_display = request.data.get("display_name")
-        if (
-            new_display
-            and hasattr(user, "display_name")
-            and new_display != getattr(user, "display_name", None)
-        ):
+        if new_display and hasattr(user, "display_name") and new_display != getattr(user, "display_name", None):
             setattr(user, "display_name", new_display)
             changed_fields.append("display_name")
 
@@ -359,9 +348,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 def spotify_login(request):
     code_verifier = generate_code_verifier()
     code_challenge = generate_code_challenge(code_verifier)
-    state = "".join(
-        secrets.choice(string.ascii_letters + string.digits) for _ in range(16)
-    )
+    state = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
 
     request.session["code_verifier"] = code_verifier
     request.session["state"] = state
@@ -404,9 +391,7 @@ def spotify_callback(request):
         "client_id": settings.SPOTIFY_CLIENT_ID,
         "code_verifier": code_verifier,
     }
-    auth_header = (
-        f"{settings.SPOTIFY_CLIENT_ID}:{settings.SPOTIFY_CLIENT_SECRET}".encode("utf-8")
-    )
+    auth_header = f"{settings.SPOTIFY_CLIENT_ID}:{settings.SPOTIFY_CLIENT_SECRET}".encode("utf-8")
     auth_header = base64.urlsafe_b64encode(auth_header).decode("utf-8")
 
     headers = {
@@ -416,9 +401,7 @@ def spotify_callback(request):
 
     response = requests.post(token_url, data=data, headers=headers)
     if response.status_code != 200:
-        return JsonResponse(
-            {"error": "Failed to obtain access token"}, status=response.status_code
-        )
+        return JsonResponse({"error": "Failed to obtain access token"}, status=response.status_code)
 
     token_data = response.json()
     access_token = token_data.get("access_token")
@@ -441,9 +424,7 @@ def spotify_callback(request):
 def spotify_profile(request):
     access_token = request.session.get("access_token")
     if not access_token:
-        return JsonResponse(
-            {"error": "Access token missing. Please log in again."}, status=401
-        )
+        return JsonResponse({"error": "Access token missing. Please log in again."}, status=401)
 
     headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -460,9 +441,7 @@ def spotify_profile(request):
         top_tracks_response.raise_for_status()
         top_tracks_data = top_tracks_response.json()
 
-        currently_playing_response = requests.get(
-            currently_playing_url, headers=headers
-        )
+        currently_playing_response = requests.get(currently_playing_url, headers=headers)
         if currently_playing_response.status_code == 204:
             current_track_data = None
         else:
@@ -474,9 +453,7 @@ def spotify_profile(request):
                 {
                     "name": bleach.clean(artist["name"]),
                     "uri": bleach.clean(artist["uri"]),
-                    "genres": [
-                        bleach.clean(genre) for genre in artist.get("genres", [])
-                    ],
+                    "genres": [bleach.clean(genre) for genre in artist.get("genres", [])],
                 }
                 for artist in top_artists_data.get("items", [])
             ],
@@ -491,12 +468,7 @@ def spotify_profile(request):
             "currently_playing": (
                 {
                     "name": bleach.clean(current_track_data["item"]["name"]),
-                    "artist": ", ".join(
-                        [
-                            bleach.clean(a["name"])
-                            for a in current_track_data["item"]["artists"]
-                        ]
-                    ),
+                    "artist": ", ".join([bleach.clean(a["name"]) for a in current_track_data["item"]["artists"]]),
                     "uri": bleach.clean(current_track_data["item"]["uri"]),
                     "album": bleach.clean(current_track_data["item"]["album"]["name"]),
                 }

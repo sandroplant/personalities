@@ -33,9 +33,7 @@ class AuthViewTests(APITestCase):
 
     def test_login_returns_jwt_token(self):
         user_model = get_user_model()
-        user_model.objects.create_user(
-            username="login_user", password="secure-pass-123"
-        )
+        user_model.objects.create_user(username="login_user", password="secure-pass-123")
 
         url = reverse("login")
         payload = {"username": "login_user", "password": "secure-pass-123"}

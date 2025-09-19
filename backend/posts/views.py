@@ -28,9 +28,7 @@ def create_post(request):
         new_post.save()
         return JsonResponse({"message": "Post created"}, status=status.HTTP_201_CREATED)
     except Exception as e:
-        return JsonResponse(
-            {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Get all posts
@@ -55,9 +53,7 @@ def get_post_by_id(request, id):
         serializer = PostSerializer(post)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Post.DoesNotExist:
-        return JsonResponse(
-            {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
-        )
+        return JsonResponse({"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception:
         return JsonResponse(
             {"error": "Error fetching post"},
@@ -73,9 +69,7 @@ def delete_post(request, id):
         post.delete()
         return JsonResponse({"message": "Post deleted"}, status=status.HTTP_200_OK)
     except Post.DoesNotExist:
-        return JsonResponse(
-            {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
-        )
+        return JsonResponse({"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception:
         return JsonResponse(
             {"error": "Error deleting post"},

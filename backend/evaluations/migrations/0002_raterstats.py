@@ -41,11 +41,7 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "indexes": [
-                    models.Index(
-                        fields=["ratings_count"], name="evaluations_ratings_7259ac_idx"
-                    )
-                ],
+                "indexes": [models.Index(fields=["ratings_count"], name="evaluations_ratings_7259ac_idx")],
             },
         ),
     ]

@@ -40,4 +40,3 @@ Notes
 - Reciprocity rule: a requester may have only one pending request per owner+section, and additional requests may require at least one approved share between the pair.
 - Visibility defaults to "friends" when a field is not specified.
 - Keep self-ratings and predicted-ratings for future objectivity computation.
-

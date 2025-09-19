@@ -36,9 +36,7 @@ def ensure_authenticated(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return JsonResponse(
-                {"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
+            return JsonResponse({"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         return view_func(request, *args, **kwargs)
 
     return _wrapped_view
@@ -62,19 +60,13 @@ def register_user(request):
     password = request.data.get("password")
 
     if not username or not email or not password:
-        return JsonResponse(
-            {"error": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
 
     # Uniqueness checks (both username and email)
     if User.objects.filter(username=username).exists():
-        return JsonResponse(
-            {"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST)
     if User.objects.filter(email=email).exists():
-        return JsonResponse(
-            {"error": "Email already registered"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": "Email already registered"}, status=status.HTTP_400_BAD_REQUEST)
 
     # Proper hashing via create_user()
     user = User.objects.create_user(username=username, email=email, password=password)
@@ -103,9 +95,7 @@ def login_user(request):
 
     user = authenticate(request, username=username, password=password)
     if not user:
-        return JsonResponse(
-            {"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
     login(request, user)
     return JsonResponse({"message": "Login successful"}, status=status.HTTP_200_OK)
@@ -123,9 +113,7 @@ def get_user_profile(request):
     profile = Profile.objects.filter(user=user).first()
 
     if not profile:
-        return JsonResponse(
-            {"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND
-        )
+        return JsonResponse({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
 
     serializer = ProfileSerializer(profile)
     return Response(serializer.data)
@@ -153,9 +141,7 @@ def update_user_profile(request):
 def delete_user_profile(request):
     user = request.user
     Profile.objects.filter(user=user).delete()
-    return JsonResponse(
-        {"message": "Profile deleted successfully"}, status=status.HTTP_204_NO_CONTENT
-    )
+    return JsonResponse({"message": "Profile deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 
 # -----------------------
@@ -219,25 +205,16 @@ def upload_profile_picture(request):
     # Accept both keys: 'file' (new) and 'profilePicture' (legacy)
     file = request.FILES.get("file") or request.FILES.get("profilePicture")
     if not file:
-        return JsonResponse(
-            {"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
 
     # Type validation using wrapper helper (file extension + content-type)
     if not has_valid_image_type(file.name, getattr(file, "content_type", None)):
-        return JsonResponse(
-            {"error": "Invalid file type"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": "Invalid file type"}, status=status.HTTP_400_BAD_REQUEST)
 
     # Size validation
     if file.size > MAX_PROFILE_IMAGE_SIZE_BYTES:
         return JsonResponse(
-            {
-                "error": (
-                    "File too large. Maximum allowed size is "
-                    f"{MAX_PROFILE_IMAGE_SIZE_MB}MB"
-                )
-            },
+            {"error": ("File too large. Maximum allowed size is " f"{MAX_PROFILE_IMAGE_SIZE_MB}MB")},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -258,9 +235,7 @@ def upload_profile_picture(request):
 
     secure_url = result.get("secure_url")
     if not secure_url:
-        return JsonResponse(
-            {"error": "Upload failed"}, status=status.HTTP_502_BAD_GATEWAY
-        )
+        return JsonResponse({"error": "Upload failed"}, status=status.HTTP_502_BAD_GATEWAY)
 
     # Save to profile
     profile, _ = Profile.objects.get_or_create(user=request.user)
@@ -310,9 +285,7 @@ class ProfileView(View):
         profile = Profile.objects.filter(user=user).first()
 
         if not profile:
-            return JsonResponse(
-                {"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+            return JsonResponse({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = ProfileSerializer(profile)
         return JsonResponse(serializer.data, safe=False)

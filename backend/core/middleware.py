@@ -14,9 +14,7 @@ class RateLimitMiddleware(MiddlewareMixin):
         if self.is_rate_limited(request):
             ip = self.get_client_ip(request)
             logger.warning(f"Rate limit exceeded for IP: {ip}")
-            return JsonResponse(
-                {"error": "Too many requests, please try again later."}, status=429
-            )
+            return JsonResponse({"error": "Too many requests, please try again later."}, status=429)
         return None  # Continue processing if rate limit not reached
 
     @ratelimit(key="ip", rate="100/15m", method="GET", block=True)

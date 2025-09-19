@@ -55,18 +55,14 @@ class ProfileRequestViewSet(viewsets.ModelViewSet):
     def _get_object_owned_by_self(self, pk):
         obj = self.get_object()
         if obj.owner_id != self.request.user.id:
-            self.permission_denied(
-                self.request, message="Only the owner can change this request"
-            )
+            self.permission_denied(self.request, message="Only the owner can change this request")
         return obj
 
     @action(detail=True, methods=["post"], url_path="approve")
     def approve(self, request, pk=None):
         obj = self._get_object_owned_by_self(pk)
         if obj.status != ProfileRequest.STATUS_PENDING:
-            return Response(
-                {"detail": "Request is not pending"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Request is not pending"}, status=status.HTTP_400_BAD_REQUEST)
         obj.status = ProfileRequest.STATUS_APPROVED
         obj.save(update_fields=["status", "updated_at"])
         return Response({"status": obj.status})
@@ -75,9 +71,7 @@ class ProfileRequestViewSet(viewsets.ModelViewSet):
     def deny(self, request, pk=None):
         obj = self._get_object_owned_by_self(pk)
         if obj.status != ProfileRequest.STATUS_PENDING:
-            return Response(
-                {"detail": "Request is not pending"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Request is not pending"}, status=status.HTTP_400_BAD_REQUEST)
         obj.status = ProfileRequest.STATUS_DENIED
         obj.save(update_fields=["status", "updated_at"])
         return Response({"status": obj.status})
@@ -88,9 +82,7 @@ class ProfileRequestViewSet(viewsets.ModelViewSet):
         if obj.requester_id != request.user.id:
             self.permission_denied(request, message="Only the requester can cancel")
         if obj.status != ProfileRequest.STATUS_PENDING:
-            return Response(
-                {"detail": "Request is not pending"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Request is not pending"}, status=status.HTTP_400_BAD_REQUEST)
         obj.status = ProfileRequest.STATUS_CANCELLED
         obj.save(update_fields=["status", "updated_at"])
         return Response({"status": obj.status})

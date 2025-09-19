@@ -62,9 +62,7 @@ def callback(request):
     # Verify state parameter
     session_state = request.session.get("oauth_state")
     if not session_state or state != session_state:
-        return JsonResponse(
-            {"error": "Invalid state parameter"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": "Invalid state parameter"}, status=status.HTTP_400_BAD_REQUEST)
 
     # Remove state from session
     request.session.pop("oauth_state", None)
@@ -72,9 +70,7 @@ def callback(request):
     # Retrieve code_verifier from session
     code_verifier = request.session.get("code_verifier")
     if not code_verifier:
-        return JsonResponse(
-            {"error": "Missing code verifier"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return JsonResponse({"error": "Missing code verifier"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         # Exchange code for access token

@@ -73,9 +73,7 @@ class Profile(models.Model):
     favorite_movies = models.CharField(max_length=200, blank=True, null=True)
     favorite_tv_shows = models.CharField(max_length=200, blank=True, null=True)
     favorite_food = models.CharField(max_length=200, blank=True, null=True)
-    favorite_travel_destinations = models.CharField(
-        max_length=200, blank=True, null=True
-    )
+    favorite_travel_destinations = models.CharField(max_length=200, blank=True, null=True)
     favorite_sport = models.CharField(max_length=100, blank=True, null=True)
     favorite_podcasts = models.CharField(max_length=200, blank=True, null=True)
     favorite_influencers = models.CharField(max_length=200, blank=True, null=True)
