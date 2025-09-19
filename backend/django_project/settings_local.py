@@ -32,22 +32,14 @@ AUTH_USER_MODEL = globals().get("AUTH_USER_MODEL", "core.User")
 DEBUG = True
 
 # CSRF/CORS for SPA dev
-ALLOWED_HOSTS = list(
-    set(list(globals().get("ALLOWED_HOSTS", [])) + ["127.0.0.1", "localhost"])
-)
+ALLOWED_HOSTS = list(set(list(globals().get("ALLOWED_HOSTS", [])) + ["127.0.0.1", "localhost"]))
 
 CSRF_TRUSTED_ORIGINS = list(
-    set(
-        list(globals().get("CSRF_TRUSTED_ORIGINS", []))
-        + ["http://localhost:3000", "http://127.0.0.1:3000"]
-    )
+    set(list(globals().get("CSRF_TRUSTED_ORIGINS", [])) + ["http://localhost:3000", "http://127.0.0.1:3000"])
 )
 
 CORS_ALLOWED_ORIGINS = list(
-    set(
-        list(globals().get("CORS_ALLOWED_ORIGINS", []))
-        + ["http://localhost:3000", "http://127.0.0.1:3000"]
-    )
+    set(list(globals().get("CORS_ALLOWED_ORIGINS", [])) + ["http://localhost:3000", "http://127.0.0.1:3000"])
 )
 
 CORS_ALLOW_CREDENTIALS = True

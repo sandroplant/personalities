@@ -108,9 +108,7 @@ class Command(BaseCommand):
         numeric_fields: List[str] = []
 
         for f in all_fields:
-            if getattr(f, "is_relation", False) and not getattr(
-                f, "many_to_many", False
-            ):
+            if getattr(f, "is_relation", False) and not getattr(f, "many_to_many", False):
                 rel = getattr(f, "related_model", None)
                 if rel is not None and f.concrete:
                     label = f"{rel._meta.app_label}.{rel._meta.model_name}"
@@ -137,15 +135,11 @@ class Command(BaseCommand):
         subject_field = options.get("subject_field") or _pick_fk_field(
             Evaluation, ["subject", "target", "rated_user", "profile", "user"]
         )
-        rater_field = options.get("rater_field") or _pick_fk_field(
-            Evaluation, ["rater", "evaluator", "author", "user"]
-        )
+        rater_field = options.get("rater_field") or _pick_fk_field(Evaluation, ["rater", "evaluator", "author", "user"])
         criterion_field = options.get("criterion_field") or _pick_fk_field(
             Evaluation, ["criterion", "criteria", "trait"]
         )
-        score_field = options.get("score_field") or _pick_numeric_field(
-            Evaluation, ["score", "rating", "value"]
-        )
+        score_field = options.get("score_field") or _pick_numeric_field(Evaluation, ["score", "rating", "value"])
 
         # If still ambiguous for subject/rater, disambiguate using the two user FKs
         if (not subject_field or not rater_field) and len(user_fk_fields) >= 2:
@@ -159,9 +153,7 @@ class Command(BaseCommand):
             if not subject_field:
                 subject_field = sorted(user_fk_fields)[0]
             if not rater_field:
-                rater_field = sorted(
-                    [n for n in user_fk_fields if n != subject_field] or user_fk_fields
-                )[0]
+                rater_field = sorted([n for n in user_fk_fields if n != subject_field] or user_fk_fields)[0]
 
         if not all([subject_field, rater_field, criterion_field, score_field]):
             self.stderr.write(
@@ -177,11 +169,7 @@ class Command(BaseCommand):
             qs = qs.filter(evaluationmeta__status="ACTIVE")
 
         # Consensus avg per (subject, criterion)
-        agg = (
-            qs.values(f"{subject_field}_id", f"{criterion_field}_id")
-            .annotate(avg=Avg(score_field))
-            .order_by()
-        )
+        agg = qs.values(f"{subject_field}_id", f"{criterion_field}_id").annotate(avg=Avg(score_field)).order_by()
         consensus: Dict[Tuple[int, int], float] = {
             (
                 int(row[f"{subject_field}_id"]),
@@ -245,10 +233,6 @@ class Command(BaseCommand):
                     obj.save()
                     updated += 1
         else:
-            logger.warning(
-                "RaterStats model not found; computed aggregates but skipped DB writes."
-            )
+            logger.warning("RaterStats model not found; computed aggregates but skipped DB writes.")
 
-        self.stdout.write(
-            self.style.SUCCESS(f"Updated RaterStats for {updated} users.")
-        )
+        self.stdout.write(self.style.SUCCESS(f"Updated RaterStats for {updated} users."))

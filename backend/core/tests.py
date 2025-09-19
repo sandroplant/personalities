@@ -24,9 +24,7 @@ class ProfileAPITest(TestCase):
 
     def test_update_user_profile(self):
         data = {"display_name": "Updated User", "email": "updated@example.com"}
-        response = self.client.post(
-            reverse("update_user_profile_api"), data, content_type="application/json"
-        )
+        response = self.client.post(reverse("update_user_profile_api"), data, content_type="application/json")
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertEqual(self.user.display_name, "Updated User")

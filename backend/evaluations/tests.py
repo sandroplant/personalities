@@ -14,27 +14,17 @@ from userprofiles.models import Friendship
 class EvaluationTasksViewTests(APITestCase):
     def setUp(self):
         User = get_user_model()
-        self.user = User.objects.create_user(
-            username="rater", email="rater@example.com", password="pw"
-        )
-        self.friend = User.objects.create_user(
-            username="friend", email="friend@example.com", password="pw"
-        )
-        self.stranger = User.objects.create_user(
-            username="stranger", email="stranger@example.com", password="pw"
-        )
+        self.user = User.objects.create_user(username="rater", email="rater@example.com", password="pw")
+        self.friend = User.objects.create_user(username="friend", email="friend@example.com", password="pw")
+        self.stranger = User.objects.create_user(username="stranger", email="stranger@example.com", password="pw")
         self.criterion = Criterion.objects.create(name="Kindness")
 
     def _auth(self):
         self.client.force_authenticate(user=self.user)
 
     def test_only_confirmed_friends_queued(self):
-        Friendship.objects.create(
-            from_user=self.user, to_user=self.friend, is_confirmed=True
-        )
-        Friendship.objects.create(
-            from_user=self.user, to_user=self.stranger, is_confirmed=False
-        )
+        Friendship.objects.create(from_user=self.user, to_user=self.friend, is_confirmed=True)
+        Friendship.objects.create(from_user=self.user, to_user=self.stranger, is_confirmed=False)
         self._auth()
         response = self.client.get(reverse("evaluation-tasks"))
         self.assertEqual(response.status_code, 200)
@@ -44,9 +34,7 @@ class EvaluationTasksViewTests(APITestCase):
         self.assertNotIn(self.stranger.id, subject_ids)
 
     def test_completed_ratings_not_duplicated(self):
-        Friendship.objects.create(
-            from_user=self.user, to_user=self.friend, is_confirmed=True
-        )
+        Friendship.objects.create(from_user=self.user, to_user=self.friend, is_confirmed=True)
         Evaluation.objects.create(
             evaluator=self.user,
             subject=self.friend,
@@ -75,9 +63,7 @@ class EvaluationTasksViewTests(APITestCase):
         self.assertIn((self.friend.id, self.criterion.id), pairs)
 
     def test_repeat_evaluation_allowed_after_cooldown(self):
-        Friendship.objects.create(
-            from_user=self.user, to_user=self.friend, is_confirmed=True
-        )
+        Friendship.objects.create(from_user=self.user, to_user=self.friend, is_confirmed=True)
         self._auth()
 
         url = reverse("evaluation-create") + f"?subject_id={self.friend.id}"

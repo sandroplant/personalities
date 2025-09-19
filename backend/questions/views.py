@@ -73,11 +73,7 @@ class QuestionListCreateView(generics.ListCreateAPIView):
 
         # Duplicate check (case-insensitive)
         if Question.objects.filter(text__iexact=text_norm).exists():
-            raise ValidationError(
-                {
-                    "text": "A similar question already exists. Please rephrase your question."
-                }
-            )
+            raise ValidationError({"text": "A similar question already exists. Please rephrase your question."})
 
         # Normalize/create tag if tag_name provided and tag not already set
         tag_name = self.request.data.get("tag_name") or self.request.data.get("tag")

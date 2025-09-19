@@ -80,15 +80,11 @@ class QuestionSerializer(serializers.ModelSerializer):
         options = attrs.get("options") or []
         if qtype == Question.QuestionType.MULTIPLE_CHOICE:
             if len(options) < 2:
-                raise serializers.ValidationError(
-                    {"options": "Multiple choice questions require 2–4 options."}
-                )
+                raise serializers.ValidationError({"options": "Multiple choice questions require 2–4 options."})
         else:
             if options:
                 raise serializers.ValidationError(
-                    {
-                        "options": "Options are only allowed for multiple choice questions."
-                    }
+                    {"options": "Options are only allowed for multiple choice questions."}
                 )
         return attrs
 
@@ -101,9 +97,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 class AnswerSerializer(serializers.ModelSerializer):
     """Serializer for creating an answer to a question."""
 
-    question_id = serializers.PrimaryKeyRelatedField(
-        queryset=Question.objects.all(), source="question"
-    )
+    question_id = serializers.PrimaryKeyRelatedField(queryset=Question.objects.all(), source="question")
     selected_option_index = serializers.IntegerField(required=False, min_value=0)
     rating = serializers.IntegerField(required=False, min_value=1, max_value=10)
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -127,38 +121,24 @@ class AnswerSerializer(serializers.ModelSerializer):
 
         if qtype == Question.QuestionType.RATING:
             if rating is None:
-                raise serializers.ValidationError(
-                    {"rating": "Rating value required for rating questions."}
-                )
+                raise serializers.ValidationError({"rating": "Rating value required for rating questions."})
             if option_index is not None:
                 raise serializers.ValidationError(
-                    {
-                        "selected_option_index": "Option index not used for rating questions."
-                    }
+                    {"selected_option_index": "Option index not used for rating questions."}
                 )
         else:
             if option_index is None:
-                raise serializers.ValidationError(
-                    {
-                        "selected_option_index": "Option index required for this question."
-                    }
-                )
+                raise serializers.ValidationError({"selected_option_index": "Option index required for this question."})
             if rating is not None:
-                raise serializers.ValidationError(
-                    {"rating": "Rating not allowed for this question."}
-                )
+                raise serializers.ValidationError({"rating": "Rating not allowed for this question."})
             if qtype == Question.QuestionType.YES_NO:
                 if option_index not in (0, 1):
                     raise serializers.ValidationError(
-                        {
-                            "selected_option_index": "Yes/No questions expect option 0 or 1."
-                        }
+                        {"selected_option_index": "Yes/No questions expect option 0 or 1."}
                     )
             elif qtype == Question.QuestionType.MULTIPLE_CHOICE:
                 if option_index >= len(question.options):
-                    raise serializers.ValidationError(
-                        {"selected_option_index": "Invalid option index."}
-                    )
+                    raise serializers.ValidationError({"selected_option_index": "Invalid option index."})
         return attrs
 
     def create(self, validated_data):

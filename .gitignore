@@ -243,3 +243,6 @@ backend/.env*
 !backend/**/migrations/
 !backend/**/migrations/*.py
 !backend/**/migrations/__init__.py
+
+# ignore accidental top-level userprofiles/
+/userprofiles/

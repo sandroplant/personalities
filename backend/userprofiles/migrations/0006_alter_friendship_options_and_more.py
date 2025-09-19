@@ -102,9 +102,7 @@ class Migration(migrations.Migration):
                 ],
                 "constraints": [
                     models.CheckConstraint(
-                        condition=models.Q(
-                            ("owner", models.F("requester")), _negated=True
-                        ),
+                        condition=models.Q(("owner", models.F("requester")), _negated=True),
                         name="info_request_not_self",
                     )
                 ],

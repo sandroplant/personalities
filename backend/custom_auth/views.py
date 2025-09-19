@@ -20,15 +20,9 @@ class AuthView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        action = (
-            self.kwargs.get("action")
-            or kwargs.get("action")
-            or request.data.get("action", "")
-        ).lower()
+        action = (self.kwargs.get("action") or kwargs.get("action") or request.data.get("action", "")).lower()
         if action not in {"register", "login"}:
-            raise ValidationError(
-                {"action": "Action must be either 'register' or 'login'."}
-            )
+            raise ValidationError({"action": "Action must be either 'register' or 'login'."})
 
         username = request.data.get("username")
         password = request.data.get("password")
@@ -98,6 +92,4 @@ def create_post(request):
         post.save()
         return Response({"message": "Post created"}, status=status.HTTP_201_CREATED)
     except Exception as exc:  # pragma: no cover - unexpected errors bubble up
-        return Response(
-            {"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

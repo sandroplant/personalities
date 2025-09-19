@@ -21,4 +21,3 @@ fi
 
 # Run server (Gunicorn in production-style)
 exec gunicorn django_project.wsgi:application --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-3}
-

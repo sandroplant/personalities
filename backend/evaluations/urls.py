@@ -32,8 +32,4 @@ if EvaluationSummaryV2View is not None:
         )
     )
 if EvaluationCreateV2View is not None:
-    urlpatterns.append(
-        path(
-            "create-v2/", EvaluationCreateV2View.as_view(), name="evaluation-create-v2"
-        )
-    )
+    urlpatterns.append(path("create-v2/", EvaluationCreateV2View.as_view(), name="evaluation-create-v2"))

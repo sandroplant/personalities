@@ -33,19 +33,13 @@ class Friendship(models.Model):
     For the first iteration we only persist accepted friendships.
     """
 
-    user_a = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="friendships_a"
-    )
-    user_b = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="friendships_b"
-    )
+    user_a = models.ForeignKey(User, on_delete=models.CASCADE, related_name="friendships_a")
+    user_b = models.ForeignKey(User, on_delete=models.CASCADE, related_name="friendships_b")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=["user_a", "user_b"], name="unique_friendship_ordered"
-            ),
+            models.UniqueConstraint(fields=["user_a", "user_b"], name="unique_friendship_ordered"),
         ]
 
     def save(self, *args, **kwargs):
@@ -83,16 +77,10 @@ class ProfileRequest(models.Model):
         (STATUS_CANCELLED, STATUS_CANCELLED),
     ]
 
-    owner = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="incoming_profile_requests"
-    )
-    requester = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="outgoing_profile_requests"
-    )
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="incoming_profile_requests")
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="outgoing_profile_requests")
     section = models.CharField(max_length=64)
-    status = models.CharField(
-        max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING
-    )
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -9,9 +9,7 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables from the .env file
 # First attempt to load from the backend directory, then fallback to root .env if needed
-load_dotenv(
-    os.path.join(os.path.dirname(__file__), "../../.env")
-)  # Adjust this path if needed
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))  # Adjust this path if needed
 
 # Set the API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -38,9 +36,7 @@ def test_openai():
 
         # Retrieve the AI message content from the response
         ai_message = (
-            response["choices"][0]["message"]["content"].strip()
-            if response["choices"]
-            else "No content returned"
+            response["choices"][0]["message"]["content"].strip() if response["choices"] else "No content returned"
         )
 
         if ai_message:

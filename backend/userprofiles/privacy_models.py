@@ -57,9 +57,7 @@ class InfoRequest(models.Model):
         related_name="info_requests_sent",
     )
     section_key = models.CharField(max_length=100)
-    status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING
-    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
 

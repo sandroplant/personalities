@@ -22,9 +22,7 @@ class EvaluationMeta(models.Model):
         on_delete=models.CASCADE,
         related_name="evaluationmeta",  # so you can use evaluation.evaluationmeta
     )
-    status = models.CharField(
-        max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING
-    )
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

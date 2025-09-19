@@ -25,9 +25,7 @@ urlpatterns = [
     # Evaluations app (includes tasks/create endpoints)
     path("evaluations/", include("evaluations.urls")),
     path("evaluations/tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
-    path(
-        "evaluations/create/", EvaluationCreateView.as_view(), name="evaluation-create"
-    ),
+    path("evaluations/create/", EvaluationCreateView.as_view(), name="evaluation-create"),
     path("auth/", include("custom_auth.urls")),
     path("posts/", include("posts.urls")),
     # API routes (if core also exposes API)

@@ -23,9 +23,7 @@ class UserAuthTests(APITestCase):
 
     def test_user_login(self):
         User = get_user_model()
-        User.objects.create_user(
-            username="loginuser", email="login@example.com", password="pass1234"
-        )
+        User.objects.create_user(username="loginuser", email="login@example.com", password="pass1234")
 
         url = reverse("login_user")
         data = {"username": "loginuser", "password": "pass1234"}
@@ -35,9 +33,7 @@ class UserAuthTests(APITestCase):
 
     def test_login_invalid_credentials(self):
         User = get_user_model()
-        User.objects.create_user(
-            username="loginuser", email="login@example.com", password="pass1234"
-        )
+        User.objects.create_user(username="loginuser", email="login@example.com", password="pass1234")
 
         url = reverse("login_user")
         data = {"username": "loginuser", "password": "wrongpass"}
