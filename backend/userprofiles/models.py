@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 
 class SpotifyProfile(models.Model):
@@ -116,19 +117,16 @@ class Friendship(models.Model):
 
     @classmethod
     def are_friends(cls, u1_id: int, u2_id: int) -> bool:
+        """
+        Return True if users are the same person, or if there is a single confirmed friendship
+        row in either direction (the current data model stores one confirmed row).
+        """
         if u1_id == u2_id:
             return True
-        forward_confirmed = cls.objects.filter(
-            from_user_id=u1_id,
-            to_user_id=u2_id,
-            is_confirmed=True,
+        return cls.objects.filter(
+            Q(from_user_id=u1_id, to_user_id=u2_id, is_confirmed=True)
+            | Q(from_user_id=u2_id, to_user_id=u1_id, is_confirmed=True)
         ).exists()
-        reverse_confirmed = cls.objects.filter(
-            from_user_id=u2_id,
-            to_user_id=u1_id,
-            is_confirmed=True,
-        ).exists()
-        return forward_confirmed and reverse_confirmed
 
 
 # Ensure privacy models are registered with the app
