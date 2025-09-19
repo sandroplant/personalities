@@ -4,11 +4,14 @@ from typing import Dict, Iterable, Tuple
 
 from django.db.models import Avg, Q
 from django.db.models.signals import post_delete, post_save
-from django.dispatch import receiver
+from django.dispatch import Signal, receiver
 
 from .models import Evaluation
 
 Pair = Tuple[int, int]
+
+# Signal emitted when an evaluation is intentionally submitted via the API.
+evaluation_submitted = Signal()
 
 
 def _build_consensus_map(pairs: Iterable[Pair]) -> Dict[Pair, float]:
@@ -78,11 +81,8 @@ def _compute_weights_for_rater(rater_id: int) -> None:
         objectivity_score=objectivity,
         pending=False,
     )
-
-
-@receiver(post_save, sender=Evaluation)
-def update_rater_weights(sender, instance: Evaluation, **kwargs) -> None:
-    """Whenever an evaluation is saved, update weights for affected raters."""
+def _handle_weight_refresh(instance: Evaluation) -> None:
+    """Shared helper to refresh rater weights for a saved evaluation."""
 
     if instance.subject_id is None or instance.criterion_id is None:
         return
@@ -97,6 +97,20 @@ def update_rater_weights(sender, instance: Evaluation, **kwargs) -> None:
         if rater_id is None:
             continue
         _compute_weights_for_rater(int(rater_id))
+
+
+@receiver(post_save, sender=Evaluation)
+def update_rater_weights(sender, instance: Evaluation, created: bool, **kwargs) -> None:
+    """Whenever an evaluation is saved, update weights for affected raters."""
+
+    _handle_weight_refresh(instance)
+
+
+@receiver(evaluation_submitted)
+def update_rater_weights_on_submission(sender, evaluation: Evaluation, **kwargs) -> None:
+    """Refresh rater weights when the manual signal is emitted."""
+
+    _handle_weight_refresh(evaluation)
 
 
 @receiver(post_delete, sender=Evaluation)

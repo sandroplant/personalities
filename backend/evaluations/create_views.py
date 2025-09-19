@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import os
-
 from django.apps import apps
+from django.conf import settings
 from django.db import transaction
 
 from rest_framework.permissions import IsAuthenticated
@@ -117,10 +116,7 @@ class EvaluationCreateV2View(APIView):
         # Participation gating for SUBJECT (rated user): count their outbound ratings
         outbound_count = Evaluation.objects.filter(**{f"{rater_field}_id": subject_id}).count()
 
-        try:
-            min_outbound = int(os.environ.get("DJANGO_EVAL_MIN_OUTBOUND", "10"))
-        except ValueError:
-            min_outbound = 10
+        min_outbound = int(getattr(settings, "EVALUATIONS_MIN_OUTBOUND", 10))
 
         status_value = EvaluationMeta.STATUS_ACTIVE if outbound_count >= min_outbound else EvaluationMeta.STATUS_PENDING
         EvaluationMeta.objects.create(evaluation=ev, status=status_value)
