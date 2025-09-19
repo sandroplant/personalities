@@ -6,7 +6,6 @@ from rest_framework import serializers
 
 from .models import Profile
 
-
 PROFILE_FIELD_NAMES = [
     "bio",
     "profile_picture",
@@ -97,9 +96,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         normalized: dict[str, str | None] = {}
         invalid_fields = sorted(set(value.keys()) - allowed_fields)
         if invalid_fields:
-            raise serializers.ValidationError(
-                {"fields": [f"Unknown visibility field(s): {', '.join(invalid_fields)}"]}
-            )
+            raise serializers.ValidationError({"fields": [f"Unknown visibility field(s): {', '.join(invalid_fields)}"]})
 
         for key, raw_level in value.items():
             if raw_level is None:
@@ -107,9 +104,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 continue
             level = str(raw_level).lower()
             if level not in {"public", "friends", "private"}:
-                raise serializers.ValidationError(
-                    {key: "Visibility level must be one of: public, friends, private."}
-                )
+                raise serializers.ValidationError({key: "Visibility level must be one of: public, friends, private."})
             normalized[key] = level
 
         return normalized
@@ -119,7 +114,5 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         incoming_keys = set(getattr(self, "initial_data", {}).keys())
         unknown = sorted(incoming_keys - allowed - {"visibility"})
         if unknown:
-            raise serializers.ValidationError(
-                {field: ["This field is not recognized."] for field in unknown}
-            )
+            raise serializers.ValidationError({field: ["This field is not recognized."] for field in unknown})
         return super().validate(attrs)

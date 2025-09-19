@@ -1,5 +1,6 @@
-import pytest
 from django.contrib.auth import get_user_model
+
+import pytest
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 
 from userprofiles.models import Profile
