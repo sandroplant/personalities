@@ -6,9 +6,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .privacy import build_privacy_filtered_profile
 from .privacy_models import InfoRequest, ProfileVisibility
 from .privacy_serializers import InfoRequestSerializer, ProfileVisibilitySerializer
-from .serializers import ProfileSerializer  # type: ignore
+from .serializers import PROFILE_FIELD_NAMES, ProfileSerializer  # type: ignore
 
 
 def get_or_create_visibility(profile):
@@ -162,43 +163,43 @@ class VisibleProfileView(APIView):
         if profile is None:
             return Response({"detail": "Profile not found"}, status=404)
 
-        # Serialize using existing serializer
-        data = ProfileSerializer(profile).data  # type: ignore
+        serializer = ProfileSerializer(profile)  # type: ignore
+        raw_data = dict(serializer.data)
 
-        # Apply visibility filtering
         try:
             vis = ProfileVisibility.objects.get(profile=profile)
+            visibility_map = vis.data if isinstance(vis.data, dict) else {}
         except ProfileVisibility.DoesNotExist:
-            vis = None
+            visibility_map = {}
 
-        if not vis or not isinstance(vis.data, dict):
-            return Response(data)
+        sanitized_visibility = {}
+        allowed_visibility_fields = set(PROFILE_FIELD_NAMES)
+        for key, level in visibility_map.items():
+            if key not in allowed_visibility_fields:
+                continue
+            sanitized_visibility[key] = (level or "").lower()
+
+        # Always expose the nested user block.
+        sanitized_visibility.setdefault("user", "public")
+
+        filtered = build_privacy_filtered_profile(
+            raw_profile_data=raw_data,
+            visibility_map=sanitized_visibility,
+            viewer=request.user,
+            owner_id=target_user.id,
+        )
 
         viewer = request.user
-
-        def has_approval(section_key: str) -> bool:
-            return InfoRequest.objects.filter(
-                owner=target_user,
-                requester=viewer,
-                section_key=section_key,
-                status=InfoRequest.STATUS_APPROVED,
-            ).exists()
-
-        # TODO: integrate friendship when a friendship model exists.
-        is_owner = viewer == target_user
-        filtered = dict(data)
-
-        for key, level in vis.data.items():
-            if key not in filtered:
-                continue
-            level = (level or "").lower()
-            if level == "public":
-                continue
-            if is_owner:
-                continue
-            if has_approval(key):
-                continue
-            # Hide for friends/private by default (until friendship model added)
-            filtered.pop(key, None)
+        if viewer != target_user:
+            approved_sections = set(
+                InfoRequest.objects.filter(
+                    owner=target_user,
+                    requester=viewer,
+                    status=InfoRequest.STATUS_APPROVED,
+                ).values_list("section_key", flat=True)
+            )
+            for key in approved_sections:
+                if key in raw_data:
+                    filtered[key] = raw_data[key]
 
         return Response(filtered)
