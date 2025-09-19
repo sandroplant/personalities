@@ -28,7 +28,8 @@ from userprofiles.services.cloudinary_utils import (
 )
 
 from .models import Profile, SpotifyProfile
-from .serializers import ProfileSerializer
+from .privacy_models import ProfileVisibility
+from .serializers import ProfileSerializer, ProfileUpdateSerializer
 
 
 # Middleware for user authentication
@@ -119,21 +120,46 @@ def get_user_profile(request):
     return Response(serializer.data)
 
 
+def _update_visibility_settings(profile: Profile, visibility_payload: dict[str, str | None] | None) -> None:
+    if visibility_payload is None:
+        return
+
+    vis_obj, _ = ProfileVisibility.objects.get_or_create(profile=profile)
+    current = dict(vis_obj.data or {})
+
+    changed = False
+    for key, level in visibility_payload.items():
+        if level is None:
+            if key in current:
+                current.pop(key, None)
+                changed = True
+            continue
+        if current.get(key) == level:
+            continue
+        current[key] = level
+        changed = True
+
+    if changed or not vis_obj.data:
+        vis_obj.data = current
+        vis_obj.save()
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def update_user_profile(request):
     user = request.user
-    profile_data = request.data
-
     profile, _ = Profile.objects.get_or_create(user=user)
 
-    # Update profile fields
-    for field, value in profile_data.items():
-        if hasattr(profile, field):
-            setattr(profile, field, value)
+    serializer = ProfileUpdateSerializer(instance=profile, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
 
-    profile.save()
-    return JsonResponse({"message": "Profile updated successfully"})
+    visibility_payload = serializer.validated_data.pop("visibility", None)
+    serializer.save()
+
+    _update_visibility_settings(profile, visibility_payload)
+
+    response_serializer = ProfileSerializer(profile)
+    return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["DELETE"])
@@ -300,9 +326,12 @@ class ProfileView(View):
 
         profile, _ = Profile.objects.get_or_create(user=user)
 
-        for field, value in data.items():
-            if hasattr(profile, field):
-                setattr(profile, field, value)
+        serializer = ProfileUpdateSerializer(instance=profile, data=data, partial=True)
+        if not serializer.is_valid():
+            return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        profile.save()
-        return JsonResponse({"message": "Profile updated successfully"})
+        visibility_payload = serializer.validated_data.pop("visibility", None)
+        serializer.save()
+        _update_visibility_settings(profile, visibility_payload)
+
+        return JsonResponse(ProfileSerializer(profile).data)

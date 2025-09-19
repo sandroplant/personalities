@@ -5,7 +5,7 @@ from typing import Any, Dict, Iterable
 
 from django.contrib.auth import get_user_model
 
-from .models_privacy import Friendship
+from .models import Friendship
 
 User = get_user_model()
 

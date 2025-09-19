@@ -114,6 +114,20 @@ class Friendship(models.Model):
     def __str__(self) -> str:
         return f"{self.from_user_id} -> {self.to_user_id}"
 
+    @classmethod
+    def are_friends(cls, u1_id: int, u2_id: int) -> bool:
+        if u1_id == u2_id:
+            return True
+        return cls.objects.filter(
+            from_user_id=u1_id,
+            to_user_id=u2_id,
+            is_confirmed=True,
+        ).exists() or cls.objects.filter(
+            from_user_id=u2_id,
+            to_user_id=u1_id,
+            is_confirmed=True,
+        ).exists()
+
 
 # Ensure privacy models are registered with the app
 try:
