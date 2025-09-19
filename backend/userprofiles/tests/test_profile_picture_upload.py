@@ -1,4 +1,6 @@
 import os
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_project.settings_test")
+
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -35,7 +37,7 @@ class UploadProfilePictureTests(TestCase):
             content_type="image/jpeg",
         )
 
-        # Accept both keys: 'file' (preferred) or 'profilePicture' (legacy)
+        # accept legacy "profilePicture" or new "file"
         response = self.client.post(self.url, {"profilePicture": image}, format="multipart")
 
         self.assertEqual(response.status_code, 200)

@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from userprofiles.views import upload_profile_picture
 
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -27,6 +28,7 @@ urlpatterns = [
     path("posts/", include("posts.urls")),
     # API routes (if core also exposes API)
     path("api/", include("core.urls")),
+    path("api/profile/picture/", upload_profile_picture, name="upload_profile_picture"),
     # Schema and Documentation URLs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
