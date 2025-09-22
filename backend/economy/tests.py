@@ -126,7 +126,10 @@ class EconomyApiIntegrationTests(APITestCase):
         )
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         q_id = resp.data["id"]
-        tx = CoinTransaction.objects.get(event_type=CoinTransaction.EventType.QUESTION_CREATED, reference_id=str(q_id))
+        tx = CoinTransaction.objects.get(
+            event_type=CoinTransaction.EventType.QUESTION_CREATED,
+            reference_id=str(q_id),
+        )
         self.assertEqual(tx.user, self.asker)
 
     def test_answer_submission_emits_transaction(self):

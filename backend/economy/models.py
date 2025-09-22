@@ -56,11 +56,17 @@ class CoinTransaction(models.Model):
     class Meta:
         ordering = ["-created_at"]
         constraints = [
+            # DB-level idempotency when a reference_id is present
             models.UniqueConstraint(
                 fields=["event_type", "reference_id"],
                 condition=Q(reference_id__isnull=False),
                 name="unique_economy_event_reference",
             )
+        ]
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["event_type"]),
         ]
 
     def __str__(self) -> str:  # pragma: no cover - repr helper
