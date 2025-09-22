@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.apps import apps
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -60,6 +61,39 @@ def _get_model(app_label: str, model_name: str):
         return None
 
 
+def _coerce_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+    return bool(value)
+
+
+def _coerce_float(value):
+    if value in (None, ""):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalize_prompts(raw_prompts):
+    if not raw_prompts:
+        return []
+    if isinstance(raw_prompts, str):
+        raw_prompts = [raw_prompts]
+    prompts = []
+    for prompt in raw_prompts:
+        if isinstance(prompt, str):
+            trimmed = prompt.strip()
+            if trimmed:
+                prompts.append(trimmed)
+    return prompts
+
+
 class EvaluationCreateV2View(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -69,6 +103,8 @@ class EvaluationCreateV2View(APIView):
         Criterion = _get_model("evaluations", "Criterion") or _get_model(
             "evaluations", "EvaluationCriterion"
         )  # type: ignore
+        ClarificationThread = _get_model("evaluations", "ClarificationThread")
+        ClarificationMessage = _get_model("evaluations", "ClarificationMessage")
         if Evaluation is None or Criterion is None:
             return Response({"detail": "Evaluation models not available"}, status=500)
 
@@ -82,6 +118,12 @@ class EvaluationCreateV2View(APIView):
         criterion_id = request.data.get("criterion_id")
         score_val = request.data.get("score")
         familiarity_val = request.data.get("familiarity")  # optional
+        comment_val = request.data.get("comment", "")
+        comment_anonymous_val = request.data.get("comment_is_anonymous")
+        self_awareness_val = request.data.get("self_awareness_flag")
+        expected_peer_val = request.data.get("expected_peer_score")
+        divergence_comment_val = request.data.get("divergence_comment", "")
+        clarification_prompts = _normalize_prompts(request.data.get("clarification_prompts"))
         if not criterion_id or score_val is None:
             return Response({"detail": "criterion_id and score are required"}, status=400)
 
@@ -110,6 +152,18 @@ class EvaluationCreateV2View(APIView):
         }
         if familiarity_field and familiarity_val is not None:
             payload[familiarity_field] = familiarity_val
+        if hasattr(Evaluation, "comment") and comment_val:
+            payload["comment"] = comment_val
+        if hasattr(Evaluation, "comment_is_anonymous"):
+            payload["comment_is_anonymous"] = _coerce_bool(comment_anonymous_val, default=True)
+        if hasattr(Evaluation, "self_awareness_flag"):
+            payload["self_awareness_flag"] = _coerce_bool(self_awareness_val, default=False)
+        if hasattr(Evaluation, "expected_peer_score"):
+            expected_peer = _coerce_float(expected_peer_val)
+            if expected_peer is not None:
+                payload["expected_peer_score"] = expected_peer
+        if hasattr(Evaluation, "divergence_comment") and divergence_comment_val:
+            payload["divergence_comment"] = divergence_comment_val
 
         ev = Evaluation.objects.create(**payload)
 
@@ -120,5 +174,33 @@ class EvaluationCreateV2View(APIView):
 
         status_value = EvaluationMeta.STATUS_ACTIVE if outbound_count >= min_outbound else EvaluationMeta.STATUS_PENDING
         EvaluationMeta.objects.create(evaluation=ev, status=status_value)
+
+        if clarification_prompts and ClarificationThread and ClarificationMessage:
+            thread, created_thread = ClarificationThread.objects.get_or_create(
+                evaluation=ev,
+                defaults={
+                    "subject_id": getattr(ev, f"{subject_field}_id"),
+                    "evaluator_id": getattr(ev, f"{rater_field}_id"),
+                    "pending_response": False,
+                },
+            )
+            if not created_thread:
+                thread.subject_id = getattr(ev, f"{subject_field}_id")
+                thread.evaluator_id = getattr(ev, f"{rater_field}_id")
+                thread.is_closed = False
+                thread.save()
+            ClarificationMessage.objects.bulk_create(
+                [
+                    ClarificationMessage(
+                        thread=thread,
+                        sender_role=getattr(ClarificationMessage, "ROLE_SYSTEM", "system"),
+                        body=prompt,
+                        is_anonymous=True,
+                    )
+                    for prompt in clarification_prompts
+                ]
+            )
+            thread.updated_at = timezone.now()
+            thread.save(update_fields=["updated_at"])
 
         return Response({"id": ev.pk, "status": status_value}, status=201)

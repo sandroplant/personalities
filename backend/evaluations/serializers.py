@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from .models import Criterion, Evaluation
+from .models import ClarificationMessage, ClarificationThread, Criterion, Evaluation
 
 
 class CriterionSerializer(serializers.ModelSerializer):
@@ -41,6 +41,11 @@ class EvaluationSerializer(serializers.ModelSerializer):
             "subject_id",
             "score",
             "familiarity",
+            "comment",
+            "comment_is_anonymous",
+            "self_awareness_flag",
+            "expected_peer_score",
+            "divergence_comment",
             "normalized_score",
             "pending",
             "rater_mean",
@@ -64,3 +69,27 @@ class EvaluationSerializer(serializers.ModelSerializer):
             "objectivity_score",
             "created_at",
         )
+
+
+class ClarificationMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClarificationMessage
+        fields = ("id", "sender_role", "body", "is_anonymous", "created_at")
+        read_only_fields = ("id", "sender_role", "created_at")
+
+
+class ClarificationThreadSerializer(serializers.ModelSerializer):
+    messages = ClarificationMessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ClarificationThread
+        fields = (
+            "id",
+            "evaluation_id",
+            "pending_response",
+            "is_closed",
+            "created_at",
+            "updated_at",
+            "messages",
+        )
+        read_only_fields = fields

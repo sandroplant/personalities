@@ -1,7 +1,14 @@
 from django.urls import path
 
 # Primary endpoints that the tests reverse()
-from .views import EvaluationCreateView, EvaluationTasksView
+from .views import (
+    ClarificationInboxView,
+    ClarificationRequestView,
+    ClarificationRespondView,
+    ClarificationThreadDetailView,
+    EvaluationCreateView,
+    EvaluationTasksView,
+)
 
 # Optional v2 endpoints (import if present)
 try:
@@ -20,6 +27,18 @@ app_name = "evaluations"
 urlpatterns = [
     path("tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
     path("create/", EvaluationCreateView.as_view(), name="evaluation-create"),
+    path("clarifications/inbox/", ClarificationInboxView.as_view(), name="clarification-inbox"),
+    path("clarifications/request/", ClarificationRequestView.as_view(), name="clarification-request"),
+    path(
+        "clarifications/<int:thread_id>/respond/",
+        ClarificationRespondView.as_view(),
+        name="clarification-respond",
+    ),
+    path(
+        "clarifications/<int:thread_id>/",
+        ClarificationThreadDetailView.as_view(),
+        name="clarification-thread-detail",
+    ),
 ]
 
 # Keep v2 routes if their modules exist
