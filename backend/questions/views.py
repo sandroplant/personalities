@@ -12,7 +12,10 @@ from rest_framework import filters, generics, permissions
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import ValidationError
 
-from .models import Question, Tag
+from economy.models import CoinTransaction
+from economy.services import record_transaction
+
+from .models import Answer, Question, Tag
 from .serializers import AnswerSerializer, QuestionSerializer, TagSerializer
 
 
@@ -83,13 +86,49 @@ class QuestionListCreateView(generics.ListCreateAPIView):
                 tag_obj, _ = Tag.objects.get_or_create(name=normalized)
                 serializer.validated_data["tag"] = tag_obj
 
-        serializer.save()
+        question = serializer.save()
+        self._reward_question_creation(question)
 
     def get_serializer_context(self):
         # Ensure serializer has request for author attachment in create()
         ctx = super().get_serializer_context()
         ctx["request"] = self.request
         return ctx
+
+    def _reward_question_creation(self, question: Question) -> None:
+        """Award coins to the author based on the quality of the prompt."""
+
+        text_length = len((question.text or "").strip())
+        option_count = len(question.options or [])
+
+        amount = 2
+        reason = "Question created"
+
+        if text_length < 20:
+            amount = -1
+            reason = "Question too short"
+        elif text_length > 120:
+            amount = 4
+            reason = "Detailed question bonus"
+        elif text_length > 60:
+            amount = 3
+            reason = "Well developed question"
+
+        if option_count:
+            amount += 1
+
+        record_transaction(
+            user=question.author,
+            amount=amount,
+            event_type=CoinTransaction.EventType.QUESTION_CREATED,
+            reason=reason,
+            reference_id=str(question.id),
+            metadata={
+                "text_length": text_length,
+                "option_count": option_count,
+                "question_type": question.question_type,
+            },
+        )
 
 
 class AnswerCreateView(generics.CreateAPIView):
@@ -98,3 +137,36 @@ class AnswerCreateView(generics.CreateAPIView):
     serializer_class = AnswerSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        answer = serializer.save()
+        self._reward_answer_submission(answer)
+
+    def _reward_answer_submission(self, answer: Answer) -> None:
+        question = answer.question
+        amount = 3
+        reason = "Answer submitted"
+
+        if question.question_type == Question.QuestionType.RATING and answer.rating is not None:
+            if answer.rating >= 8:
+                amount = 5
+                reason = "High quality rating answer"
+            elif answer.rating <= 3:
+                amount = -2
+                reason = "Low rating penalty"
+            else:
+                amount = 3
+                reason = "Rating answer"
+
+        record_transaction(
+            user=answer.user,
+            amount=amount,
+            event_type=CoinTransaction.EventType.ANSWER_SUBMITTED,
+            reason=reason,
+            reference_id=str(answer.id),
+            metadata={
+                "question_id": answer.question_id,
+                "question_type": question.question_type,
+                "rating": answer.rating,
+            },
+        )

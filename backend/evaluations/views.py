@@ -15,6 +15,9 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from economy.models import CoinTransaction
+from economy.services import record_transaction
+
 from userprofiles.models import Friendship
 
 from .meta_models import EvaluationMeta
@@ -231,7 +234,61 @@ class EvaluationCreateView(APIView):
                 status=EvaluationMeta.STATUS_PENDING,
             ).update(status=EvaluationMeta.STATUS_ACTIVE)
 
+        self._apply_economy_rewards(evaluation)
+
         return Response({"id": evaluation.id}, status=status.HTTP_201_CREATED)
+
+    def _apply_economy_rewards(self, evaluation: Evaluation) -> None:
+        score = float(evaluation.score)
+
+        if score >= 4:
+            subject_amount = 10
+            subject_reason = "Positive evaluation received"
+        elif score <= 2:
+            subject_amount = -6
+            subject_reason = "Negative evaluation received"
+        else:
+            subject_amount = 4
+            subject_reason = "Evaluation received"
+
+        record_transaction(
+            user=evaluation.subject,
+            amount=subject_amount,
+            event_type=CoinTransaction.EventType.EVALUATION_RECEIVED,
+            reason=subject_reason,
+            reference_id=f"evaluation:{evaluation.id}",
+            metadata={
+                "evaluator_id": evaluation.evaluator_id,
+                "criterion_id": evaluation.criterion_id,
+                "score": evaluation.score,
+            },
+        )
+
+        evaluator_amount = 2
+        evaluator_reason = "Evaluation submitted"
+        familiarity = evaluation.familiarity
+        if familiarity is not None:
+            try:
+                familiarity = int(familiarity)
+            except (TypeError, ValueError):  # pragma: no cover - defensive
+                familiarity = None
+        if familiarity is not None and familiarity >= 4:
+            evaluator_amount = 3
+            evaluator_reason = "High familiarity evaluation submitted"
+
+        record_transaction(
+            user=evaluation.evaluator,
+            amount=evaluator_amount,
+            event_type=CoinTransaction.EventType.EVALUATION_GIVEN,
+            reason=evaluator_reason,
+            reference_id=f"evaluation-given:{evaluation.id}",
+            metadata={
+                "subject_id": evaluation.subject_id,
+                "criterion_id": evaluation.criterion_id,
+                "score": evaluation.score,
+                "familiarity": evaluation.familiarity,
+            },
+        )
 
 
 class EvaluationSummaryView(APIView):
