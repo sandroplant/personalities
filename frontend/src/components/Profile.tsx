@@ -345,7 +345,9 @@ const Profile: React.FC = () => {
           <ListGroup variant="flush">
             {Object.entries(personality_values).map(([trait, value]) => (
               <ListGroup.Item key={trait}>
-                <strong>{`${trait}: ${value}`}</strong>
+                <>
+                  <strong>{trait}:</strong> {value}
+                </>
               </ListGroup.Item>
             ))}
           </ListGroup>
