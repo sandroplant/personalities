@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 import bleach
 import requests
 from django_ratelimit.decorators import ratelimit
+from posts.models import Post
 from rest_framework import generics, status, viewsets
 from rest_framework.authentication import BaseAuthentication, SessionAuthentication
 from rest_framework.decorators import api_view, permission_classes
@@ -22,7 +23,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Message, Post, Profile, User
+from messaging.models import Message
+from userprofiles.models import Profile
+
+from .models import User
 from .serializers import (
     LoginSerializer,
     MessageSerializer,
@@ -89,14 +93,14 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 
 
 def _get_or_create_profile(user: User) -> Profile:
-    """Ensure a core.Profile exists for the given user (no non-existent fields)."""
-    profile, _ = Profile.objects.get_or_create(
-        user=user,
-        defaults={
-            "full_name": user.username,
-            "bio": "",
-        },
-    )
+    """Ensure a canonical Profile exists for the given user."""
+    defaults = {
+        "full_name": user.get_full_name() or user.display_name or user.username,
+    }
+    profile, created = Profile.objects.get_or_create(user=user, defaults=defaults)
+    if not created and not profile.full_name:
+        profile.full_name = defaults["full_name"]
+        profile.save(update_fields=["full_name"])
     return profile
 
 

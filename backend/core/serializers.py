@@ -2,9 +2,11 @@
 
 from django.contrib.auth import authenticate, get_user_model
 
+from posts.models import Post
 from rest_framework import serializers
 
-from .models import Message, Post, Profile
+from messaging.models import Message
+from userprofiles.models import Profile
 
 User = get_user_model()
 
@@ -32,7 +34,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         Profile.objects.create(
             user=user,
             full_name=name,
-            # Add other default fields if necessary
         )
         return user
 

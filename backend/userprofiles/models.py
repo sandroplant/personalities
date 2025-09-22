@@ -27,9 +27,12 @@ class Profile(models.Model):
         on_delete=models.CASCADE,
         related_name="userprofile_profile",
     )
-    # Basic info
+    # Summary information
+    full_name = models.CharField(max_length=100, blank=True)
     bio = models.TextField(blank=True)
     profile_picture = models.URLField(blank=True, null=True)
+
+    # Basic info
     age_group = models.CharField(max_length=50, blank=True, null=True)
     gender_identity = models.CharField(max_length=50, blank=True, null=True)
     pronouns = models.CharField(max_length=50, blank=True, null=True)
@@ -49,6 +52,7 @@ class Profile(models.Model):
     body_type = models.CharField(max_length=50, blank=True, null=True)
     skin_tone = models.CharField(max_length=50, blank=True, null=True)
     tattoos_piercings = models.CharField(max_length=100, blank=True, null=True)
+    appearance = models.JSONField(default=dict, blank=True)
 
     # Background
     education_level = models.CharField(max_length=100, blank=True, null=True)
@@ -66,6 +70,7 @@ class Profile(models.Model):
 
     # Hobbies & interests
     hobbies = models.TextField(blank=True, null=True)
+    interests = models.TextField(blank=True, null=True)
 
     # Favorites
     favorite_songs = models.CharField(max_length=200, blank=True, null=True)
@@ -81,6 +86,8 @@ class Profile(models.Model):
 
     # Personality & values
     personality_values = models.JSONField(blank=True, null=True)
+    criteria = models.JSONField(default=dict, blank=True)
+    spotify_info = models.JSONField(default=dict, blank=True)
 
     # Fun & miscellaneous
     fun_fact = models.CharField(max_length=255, blank=True, null=True)
@@ -88,9 +95,11 @@ class Profile(models.Model):
     achievements = models.CharField(max_length=255, blank=True, null=True)
     personal_quote = models.CharField(max_length=255, blank=True, null=True)
     social_links = models.TextField(blank=True, null=True)
+    privacy_settings = models.JSONField(default=dict, blank=True)
 
     def __str__(self) -> str:
-        return f"{self.user.username}'s Profile"
+        name = self.full_name or self.user.get_full_name() or self.user.username
+        return f"{name}'s Profile"
 
 
 class Friendship(models.Model):

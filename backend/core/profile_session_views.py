@@ -7,7 +7,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .models import Profile
+from userprofiles.models import Profile
+
 from .serializers import ProfileSerializer
 
 User = get_user_model()
@@ -31,7 +32,11 @@ def _get_session_user(request):
 
 def _ensure_session_profile(user):
     """Fetch or create the profile for the given user."""
-    profile, _ = Profile.objects.get_or_create(user=user)
+    defaults = {"full_name": user.get_full_name() or user.display_name or user.username}
+    profile, created = Profile.objects.get_or_create(user=user, defaults=defaults)
+    if not created and not profile.full_name:
+        profile.full_name = defaults["full_name"]
+        profile.save(update_fields=["full_name"])
     return profile
 
 

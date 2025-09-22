@@ -61,7 +61,7 @@ class MessagingView(View):
         try:
             messages = Message.objects.filter(
                 (Q(sender=userId1) & Q(recipient=userId2)) | (Q(sender=userId2) & Q(recipient=userId1))
-            ).order_by("timestamp")
+            ).order_by("created_at")
 
             # Serialize the messages (you might want to create a serializer for this)
             messages_data = [message.serialize() for message in messages]  # Assuming you have a serialize method
