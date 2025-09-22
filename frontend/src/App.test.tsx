@@ -11,10 +11,10 @@ jest.mock('./components/FriendEvaluation', () => () => <div />);
 jest.mock('./components/FriendsEvaluations', () => () => <div />);
 jest.mock('./components/QuestionsFeed', () => () => <div />);
 
-const App = require('./App').default;
+import App from './App';
 
-test('renders navigation brand', () => {
+test('renders navbar with Login link', () => {
   render(<App />);
-  const brand = screen.getByText('Personalities');
-  expect(brand).toBeInTheDocument();
+  const linkElement = screen.getByRole('link', { name: /login/i });
+  expect(linkElement).toBeInTheDocument();
 });
