@@ -25,12 +25,17 @@ class QuestionSerializer(serializers.ModelSerializer):
     )
     question_type = serializers.ChoiceField(choices=Question.QuestionType.choices)
     options = serializers.JSONField(required=False)
+    targeting_criteria = serializers.JSONField(required=False)
 
     # These are provided by queryset annotations in the list view.
     yes_count = serializers.IntegerField(read_only=True)
     no_count = serializers.IntegerField(read_only=True)
     average_rating = serializers.FloatField(read_only=True)
     rating_count = serializers.IntegerField(read_only=True)
+    coins_spent = serializers.IntegerField(read_only=True)
+    price_spent = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    used_free_allowance = serializers.BooleanField(read_only=True)
+    eligible_responder_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Question
@@ -43,6 +48,12 @@ class QuestionSerializer(serializers.ModelSerializer):
             "options",
             "is_anonymous",
             "created_at",
+            "quota_date",
+            "used_free_allowance",
+            "coins_spent",
+            "price_spent",
+            "targeting_criteria",
+            "eligible_responder_count",
             "yes_count",
             "no_count",
             "average_rating",
@@ -51,6 +62,11 @@ class QuestionSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "created_at",
+            "quota_date",
+            "used_free_allowance",
+            "coins_spent",
+            "price_spent",
+            "eligible_responder_count",
             "yes_count",
             "no_count",
             "average_rating",
@@ -88,10 +104,41 @@ class QuestionSerializer(serializers.ModelSerializer):
                 )
         return attrs
 
+    def validate_targeting_criteria(self, value):
+        if value in (None, ""):
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Targeting criteria must be a JSON object.")
+        cleaned = {}
+        for key, val in value.items():
+            if isinstance(val, (list, tuple)):
+                cleaned[key] = [str(item) for item in val if str(item).strip()]
+            elif val is not None and str(val).strip():
+                cleaned[key] = str(val).strip()
+        return cleaned
+
     def create(self, validated_data):
         # Attach the author from context
         author = self.context["request"].user
         return Question.objects.create(author=author, **validated_data)
+
+
+class QuestionReportSerializer(serializers.ModelSerializer):
+    price_spent = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = Question
+        fields = [
+            "id",
+            "text",
+            "created_at",
+            "coins_spent",
+            "price_spent",
+            "used_free_allowance",
+            "targeting_criteria",
+            "eligible_responder_count",
+        ]
+        read_only_fields = fields
 
 
 class AnswerSerializer(serializers.ModelSerializer):

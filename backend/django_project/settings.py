@@ -159,3 +159,11 @@ CLOUDINARY_API_SECRET = env("CLOUDINARY_API_SECRET", default="")
 # Redis configuration
 REDIS_HOST = env("REDIS_HOST", default="redis")
 REDIS_PORT = env("REDIS_PORT", default="6379")
+
+# Questions / polling configuration
+QUESTIONS_DAILY_FREE_LIMIT = env.int("QUESTIONS_DAILY_FREE_LIMIT", default=3)
+QUESTIONS_PAID_COIN_COST = env.int("QUESTIONS_PAID_COIN_COST", default=10)
+QUESTIONS_TARGETED_COIN_COST = env.int(
+    "QUESTIONS_TARGETED_COIN_COST", default=QUESTIONS_PAID_COIN_COST
+)
+QUESTIONS_COIN_PRICE = env("QUESTIONS_COIN_PRICE", default="0.10")

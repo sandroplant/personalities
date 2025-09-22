@@ -8,6 +8,7 @@ class User(AbstractUser):
     # Fields expected by tests:
     spotify_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
     display_name = models.CharField(max_length=100, blank=True)
+    coin_balance = models.PositiveIntegerField(default=0)
 
     class Meta:
         app_label = "core"

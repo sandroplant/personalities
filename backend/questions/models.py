@@ -6,8 +6,11 @@ list.  Answers record which option a user selected and whether the
 response is anonymous.
 """
 
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Tag(models.Model):
@@ -56,6 +59,12 @@ class Question(models.Model):
     options = models.JSONField(default=list, blank=True)
     is_anonymous = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    quota_date = models.DateField(default=timezone.now)
+    used_free_allowance = models.BooleanField(default=False)
+    coins_spent = models.PositiveIntegerField(default=0)
+    price_spent = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    targeting_criteria = models.JSONField(default=dict, blank=True)
+    eligible_responder_count = models.PositiveIntegerField(default=0)
 
     def __str__(self) -> str:
         return self.text
