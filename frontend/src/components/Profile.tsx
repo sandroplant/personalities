@@ -1,15 +1,24 @@
-// frontend/src/components/Profile.tsx
 import { Link } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
-import { Container, Card, ListGroup, Spinner, Alert } from 'react-bootstrap';
+import {
+  Container,
+  Card,
+  ListGroup,
+  Spinner,
+  Alert,
+} from 'react-bootstrap';
 import api from '../services/api';
-import EvaluationSummary from './EvaluationSummary'; // <-- import the new component
+import EvaluationSummary from './EvaluationSummary';  // <-- import the new component
 
 /**
  * Profile component
  *
  * This component fetches the current user's profile from the backend and
- * displays a summary of all available profile information.
+ * displays a summary of all available profile information. The data is
+ * grouped into logical sections such as basic info, appearance, lifestyle,
+ * favourites, personality values and miscellaneous details. During
+ * loading, a spinner is shown, and any errors encountered while
+ * retrieving the profile are displayed as an alert.
  */
 const Profile: React.FC = () => {
   const [profile, setProfile] = useState<any | null>(null);
@@ -21,7 +30,7 @@ const Profile: React.FC = () => {
       try {
         const response = await api.get('/userprofiles/profile/');
         setProfile(response.data);
-      } catch {
+      } catch (err) {
         setError('Failed to fetch profile');
       } finally {
         setLoading(false);
@@ -31,14 +40,11 @@ const Profile: React.FC = () => {
     fetchProfile();
   }, []);
 
-  // Helper to safely join arrays or split comma-separated strings
+  // Helper to safely join arrays or split comma‑separated strings
   const toList = (value: any): string[] => {
     if (!value) return [];
     if (Array.isArray(value)) return value;
-    return String(value)
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
+    return String(value).split(',').map((item) => item.trim()).filter(Boolean);
   };
 
   if (loading) {
@@ -84,8 +90,8 @@ const Profile: React.FC = () => {
     hair_style,
     skin_tone,
     tattoos_piercings,
-    education_level: _education_level, // unused → prefixed
-    profession: _profession, // unused → prefixed
+    education_level,
+    profession,
     diet,
     exercise_frequency,
     smoking,
@@ -111,7 +117,8 @@ const Profile: React.FC = () => {
   } = profile;
 
   // Determine the user ID for evaluation summary; falls back to profile.id if user is nested.
-  const userId: number | undefined = profile.user?.id ?? profile.id;
+  const userId: number | undefined =
+    profile.user?.id ?? profile.id;
 
   return (
     <Container className="mt-5">
@@ -248,47 +255,39 @@ const Profile: React.FC = () => {
           )}
           {favorite_songs && toList(favorite_songs).length > 0 && (
             <ListGroup.Item>
-              <strong>Favourite Songs:</strong>{' '}
-              {toList(favorite_songs).join(', ')}
+              <strong>Favourite Songs:</strong> {toList(favorite_songs).join(', ')}
             </ListGroup.Item>
           )}
           {favorite_artists && toList(favorite_artists).length > 0 && (
             <ListGroup.Item>
-              <strong>Favourite Artists:</strong>{' '}
-              {toList(favorite_artists).join(', ')}
+              <strong>Favourite Artists:</strong> {toList(favorite_artists).join(', ')}
             </ListGroup.Item>
           )}
           {favorite_books && toList(favorite_books).length > 0 && (
             <ListGroup.Item>
-              <strong>Favourite Books:</strong>{' '}
-              {toList(favorite_books).join(', ')}
+              <strong>Favourite Books:</strong> {toList(favorite_books).join(', ')}
             </ListGroup.Item>
           )}
           {favorite_movies && toList(favorite_movies).length > 0 && (
             <ListGroup.Item>
-              <strong>Favourite Movies:</strong>{' '}
-              {toList(favorite_movies).join(', ')}
+              <strong>Favourite Movies:</strong> {toList(favorite_movies).join(', ')}
             </ListGroup.Item>
           )}
           {favorite_tv_shows && toList(favorite_tv_shows).length > 0 && (
             <ListGroup.Item>
-              <strong>Favourite TV Shows:</strong>{' '}
-              {toList(favorite_tv_shows).join(', ')}
+              <strong>Favourite TV Shows:</strong> {toList(favorite_tv_shows).join(', ')}
             </ListGroup.Item>
           )}
           {favorite_food && toList(favorite_food).length > 0 && (
             <ListGroup.Item>
-              <strong>Favourite Food:</strong>{' '}
-              {toList(favorite_food).join(', ')}
+              <strong>Favourite Food:</strong> {toList(favorite_food).join(', ')}
             </ListGroup.Item>
           )}
-          {favorite_travel_destinations &&
-            toList(favorite_travel_destinations).length > 0 && (
-              <ListGroup.Item>
-                <strong>Favourite Travel Destinations:</strong>{' '}
-                {toList(favorite_travel_destinations).join(', ')}
-              </ListGroup.Item>
-            )}
+          {favorite_travel_destinations && toList(favorite_travel_destinations).length > 0 && (
+            <ListGroup.Item>
+              <strong>Favourite Travel Destinations:</strong> {toList(favorite_travel_destinations).join(', ')}
+            </ListGroup.Item>
+          )}
           {favorite_sport && (
             <ListGroup.Item>
               <strong>Favourite Sport:</strong> {favorite_sport}
@@ -296,14 +295,12 @@ const Profile: React.FC = () => {
           )}
           {favorite_podcasts && toList(favorite_podcasts).length > 0 && (
             <ListGroup.Item>
-              <strong>Favourite Podcasts:</strong>{' '}
-              {toList(favorite_podcasts).join(', ')}
+              <strong>Favourite Podcasts:</strong> {toList(favorite_podcasts).join(', ')}
             </ListGroup.Item>
           )}
           {favorite_influencers && toList(favorite_influencers).length > 0 && (
             <ListGroup.Item>
-              <strong>Favourite Influencers:</strong>{' '}
-              {toList(favorite_influencers).join(', ')}
+              <strong>Favourite Influencers:</strong> {toList(favorite_influencers).join(', ')}
             </ListGroup.Item>
           )}
         </ListGroup>
@@ -348,7 +345,8 @@ const Profile: React.FC = () => {
           <ListGroup variant="flush">
             {Object.entries(personality_values).map(([trait, value]) => (
               <ListGroup.Item key={trait}>
-                <strong>{`${trait}: ${value}`}</strong>
+                <strong>{trait}:</strong>{' '}
+                {Array.isArray(value) ? value.join(', ') : String(value)}
               </ListGroup.Item>
             ))}
           </ListGroup>

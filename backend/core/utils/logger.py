@@ -19,11 +19,14 @@ class SensitiveInfoFormatter(logging.Formatter):
 
 logger = logging.getLogger(__name__)
 
-# Optional: Configure logger if needed (handlers are already set in settings.py)
+# Optional: Configure logger if needed
+# (handlers are already set in settings.py)
 # Example:
 # if not logger.handlers:
 #     handler = logging.StreamHandler()
-#     formatter = SensitiveInfoFormatter('%(asctime)s [%(levelname)s]: %(message)s')
+#     formatter = SensitiveInfoFormatter(
+#         "%(asctime)s [%(levelname)s]: %(message)s"
+#     )
 #     handler.setFormatter(formatter)
 #     logger.addHandler(handler)
 #     logger.setLevel(logging.INFO)
