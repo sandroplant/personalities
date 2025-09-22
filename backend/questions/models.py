@@ -56,6 +56,10 @@ class Question(models.Model):
     options = models.JSONField(default=list, blank=True)
     is_anonymous = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    quality_score = models.FloatField(default=0.0)
+    agreement_score = models.FloatField(default=0.0)
+    humor_score = models.FloatField(default=0.0)
+    safety_score = models.FloatField(default=0.0)
 
     def __str__(self) -> str:
         return self.text
@@ -85,9 +89,64 @@ class Answer(models.Model):
     rating = models.PositiveIntegerField(null=True, blank=True)
     is_anonymous = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    quality_score = models.FloatField(default=0.0)
+    agreement_score = models.FloatField(default=0.0)
+    humor_score = models.FloatField(default=0.0)
+    safety_score = models.FloatField(default=0.0)
 
     class Meta:
         unique_together = ("question", "user")
 
     def __str__(self) -> str:
         return f"Answer by {self.user} to {self.question}"  # pragma: no cover
+
+
+class BaseReaction(models.Model):
+    """Abstract base storing the four reaction dimensions for content."""
+
+    class ReactionValue(models.IntegerChoices):
+        NEGATIVE = -1, "negative"
+        NEUTRAL = 0, "neutral"
+        POSITIVE = 1, "positive"
+
+    DIMENSIONS = ("quality", "agreement", "humor", "safety")
+
+    quality = models.SmallIntegerField(choices=ReactionValue.choices, default=ReactionValue.NEUTRAL)
+    agreement = models.SmallIntegerField(choices=ReactionValue.choices, default=ReactionValue.NEUTRAL)
+    humor = models.SmallIntegerField(choices=ReactionValue.choices, default=ReactionValue.NEUTRAL)
+    safety = models.SmallIntegerField(choices=ReactionValue.choices, default=ReactionValue.NEUTRAL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class QuestionReaction(BaseReaction):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="reactions")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="question_reactions",
+    )
+
+    class Meta:
+        unique_together = ("question", "user")
+
+    def __str__(self) -> str:  # pragma: no cover - human readable helper
+        return f"Reaction by {self.user} on question {self.question_id}"
+
+
+class AnswerReaction(BaseReaction):
+    answer = models.ForeignKey(Answer, on_delete=models.CASCADE, related_name="reactions")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="answer_reactions",
+    )
+
+    class Meta:
+        unique_together = ("answer", "user")
+
+    def __str__(self) -> str:  # pragma: no cover - human readable helper
+        return f"Reaction by {self.user} on answer {self.answer_id}"

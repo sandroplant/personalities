@@ -5,7 +5,7 @@ instances to and from JSON for API consumption.
 
 from rest_framework import serializers
 
-from .models import Answer, Question, Tag
+from .models import Answer, AnswerReaction, Question, QuestionReaction, Tag
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -47,6 +47,10 @@ class QuestionSerializer(serializers.ModelSerializer):
             "no_count",
             "average_rating",
             "rating_count",
+            "quality_score",
+            "agreement_score",
+            "humor_score",
+            "safety_score",
         ]
         read_only_fields = [
             "id",
@@ -55,6 +59,10 @@ class QuestionSerializer(serializers.ModelSerializer):
             "no_count",
             "average_rating",
             "rating_count",
+            "quality_score",
+            "agreement_score",
+            "humor_score",
+            "safety_score",
         ]
 
     def validate_options(self, value):
@@ -144,3 +152,31 @@ class AnswerSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # unique constraint ensures only one answer per user per question
         return Answer.objects.create(**validated_data)
+
+
+class BaseReactionSerializer(serializers.ModelSerializer):
+    dimension_fields = QuestionReaction.DIMENSIONS
+
+    quality = serializers.IntegerField(required=False, min_value=-1, max_value=1)
+    agreement = serializers.IntegerField(required=False, min_value=-1, max_value=1)
+    humor = serializers.IntegerField(required=False, min_value=-1, max_value=1)
+    safety = serializers.IntegerField(required=False, min_value=-1, max_value=1)
+
+    def validate(self, attrs):
+        for field in self.dimension_fields:
+            attrs[field] = int(attrs.get(field, 0))
+        return attrs
+
+
+class QuestionReactionSerializer(BaseReactionSerializer):
+    class Meta:
+        model = QuestionReaction
+        fields = ["id", "quality", "agreement", "humor", "safety", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class AnswerReactionSerializer(BaseReactionSerializer):
+    class Meta:
+        model = AnswerReaction
+        fields = ["id", "quality", "agreement", "humor", "safety", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]

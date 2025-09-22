@@ -7,13 +7,23 @@ annotates yes/no counts and rating stats so the serializer fields are present.
 """
 
 from django.db.models import Avg, Count, Q
+from django.shortcuts import get_object_or_404
 
-from rest_framework import filters, generics, permissions
+from rest_framework import filters, generics, permissions, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 
-from .models import Question, Tag
-from .serializers import AnswerSerializer, QuestionSerializer, TagSerializer
+from core.reactions import build_breakdown
+
+from .models import Answer, Question, QuestionReaction, AnswerReaction, Tag
+from .serializers import (
+    AnswerReactionSerializer,
+    AnswerSerializer,
+    QuestionReactionSerializer,
+    QuestionSerializer,
+    TagSerializer,
+)
 
 
 class TagListView(generics.ListAPIView):
@@ -98,3 +108,89 @@ class AnswerCreateView(generics.CreateAPIView):
     serializer_class = AnswerSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+
+
+class QuestionReactionView(generics.GenericAPIView):
+    """Create/update and retrieve reactions for a question."""
+
+    serializer_class = QuestionReactionSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_object(self) -> Question:
+        return get_object_or_404(Question, pk=self.kwargs["pk"])
+
+    def get(self, request, *args, **kwargs):
+        question = self.get_object()
+        rows = list(QuestionReaction.objects.filter(question=question).values("user_id", *QuestionReaction.DIMENSIONS))
+        breakdown = build_breakdown(rows)
+        user_reaction = None
+        if request.user and request.user.is_authenticated:
+            reaction = QuestionReaction.objects.filter(question=question, user=request.user).first()
+            if reaction:
+                user_reaction = self.get_serializer(reaction).data
+        payload = {
+            "question_id": question.id,
+            "scores": {field: getattr(question, f"{field}_score") for field in QuestionReaction.DIMENSIONS},
+            "breakdown": breakdown,
+            "user_reaction": user_reaction,
+        }
+        return Response(payload)
+
+    def post(self, request, *args, **kwargs):
+        question = self.get_object()
+        self.check_object_permissions(request, question)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        defaults = {field: serializer.validated_data.get(field, 0) for field in QuestionReaction.DIMENSIONS}
+        reaction, created = QuestionReaction.objects.update_or_create(
+            question=question,
+            user=request.user,
+            defaults=defaults,
+        )
+        data = self.get_serializer(reaction).data
+        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(data, status=status_code)
+
+
+class AnswerReactionView(generics.GenericAPIView):
+    """Create/update and retrieve reactions for an answer."""
+
+    serializer_class = AnswerReactionSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_object(self) -> Answer:
+        return get_object_or_404(Answer, pk=self.kwargs["pk"])
+
+    def get(self, request, *args, **kwargs):
+        answer = self.get_object()
+        rows = list(AnswerReaction.objects.filter(answer=answer).values("user_id", *AnswerReaction.DIMENSIONS))
+        breakdown = build_breakdown(rows)
+        user_reaction = None
+        if request.user and request.user.is_authenticated:
+            reaction = AnswerReaction.objects.filter(answer=answer, user=request.user).first()
+            if reaction:
+                user_reaction = self.get_serializer(reaction).data
+        payload = {
+            "answer_id": answer.id,
+            "scores": {field: getattr(answer, f"{field}_score") for field in AnswerReaction.DIMENSIONS},
+            "breakdown": breakdown,
+            "user_reaction": user_reaction,
+        }
+        return Response(payload)
+
+    def post(self, request, *args, **kwargs):
+        answer = self.get_object()
+        self.check_object_permissions(request, answer)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        defaults = {field: serializer.validated_data.get(field, 0) for field in AnswerReaction.DIMENSIONS}
+        reaction, created = AnswerReaction.objects.update_or_create(
+            answer=answer,
+            user=request.user,
+            defaults=defaults,
+        )
+        data = self.get_serializer(reaction).data
+        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(data, status=status_code)

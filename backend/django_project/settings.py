@@ -47,8 +47,8 @@ INSTALLED_APPS = [
     "spotify_auth",
     "custom_auth",
     "messaging",
-    "posts",
-    "questions",
+    "posts.apps.PostsConfig",
+    "questions.apps.QuestionsConfig",
 ]
 
 SITE_ID = 1  # required for django-allauth

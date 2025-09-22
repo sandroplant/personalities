@@ -1,12 +1,17 @@
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
-from .models import Post
-from .serializers import PostSerializer
+from core.reactions import build_breakdown
+
+from .models import Comment, CommentReaction, Post
+from .serializers import CommentReactionSerializer, PostSerializer
 
 
 @csrf_exempt
@@ -47,3 +52,39 @@ def delete_post(request, id):
 
     post.delete()
     return JsonResponse({"message": "Post deleted"}, status=status.HTTP_200_OK)
+
+
+@api_view(["GET", "POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def comment_reactions(request, pk):
+    comment = get_object_or_404(Comment, pk=pk)
+
+    if request.method == "GET":
+        rows = list(CommentReaction.objects.filter(comment=comment).values("user_id", *CommentReaction.DIMENSIONS))
+        breakdown = build_breakdown(rows)
+        user_reaction = None
+        if request.user and request.user.is_authenticated:
+            reaction = CommentReaction.objects.filter(comment=comment, user=request.user).first()
+            if reaction:
+                user_reaction = CommentReactionSerializer(reaction).data
+        return Response(
+            {
+                "comment_id": comment.id,
+                "scores": {field: getattr(comment, f"{field}_score") for field in CommentReaction.DIMENSIONS},
+                "breakdown": breakdown,
+                "user_reaction": user_reaction,
+            }
+        )
+
+    serializer = CommentReactionSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    defaults = {field: serializer.validated_data.get(field, 0) for field in CommentReaction.DIMENSIONS}
+    reaction, created = CommentReaction.objects.update_or_create(
+        comment=comment,
+        user=request.user,
+        defaults=defaults,
+    )
+    data = CommentReactionSerializer(reaction).data
+    status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    return Response(data, status=status_code)
