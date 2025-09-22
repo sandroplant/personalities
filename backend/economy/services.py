@@ -31,8 +31,14 @@ def record_transaction(
     reference_id: Optional[str] = None,
     metadata: Optional[dict[str, Any]] = None,
 ) -> Optional[CoinTransaction]:
-    """Persist a coin transaction, updating the running balance safely."""
+    """Persist a coin transaction, updating the running balance safely.
 
+    Concurrency notes:
+    - We acquire a row lock on the user's CoinBalance *before* computing the 24h
+      credited total to avoid races that could exceed the daily credit cap.
+    - A (event_type, reference_id) duplicate is short-circuited under SELECT ... FOR UPDATE
+      to make idempotent calls safe under concurrency.
+    """
     if amount == 0:
         return None
     if abs(amount) > _max_transaction_abs():
@@ -41,13 +47,11 @@ def record_transaction(
     metadata = metadata or {}
 
     with transaction.atomic():
+        # Idempotency: if a specific reference was used already, return it.
         if reference_id:
             existing = (
                 CoinTransaction.objects.select_for_update()
-                .filter(
-                    event_type=event_type,
-                    reference_id=reference_id,
-                )
+                .filter(event_type=event_type, reference_id=reference_id)
                 .first()
             )
             if existing:
@@ -56,14 +60,14 @@ def record_transaction(
         now = timezone.now()
         adjusted_amount = amount
 
+        # Serialize per-user updates by locking (or creating) the balance row first.
+        balance, _ = CoinBalance.objects.select_for_update().get_or_create(user=user)
+
+        # Enforce the daily credit cap AFTER we have the lock to avoid races.
         if amount > 0:
             window_start = now - timedelta(hours=24)
             credited = (
-                CoinTransaction.objects.filter(
-                    user=user,
-                    amount__gt=0,
-                    created_at__gte=window_start,
-                ).aggregate(
+                CoinTransaction.objects.filter(user=user, amount__gt=0, created_at__gte=window_start).aggregate(
                     total=Sum("amount")
                 )["total"]
                 or 0
@@ -73,15 +77,15 @@ def record_transaction(
                 return None
             if adjusted_amount > allowance:
                 adjusted_amount = allowance
-                metadata = {**metadata, "partial": True, "allowed_amount": allowance}
+                metadata = {**(metadata or {}), "partial": True, "allowed_amount": allowance}
 
-        balance, _ = CoinBalance.objects.select_for_update().get_or_create(user=user)
+        # Prevent overdraft on debits; clamp to available balance.
         new_balance = int(balance.coins) + int(adjusted_amount)
         if new_balance < 0:
             adjusted_amount = -int(balance.coins)
             if adjusted_amount == 0:
                 return None
-            metadata = {**metadata, "clamped": True}
+            metadata = {**(metadata or {}), "clamped": True}
             new_balance = 0
 
         transaction_obj = CoinTransaction.objects.create(
@@ -103,11 +107,11 @@ def record_transaction(
 
 def _update_reputation(*, user, delta: int, occurred_at) -> None:
     """Recalculate the derived ``ReputationMetric`` for ``user``."""
-
     balance = CoinBalance.objects.filter(user=user).first()
     coins = int(balance.coins) if balance else 0
     metric, _ = ReputationMetric.objects.get_or_create(user=user)
 
+    # Simple, monotonic score derived from balance; tweakable later.
     new_score = round(max(coins, 0) ** 0.5, 2)
     momentum = round(delta / max(abs(coins), 1), 4)
 
