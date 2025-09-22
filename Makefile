@@ -1,7 +1,10 @@
-.PHONY: lint test test-local
-lint:
-	flake8 backend
+.PHONY: setup format test
+
+setup:
+	python3.11 -m venv .venv && . .venv/bin/activate && pip install -r backend/requirements.txt
+
+format:
+	pre-commit run --all-files
+
 test:
-	cd backend && DJANGO_SETTINGS_MODULE=django_project.settings_test python manage.py test
-test-local:
-	cd backend && LOCAL_TESTS=1 DJANGO_SETTINGS_MODULE=django_project.settings_test python manage.py test
+	python backend/manage.py test
