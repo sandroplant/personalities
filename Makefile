@@ -1,19 +1,14 @@
 .PHONY: lint format test
 
+SHELL := /bin/bash
+.ONESHELL:
+
 lint:
-	@python - <<'PY'
-import importlib.util, sys, subprocess, os
-if importlib.util.find_spec("pre_commit") is None:
-    cmd = [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "-q"]
-    if os.path.exists("requirements-dev.txt"):
-        subprocess.check_call(cmd + ["-r", "requirements-dev.txt"])
-    else:
-        subprocess.check_call(cmd + ["pre-commit"])
-PY
-	@$(PYTHON) -m pre_commit run --all-files || python -m pre_commit run --all-files
+\tpython -m pip install -q --disable-pip-version-check -r requirements-dev.txt || python -m pip install -q pre-commit
+\tpython -m pre_commit run --all-files
 
 format:
-	@$(MAKE) lint
+\tpython -m pre_commit run --all-files
 
 test:
-	python backend/manage.py test
+\tpython backend/manage.py test
