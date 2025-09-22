@@ -246,3 +246,6 @@ backend/.env*
 
 # ignore accidental top-level userprofiles/
 /userprofiles/
+
+# keep static dir in repo
+!backend/static/.gitkeep

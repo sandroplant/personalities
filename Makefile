@@ -1,7 +1,13 @@
-.PHONY: lint test test-local
+.PHONY: lint format test
+
+SHELL := /bin/bash
+
 lint:
-	flake8 backend
+	python -m pip install -q --disable-pip-version-check -r requirements-dev.txt || python -m pip install -q pre-commit
+	python -m pre_commit run --all-files
+
+format:
+	python -m pre_commit run --all-files
+
 test:
-	cd backend && DJANGO_SETTINGS_MODULE=django_project.settings_test python manage.py test
-test-local:
-	cd backend && LOCAL_TESTS=1 DJANGO_SETTINGS_MODULE=django_project.settings_test python manage.py test
+	python backend/manage.py test

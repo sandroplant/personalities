@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "messaging",
     "posts",
     "questions",
+    "economy.apps.EconomyConfig",
 ]
 
 SITE_ID = 1  # required for django-allauth
@@ -144,6 +145,8 @@ SPECTACULAR_SETTINGS = {
 # Env-backed thresholds / knobs
 EVALUATIONS_MIN_RATINGS = int(os.getenv("EVALUATIONS_MIN_RATINGS", "10"))
 EVALUATIONS_REPEAT_DAYS = env.int("EVALUATIONS_REPEAT_DAYS", default=7)  # cooldown
+ECONOMY_MAX_TRANSACTION_ABS = env.int("ECONOMY_MAX_TRANSACTION_ABS", default=50)
+ECONOMY_MAX_DAILY_CREDIT = env.int("ECONOMY_MAX_DAILY_CREDIT", default=200)
 
 # Additional configuration reading from environment variables
 SPOTIFY_CLIENT_ID = env("SPOTIFY_CLIENT_ID", default="")
