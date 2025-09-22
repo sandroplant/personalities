@@ -2,10 +2,10 @@
 
 from django.contrib.auth import authenticate, get_user_model
 
+from posts.models import Post
 from rest_framework import serializers
 
 from messaging.models import Message
-from posts.models import Post
 from userprofiles.models import Profile
 
 User = get_user_model()

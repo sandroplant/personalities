@@ -6,7 +6,6 @@ from rest_framework import serializers
 
 from .models import Comment, Post
 
-
 User = get_user_model()
 
 

@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 import bleach
 import requests
 from django_ratelimit.decorators import ratelimit
+from posts.models import Post
 from rest_framework import generics, status, viewsets
 from rest_framework.authentication import BaseAuthentication, SessionAuthentication
 from rest_framework.decorators import api_view, permission_classes
@@ -23,7 +24,6 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from messaging.models import Message
-from posts.models import Post
 from userprofiles.models import Profile
 
 from .models import User
