@@ -8,12 +8,11 @@ annotates yes/no counts and rating stats so the serializer fields are present.
 
 from django.db.models import Avg, Count, Q
 
+from economy.models import CoinTransaction
+from economy.services import record_transaction
 from rest_framework import filters, generics, permissions
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import ValidationError
-
-from economy.models import CoinTransaction
-from economy.services import record_transaction
 
 from .models import Answer, Question, Tag
 from .serializers import AnswerSerializer, QuestionSerializer, TagSerializer

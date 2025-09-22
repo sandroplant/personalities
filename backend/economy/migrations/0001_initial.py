@@ -58,9 +58,7 @@ class Migration(migrations.Migration):
                 ("score", models.FloatField(default=0.0)),
                 (
                     "momentum",
-                    models.FloatField(
-                        default=0.0, help_text="Derivative of recent reputation change."
-                    ),
+                    models.FloatField(default=0.0, help_text="Derivative of recent reputation change."),
                 ),
                 (
                     "last_recalculated",
@@ -94,9 +92,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "amount",
-                    models.IntegerField(
-                        help_text="Positive values credit coins; negative values deduct coins."
-                    ),
+                    models.IntegerField(help_text="Positive values credit coins; negative values deduct coins."),
                 ),
                 (
                     "event_type",

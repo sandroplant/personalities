@@ -42,10 +42,14 @@ def record_transaction(
 
     with transaction.atomic():
         if reference_id:
-            existing = CoinTransaction.objects.select_for_update().filter(
-                event_type=event_type,
-                reference_id=reference_id,
-            ).first()
+            existing = (
+                CoinTransaction.objects.select_for_update()
+                .filter(
+                    event_type=event_type,
+                    reference_id=reference_id,
+                )
+                .first()
+            )
             if existing:
                 return existing
 
@@ -59,7 +63,9 @@ def record_transaction(
                     user=user,
                     amount__gt=0,
                     created_at__gte=window_start,
-                ).aggregate(total=Sum("amount"))["total"]
+                ).aggregate(
+                    total=Sum("amount")
+                )["total"]
                 or 0
             )
             allowance = max(0, _daily_credit_cap() - int(credited))

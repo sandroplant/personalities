@@ -6,13 +6,13 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from economy.models import CoinBalance, CoinTransaction, ReputationMetric
+from economy.services import record_transaction
+from questions.models import Answer, Question
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from evaluations.models import Criterion
-from economy.models import CoinBalance, CoinTransaction, ReputationMetric
-from economy.services import record_transaction
-from questions.models import Answer, Question
 
 
 class EconomyServiceTests(TestCase):

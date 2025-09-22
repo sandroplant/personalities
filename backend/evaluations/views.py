@@ -10,13 +10,12 @@ from django.contrib.auth import get_user_model
 from django.db.models import Avg, Max
 from django.utils import timezone
 
+from economy.models import CoinTransaction
+from economy.services import record_transaction
 from rest_framework import generics, permissions, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from economy.models import CoinTransaction
-from economy.services import record_transaction
 
 from userprofiles.models import Friendship
 
