@@ -17,6 +17,8 @@ from rest_framework.views import APIView
 
 from userprofiles.models import Friendship
 
+from notifications.services import NotificationService
+
 from .meta_models import EvaluationMeta
 from .models import Criterion, Evaluation
 from .rater_models import RaterStats
@@ -148,6 +150,12 @@ class EvaluationCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        User = get_user_model()
+        try:
+            subject = User.objects.get(pk=subject_id)
+        except User.DoesNotExist:
+            return Response({"detail": "Subject not found."}, status=status.HTTP_404_NOT_FOUND)
+
         create_kwargs = {
             "evaluator": user,
             "subject_id": subject_id,
@@ -158,6 +166,9 @@ class EvaluationCreateView(APIView):
             create_kwargs["familiarity"] = familiarity
 
         evaluation = Evaluation.objects.create(**create_kwargs)
+
+        NotificationService.notify_evaluation_request(subject, evaluation)
+        NotificationService.adjust_coins(user, 1, "evaluation_submitted")
 
         # Notify downstream listeners so reliability/objectivity are recalculated.
         evaluation_submitted.send(sender=Evaluation, evaluation=evaluation)

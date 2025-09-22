@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     "messaging",
     "posts",
     "questions",
+    "notifications.apps.NotificationsConfig",
+    "feed.apps.FeedConfig",
 ]
 
 SITE_ID = 1  # required for django-allauth

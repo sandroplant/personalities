@@ -22,6 +22,8 @@ urlpatterns = [
     path("spotify/", include("spotify_auth.urls")),
     path("uploads/", include("uploads.urls")),
     path("questions/", include("questions.urls")),
+    path("feed/", include("feed.urls")),
+    path("notifications/", include("notifications.urls")),
     # Evaluations app (includes tasks/create endpoints)
     path("evaluations/", include("evaluations.urls")),
     path("evaluations/tasks/", EvaluationTasksView.as_view(), name="evaluation-tasks"),
