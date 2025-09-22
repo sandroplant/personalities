@@ -7,6 +7,7 @@ from rest_framework import serializers
 from .models import Profile
 
 PROFILE_FIELD_NAMES = [
+    "full_name",
     "bio",
     "profile_picture",
     # Basic info
@@ -28,6 +29,7 @@ PROFILE_FIELD_NAMES = [
     "body_type",
     "skin_tone",
     "tattoos_piercings",
+    "appearance",
     # Background
     "education_level",
     "field_of_study",
@@ -42,6 +44,7 @@ PROFILE_FIELD_NAMES = [
     "pets",
     # Hobbies & interests
     "hobbies",
+    "interests",
     # Favorites
     "favorite_songs",
     "favorite_artists",
@@ -55,12 +58,15 @@ PROFILE_FIELD_NAMES = [
     "favorite_influencers",
     # Personality & values
     "personality_values",
+    "criteria",
+    "spotify_info",
     # Fun & miscellaneous
     "fun_fact",
     "goals",
     "achievements",
     "personal_quote",
     "social_links",
+    "privacy_settings",
 ]
 
 

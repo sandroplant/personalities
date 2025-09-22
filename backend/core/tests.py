@@ -9,13 +9,14 @@ from core.models import User
 class ProfileAPITest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create(
+        self.user = User.objects.create_user(
+            username="test_user",
+            email="test@example.com",
+            password="password123",
             spotify_id="test_spotify_id",
             display_name="Test User",
-            email="test@example.com",
         )
-        self.client.session["user_id"] = str(self.user.id)
-        self.client.session.save()
+        self.client.force_login(self.user)
 
     def test_get_user_profile(self):
         response = self.client.get(reverse("get_user_profile_api"))

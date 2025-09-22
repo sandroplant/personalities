@@ -3,7 +3,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import Comment, Message, Post, Profile, User
+from .models import User
 
 
 class UserAdmin(BaseUserAdmin):
@@ -38,7 +38,3 @@ class UserAdmin(BaseUserAdmin):
 
 
 admin.site.register(User, UserAdmin)
-admin.site.register(Profile)
-admin.site.register(Message)
-admin.site.register(Post)
-admin.site.register(Comment)
