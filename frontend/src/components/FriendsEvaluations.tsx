@@ -39,12 +39,12 @@ const FriendsEvaluations: React.FC = () => {
       try {
         // Fetch a list of evaluation tasks from the backend. Each task
         // contains a subject (friend) and a criterion to rate. The backend
-        // returns an array of objects with keys: subjectId, subjectName,
+        // returns an object with a "tasks" array: subjectId, subjectName,
         // criterionId, criterionName, firstTime.
-        const response = await api.get('/evaluations/tasks/');
-        const tasks: EvaluationTask[] = response.data;
+        const res = await api.get('/evaluations/tasks/');
+        const tasks: EvaluationTask[] = res.data?.tasks ?? res.data;
         setQueue(tasks);
-        setCurrent(tasks[0] || null);
+        setCurrent(tasks[0] ?? null);
       } catch (err) {
         console.error('Failed to load evaluation tasks', err);
         setError('Failed to load evaluation tasks');
