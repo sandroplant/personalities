@@ -1,20 +1,10 @@
+// frontend/src/components/QuestionsFeed.tsx
 import React, { useEffect, useState } from 'react';
 import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Button,
-  Modal,
-  Form,
-  Spinner,
-  Alert,
+  Container, Row, Col, Card, Button, Modal, Form, Spinner, Alert,
 } from 'react-bootstrap';
 import api from '../services/api';
 
-/**
- * Type definitions for question and tag objects returned by the API.
- */
 interface Tag {
   id: number;
   name: string;
@@ -35,14 +25,6 @@ interface Question {
   rating_count?: number;
 }
 
-/**
- * QuestionsFeed component
- *
- * Displays a list of questions pulled from the backend and provides
- * functionality to create new questions via a modal form. Users can
- * filter questions by tag and search text, choose the sort order, and
- * optionally create a custom tag when posting a question.
- */
 const QuestionsFeed: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -52,27 +34,21 @@ const QuestionsFeed: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // State for ask question modal
+  // Ask Question modal
   const [showModal, setShowModal] = useState(false);
   const [questionText, setQuestionText] = useState('');
   const [modalTagId, setModalTagId] = useState<number | ''>('');
   const [customTag, setCustomTag] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [options, setOptions] = useState<string[]>(['', '', '', '']);
-  const [questionType, setQuestionType] = useState<
-    'yesno' | 'multiple_choice' | 'rating'
-  >('yesno');
+  const [questionType, setQuestionType] = useState<'yesno' | 'multiple_choice' | 'rating'>('yesno');
   const [submitting, setSubmitting] = useState(false);
   const [ratings, setRatings] = useState<Record<number, number>>({});
 
+  // Reset options when not multiple choice
   useEffect(() => {
     if (questionType !== 'multiple_choice') {
-      setOptions((prev) => {
-        if (prev.every((opt) => !opt.trim())) {
-          return prev;
-        }
-        return ['', '', '', ''];
-      });
+      setOptions((prev) => (prev.every((opt) => !opt.trim()) ? prev : ['', '', '', '']));
     }
   }, [questionType]);
 
@@ -90,24 +66,20 @@ const QuestionsFeed: React.FC = () => {
     resetModalState();
   };
 
-  /**
-   * Fetch tags and questions on mount. Also re-fetch when the selected
-   * tag, search query, or sort mode changes. Uses query parameters to filter
-   * questions by tag or search text and to specify sorting.
-   */
+  // Load tags/questions
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch tags
         const tagResponse = await api.get('/questions/tags/');
         setTags(tagResponse.data);
-        // Fetch questions with optional filters
-        const params: any = {};
+
+        const params: Record<string, unknown> = {};
         if (selectedTag) params.tag = selectedTag;
         if (search.trim()) params.search = search.trim();
         if (sort === 'recent') params.sort = 'recent';
+
         const questionResp = await api.get('/questions/questions/', { params });
         setQuestions(questionResp.data.results || questionResp.data);
       } catch (err) {
@@ -120,11 +92,15 @@ const QuestionsFeed: React.FC = () => {
     fetchData();
   }, [selectedTag, search, sort]);
 
-  /**
-   * Submit a new answer to a question. For yes/no polls the option
-   * indices are 0 (Yes) and 1 (No). For multi-choice polls the index
-   * corresponds to the selected option.
-   */
+  const refreshQuestions = async () => {
+    const params: Record<string, unknown> = {};
+    if (selectedTag) params.tag = selectedTag;
+    if (search.trim()) params.search = search.trim();
+    if (sort === 'recent') params.sort = 'recent';
+    const response = await api.get('/questions/questions/', { params });
+    setQuestions(response.data.results || response.data);
+  };
+
   const submitAnswer = async (questionId: number, optionIndex: number) => {
     try {
       await api.post('/questions/answers/', {
@@ -132,13 +108,7 @@ const QuestionsFeed: React.FC = () => {
         selected_option_index: optionIndex,
         is_anonymous: false,
       });
-      // Refresh questions to update counts
-      const params: any = {};
-      if (selectedTag) params.tag = selectedTag;
-      if (search.trim()) params.search = search.trim();
-      if (sort === 'recent') params.sort = 'recent';
-      const response = await api.get('/questions/questions/', { params });
-      setQuestions(response.data.results || response.data);
+      await refreshQuestions();
     } catch (err) {
       console.error('Error submitting answer', err);
       alert('There was an error submitting your answer. Please try again.');
@@ -152,24 +122,13 @@ const QuestionsFeed: React.FC = () => {
         rating,
         is_anonymous: false,
       });
-      // Refresh questions to show updated rating results
-      const params: any = {};
-      if (selectedTag) params.tag = selectedTag;
-      if (search.trim()) params.search = search.trim();
-      if (sort === 'recent') params.sort = 'recent';
-      const response = await api.get('/questions/questions/', { params });
-      setQuestions(response.data.results || response.data);
+      await refreshQuestions();
     } catch (err) {
       console.error('Error submitting rating', err);
       alert('There was an error submitting your rating. Please try again.');
     }
   };
 
-  /**
-   * Handle submission of a new question from the modal. Validates
-   * required fields and sends a POST request matching the selected
-   * question type. Clears state after successful submission.
-   */
   const handleQuestionSubmit = async () => {
     if (!questionText.trim()) {
       alert('Question text cannot be empty.');
@@ -178,35 +137,31 @@ const QuestionsFeed: React.FC = () => {
     setSubmitting(true);
     try {
       const filteredOptions = options.filter((opt) => opt.trim());
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         text: questionText.trim(),
         is_anonymous: isAnonymous,
-        question_type: questionType,
+        question_type: questionType, // REQUIRED by backend
       };
-      // Prioritize custom tag over selected tag
+      // Tag selection
       if (customTag.trim()) {
         payload.tag_name = customTag.trim();
       } else if (modalTagId) {
         payload.tag_id = modalTagId;
       }
+      // Options by type
       if (questionType === 'multiple_choice') {
         if (filteredOptions.length < 2) {
           alert('Please provide at least two options for multiple choice questions.');
+          setSubmitting(false);
           return;
         }
         payload.options = filteredOptions;
       } else if (questionType === 'rating') {
         payload.options = [];
       }
+
       await api.post('/questions/questions/', payload);
-      // Refresh list
-      const params: any = {};
-      if (selectedTag) params.tag = selectedTag;
-      if (search.trim()) params.search = search.trim();
-      if (sort === 'recent') params.sort = 'recent';
-      const response = await api.get('/questions/questions/', { params });
-      setQuestions(response.data.results || response.data);
-      // Reset modal state
+      await refreshQuestions();
       handleCloseModal();
     } catch (err) {
       console.error('Error creating question', err);
@@ -226,6 +181,7 @@ const QuestionsFeed: React.FC = () => {
           <Button onClick={() => setShowModal(true)}>Ask a Question</Button>
         </Col>
       </Row>
+
       {/* Filters */}
       <Row className="mb-3">
         <Col md={4} className="mb-2">
@@ -240,9 +196,7 @@ const QuestionsFeed: React.FC = () => {
           <Form.Select
             value={selectedTag}
             onChange={(e) =>
-              setSelectedTag(
-                e.target.value === '' ? '' : parseInt(e.target.value)
-              )
+              setSelectedTag(e.target.value === '' ? '' : parseInt(e.target.value, 10))
             }
           >
             <option value="">All Tags</option>
@@ -256,16 +210,15 @@ const QuestionsFeed: React.FC = () => {
         <Col md={4} className="mb-2">
           <Form.Select
             value={sort}
-            onChange={(e) =>
-              setSort(e.target.value === 'recent' ? 'recent' : 'trending')
-            }
+            onChange={(e) => setSort(e.target.value === 'recent' ? 'recent' : 'trending')}
           >
             <option value="trending">Trending</option>
             <option value="recent">Recent</option>
           </Form.Select>
         </Col>
       </Row>
-      {/* List of questions */}
+
+      {/* List */}
       {loading ? (
         <div className="text-center">
           <Spinner animation="border" role="status">
@@ -283,11 +236,9 @@ const QuestionsFeed: React.FC = () => {
               <Card.Body>
                 <Card.Title>{q.text}</Card.Title>
                 {q.tag && (
-                  <Card.Subtitle className="mb-2 text-muted">
-                    {q.tag.name}
-                  </Card.Subtitle>
+                  <Card.Subtitle className="mb-2 text-muted">{q.tag.name}</Card.Subtitle>
                 )}
-                {/* Display options and answer inputs */}
+
                 {q.question_type === 'rating' ? (
                   <>
                     <Form.Range
@@ -295,10 +246,7 @@ const QuestionsFeed: React.FC = () => {
                       max={10}
                       value={ratings[q.id] || 5}
                       onChange={(e) =>
-                        setRatings({
-                          ...ratings,
-                          [q.id]: parseInt(e.target.value),
-                        })
+                        setRatings({ ...ratings, [q.id]: parseInt(e.target.value, 10) })
                       }
                       className="mb-2"
                       aria-label="Rating slider"
@@ -306,8 +254,7 @@ const QuestionsFeed: React.FC = () => {
                     <div className="mb-2">Rating: {ratings[q.id] || 5}</div>
                     {typeof q.average_rating === 'number' && (
                       <div className="mb-2">
-                        Average: {q.average_rating.toFixed(1)} (
-                        {q.rating_count ?? 0} votes)
+                        Average: {q.average_rating.toFixed(1)} ({q.rating_count ?? 0} votes)
                       </div>
                     )}
                     <Button
@@ -352,13 +299,9 @@ const QuestionsFeed: React.FC = () => {
           ))}
         </>
       )}
+
       {/* Ask Question Modal */}
-      <Modal
-        show={showModal}
-        onHide={handleCloseModal}
-        backdrop="static"
-        size="lg"
-      >
+      <Modal show={showModal} onHide={handleCloseModal} backdrop="static" size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Ask a Question</Modal.Title>
         </Modal.Header>
@@ -374,14 +317,13 @@ const QuestionsFeed: React.FC = () => {
                 placeholder="Enter your question here..."
               />
             </Form.Group>
+
             <Form.Group controlId="tagSelect" className="mb-3">
               <Form.Label>Select a tag</Form.Label>
               <Form.Select
                 value={modalTagId}
                 onChange={(e) =>
-                  setModalTagId(
-                    e.target.value === '' ? '' : parseInt(e.target.value)
-                  )
+                  setModalTagId(e.target.value === '' ? '' : parseInt(e.target.value, 10))
                 }
               >
                 <option value="">Choose from existing tags</option>
@@ -392,6 +334,7 @@ const QuestionsFeed: React.FC = () => {
                 ))}
               </Form.Select>
             </Form.Group>
+
             <Form.Group controlId="customTag" className="mb-3">
               <Form.Label>Custom Tag (optional)</Form.Label>
               <Form.Control
@@ -404,23 +347,21 @@ const QuestionsFeed: React.FC = () => {
                 Leave this blank to use the selected tag above.
               </Form.Text>
             </Form.Group>
+
             <Form.Group controlId="questionType" className="mb-3">
               <Form.Label>Question Type</Form.Label>
               <Form.Select
                 value={questionType}
-                onChange={(e) => {
-                  const value = e.target.value as
-                    | 'yesno'
-                    | 'multiple_choice'
-                    | 'rating';
-                  setQuestionType(value);
-                }}
+                onChange={(e) =>
+                  setQuestionType(e.target.value as 'yesno' | 'multiple_choice' | 'rating')
+                }
               >
                 <option value="yesno">Yes / No</option>
                 <option value="multiple_choice">Multiple Choice</option>
                 <option value="rating">Rating</option>
               </Form.Select>
             </Form.Group>
+
             <Form.Group controlId="anonymousCheck" className="mb-3">
               <Form.Check
                 type="checkbox"
@@ -429,6 +370,7 @@ const QuestionsFeed: React.FC = () => {
                 onChange={(e) => setIsAnonymous(e.target.checked)}
               />
             </Form.Group>
+
             {questionType === 'multiple_choice' && (
               <>
                 <Form.Label>Answer Options (minimum 2, up to 4)</Form.Label>
@@ -451,18 +393,10 @@ const QuestionsFeed: React.FC = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={handleCloseModal}
-            disabled={submitting}
-          >
+          <Button variant="secondary" onClick={handleCloseModal} disabled={submitting}>
             Cancel
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleQuestionSubmit}
-            disabled={submitting}
-          >
+          <Button variant="primary" onClick={handleQuestionSubmit} disabled={submitting}>
             {submitting ? 'Posting...' : 'Post Question'}
           </Button>
         </Modal.Footer>

@@ -68,7 +68,6 @@ const FriendsEvaluations: React.FC = () => {
       return;
     }
 
-    // Need to fetch the next page
     if (nextOffset !== null && !fetchingMore) {
       try {
         setFetchingMore(true);
@@ -85,7 +84,6 @@ const FriendsEvaluations: React.FC = () => {
         setScore(5);
       }
     } else {
-      // No more data
       setQueue([]);
       setCurrent(null);
       setFamiliarity(5);
@@ -123,7 +121,6 @@ const FriendsEvaluations: React.FC = () => {
   const onFamiliarityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFamiliarity(Number(e.target.value));
   };
-
   const onScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setScore(Number(e.target.value));
   };
@@ -182,12 +179,7 @@ const FriendsEvaluations: React.FC = () => {
           </Card.Title>
           <Form.Group controlId="score" className="my-3">
             <Form.Label>Score (1–10)</Form.Label>
-            <Form.Range
-              min={1}
-              max={10}
-              value={score}
-              onChange={onScoreChange}
-            />
+            <Form.Range min={1} max={10} value={score} onChange={onScoreChange} />
             <div>Selected: {score}</div>
           </Form.Group>
 
